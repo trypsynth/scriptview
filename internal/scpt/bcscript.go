@@ -40,8 +40,16 @@ func (b *bcBuilder) scriptItems(v fasValue, top bool) ([]int16, error) {
 	}
 	b.scopes = append(b.scopes, scopeNames)
 	defer func() { b.scopes = b.scopes[:len(b.scopes)-1] }()
-	var items, uses []int16
+	var items, uses, props []int16
 	var runBody []int16
+	// The compiler puts the implicit run handler after every other handler,
+	// so a run handler anywhere else was written out: on run.
+	lastHandler := -1
+	for i, entry := range table[2:] {
+		if e, ok := entry.(*fasBlock); ok && (e.kind == 16 || e.kind == 17) {
+			lastHandler = i
+		}
+	}
 	for i, entry := range table[2:] {
 		var name fasValue
 		if i < len(names) {
@@ -55,7 +63,7 @@ func (b *bcBuilder) scriptItems(v fasValue, top bool) ([]int16, error) {
 				if !ok {
 					continue
 				}
-				if c, ok := h.name.(fasCode); ok && c.code == "aevtoapp" && top && len(h.params) == 0 && len(h.pattern) == 0 {
+				if c, ok := h.name.(fasCode); ok && c.code == "aevtoapp" && top && len(h.params) == 0 && !h.hasPattern && i == lastHandler {
 					// The implicit run handler: its body is the script's
 					// top-level code.
 					body, err := b.handlerBody(h)
@@ -94,9 +102,10 @@ func (b *bcBuilder) scriptItems(v fasValue, top bool) ([]int16, error) {
 		// Anything else is a property with its initial value.
 		if name != nil {
 			prop := b.node('j', b.keyRef(name), b.literal(entry))
-			items = append([]int16{b.node('l', prop)}, items...)
+			props = append(props, b.node('l', prop))
 		}
 	}
+	items = append(props, items...)
 	if len(runBody) > 0 {
 		items = append(items, runBody...)
 	}
@@ -146,7 +155,13 @@ func (b *bcBuilder) handlerBody(h handlerCode) ([]int16, error) {
 		bh.index[in.off] = i
 	}
 	bh.index[len(h.code)] = len(prog)
-	return bh.stmts(0, len(h.code))
+	stmts, err := bh.stmts(0, len(h.code))
+	if n := len(prog); err == nil && n >= 3 && prog[n-3].name == "StoreResult" && prog[n-2].name == "GetResult" && prog[n-1].name == "Return" {
+		// A blank line (or comment) after the last statement compiles to
+		// this tail instead of a bare Return.
+		stmts = append(stmts, b.node('l'))
+	}
+	return stmts, err
 }
 
 // handlerDef builds an 'i' handler definition node.
@@ -172,7 +187,7 @@ func (b *bcBuilder) handlerDef(h handlerCode, blk *fasBlock) (int16, error) {
 		if len(params) > 0 {
 			direct = params[0]
 		}
-		if len(h.pattern) > 0 {
+		if h.hasPattern {
 			var names []int16
 			for _, p := range h.pattern {
 				names = append(names, b.node('o', b.nameRef(p)))

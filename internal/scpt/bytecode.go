@@ -162,13 +162,14 @@ func (dc *decompState) decodeValue(ref int16, depth int) fasValue {
 // handlerCode is one handler's (or the implicit run handler's) bytecode and
 // the tables its instructions index into.
 type handlerCode struct {
-	name     fasValue   // identifier string or fasCode event
-	params   []fasValue // names, or terms for names that spell one (on f(key))
-	pattern  []string   // a list-pattern direct parameter: on run {a, b}
-	vars     []string
-	varTerms map[int]fasCode // variables whose names spell a term: key
-	literals []fasValue
-	code     []byte
+	name       fasValue   // identifier string or fasCode event
+	params     []fasValue // names, or terms for names that spell one (on f(key))
+	pattern    []string   // a list-pattern direct parameter: on run {a, b}
+	hasPattern bool       // the handler takes a pattern, maybe empty: on run {}
+	vars       []string
+	varTerms   map[int]fasCode // variables whose names spell a term: key
+	literals   []fasValue
+	code       []byte
 }
 
 // handlerTable returns the script's handlers from the root object's table.
@@ -247,6 +248,7 @@ func (dc *decompState) handlerFrom(v fasValue) (handlerCode, bool) {
 	case []fasValue:
 		// A pattern parameter: on run {input, parameters}.
 		h.pattern = stringsOf(p)
+		h.hasPattern = true
 	}
 	return h, true
 }

@@ -523,6 +523,10 @@ func (bh *bcHandler) run(lo, hi int, stack []stackVal) ([]int16, []stackVal, err
 			// Evaluating a reference: transparent in source, unless the value
 			// then serves as a container (an explicit `get`).
 			if n := len(stack); n > 0 {
+				if stack[n-1].gotten {
+					// Evaluated twice: set x to get properties.
+					stack[n-1].id = b.node('e', stack[n-1].id)
+				}
 				stack[n-1].gotten = true
 			}
 		case "Equal", "NotEqual", "GreaterThan", "GreaterThanOrEqual", "LessThan", "LessThanOrEqual",
