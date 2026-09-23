@@ -1,0 +1,11 @@
+-- Decompiled from run-only bytecode: comments and original formatting are not recoverable.
+
+script S
+	property name : "02"
+	property n : 1
+	on t()
+		return {n, my extra}
+	end t
+end script
+
+S's t()

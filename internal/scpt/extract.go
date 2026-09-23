@@ -178,8 +178,6 @@ func (f *File) RunOnly() bool {
 	if !ok || len(root.refs) < 2 {
 		return false
 	}
-	if tree, ok := dc.objects[root.refs[1]]; ok && tree.typ != objSymbol {
-		return false
-	}
-	return len(dc.handlerTable()) > 0
+	tree, ok := dc.objects[root.refs[1]]
+	return ok && tree.typ == objSymbol
 }

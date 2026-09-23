@@ -6,3 +6,4 @@ script S
 		return {n, my extra}
 	end t
 end script
+S's t()
