@@ -767,6 +767,12 @@ func (dc *decompState) expr(id int16) string {
 			return "my " + part
 		}
 		if n.flags&flagPossessive != 0 {
+			if c, ok := dc.nodes[n.children[1]]; ok && c.typ == 'g' && n.flags&flagImplicitIts != 0 {
+				if code := dc.osCode[child0(dc.nodes[n.children[0]])]; dc.className4(code) == "" {
+					return dc.expr(n.children[0]) // name: a property of the tell target
+				}
+				return "its " + dc.expr(n.children[0]) // its file: file alone is the class
+			}
 			if c, ok := dc.nodes[n.children[1]]; ok && c.typ == 'g' {
 				if n.flags&flagAltSyntax != 0 {
 					return "it's " + dc.expr(n.children[0]) // kept by old compilers

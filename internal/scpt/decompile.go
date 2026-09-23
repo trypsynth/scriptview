@@ -114,6 +114,9 @@ const (
 	commentHash       = 6     // # …
 	commentHeaderHash = 7     // # … on the header line
 	flagThe           = 0x100 // 'l': article "the"; 'n': "in" for "of"; '4': front/back
+	// flagImplicitIts marks a bytecode `its x` where `its` is needed only
+	// if x alone would name a class (not a flag compilers write).
+	flagImplicitIts = 0x8000
 )
 
 // firstPositive returns the first positive child of n, or 0.
