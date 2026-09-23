@@ -1,0 +1,4 @@
+script
+	property name : "x"
+	property parent : AppleScript
+end script

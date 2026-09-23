@@ -324,6 +324,7 @@ func (bh *bcHandler) stmts(lo, hi int) ([]int16, error) {
 		}
 	}
 	out = bh.foldDestructuring(out)
+	out = bh.usingTermsBlocks(out)
 	// A blank line or comment after a block's last statement compiles to
 	// StoreResult, GetResult at the block's end.
 	if j, ok := bh.index[hi]; ok && j >= 2 && bh.index[lo] <= j-2 && bh.blankTail(j) {
@@ -503,7 +504,7 @@ func (bh *bcHandler) run(lo, hi int, stack []stackVal) ([]int16, []stackVal, err
 				return out, stack, err
 			}
 			name := bh.keyOf(nameVal.id)
-			if n := b.out.nodes[nameVal.id]; n.typ == 'm' && b.out.osCode[child0(n)] == "msng" {
+			if n := b.out.nodes[nameVal.id]; nameVal.undefined || n.typ == 'm' && b.out.osCode[child0(n)] == "msng" {
 				name = b.ref() // an anonymous script object
 			}
 			obj := b.node('h', name, b.node('k', b.cons(inner)))
@@ -514,7 +515,11 @@ func (bh *bcHandler) run(lo, hi int, stack []stackVal) ([]int16, []stackVal, err
 			if err != nil {
 				return out, stack, err
 			}
-			emit(b.node('j', bh.varRef(in.args[0]), v.id))
+			key := bh.varRef(in.args[0])
+			if i := in.args[0]; i < 0 || i >= len(bh.h.vars) {
+				key = b.termRef(fasCode{kind: osKindCode, code: "pare"}) // the unnamed slot is parent
+			}
+			emit(b.node('j', key, v.id))
 			stack = append(stack, stackVal{id: v.id, assigned: true, count: -1})
 		case "DefineProcedure":
 			blk, ok := bh.lit(in.args[0]).(*fasBlock)
@@ -720,6 +725,13 @@ func (bh *bcHandler) run(lo, hi int, stack []stackVal) ([]int16, []stackVal, err
 			}
 		case "Pop":
 			if len(stack) > 0 {
+				if pc > 0 && strings.HasPrefix(bh.prog[pc-1].name, "PushLiteral") {
+					if _, app := bh.lit(bh.prog[pc-1].args[len(bh.prog[pc-1].args)-1]).(fasApp); app {
+						// using terms from application …: the compiler only
+						// loads the terms. The block runs to the end of this one.
+						emit(b.node('w', 0, stack[len(stack)-1].id))
+					}
+				}
 				stack = stack[:len(stack)-1]
 			}
 		case "GCSwap":
@@ -868,6 +880,23 @@ func isReference(n nodeRec) bool {
 
 // stmtValue returns the expression of an expression statement, looking
 // through an explicit get.
+// usingTermsBlocks turns each `using terms from` marker into a block that
+// holds the statements after it.
+func (bh *bcHandler) usingTermsBlocks(stmts []int16) []int16 {
+	b := bh.b
+	for k := len(stmts) - 1; k >= 0; k-- {
+		w := b.out.nodes[child0(b.out.nodes[stmts[k]])]
+		if w.typ != 'w' || len(w.children) != 2 || w.children[0] != 0 {
+			continue
+		}
+		body := append([]int16(nil), stmts[k+1:]...)
+		w.children[0] = b.node('k', b.cons(body))
+		b.out.nodes[child0(b.out.nodes[stmts[k]])] = w
+		stmts = stmts[:k+1]
+	}
+	return stmts
+}
+
 // isValue reports whether statement stmt is the value x on its own,
 // possibly under an explicit get.
 func (bh *bcHandler) isValue(stmt, x int16) bool {

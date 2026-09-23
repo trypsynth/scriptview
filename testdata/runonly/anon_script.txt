@@ -1,0 +1,6 @@
+-- Decompiled from run-only bytecode: comments and original formatting are not recoverable.
+
+script
+	property name : "x"
+	property parent : AppleScript
+end script

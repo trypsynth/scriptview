@@ -1,0 +1,10 @@
+-- Decompiled from run-only bytecode: comments and original formatting are not recoverable.
+
+on f()
+	using terms from application "Finder"
+		set x to 1
+		return name of x
+	end using terms from
+end f
+
+beep
