@@ -55,6 +55,18 @@ func Parse(data []byte) (*File, error) {
 		}
 		return &File{source: src}, nil
 	}
+	if bytes.HasPrefix(data, []byte("#!")) {
+		// AppleScript's loader skips a #! line before the magic.
+		if i := bytes.IndexAny(data, "\n\r"); i >= 0 && bytes.HasPrefix(data[i+1:], Magic) {
+			data = data[i+1:]
+		}
+	}
+	if bytes.HasPrefix(data, Magic) {
+		// Files copied through other systems can have junk after the trailer.
+		if i := bytes.LastIndex(data, []byte{0xfa, 0xde, 0xde, 0xad}); i >= 0 {
+			data = data[:i+4]
+		}
+	}
 	if len(data) < len(Magic) || !bytes.HasPrefix(data, Magic) {
 		if isPlainText(data) {
 			return &File{source: string(data)}, nil // uncompiled source saved as .scpt

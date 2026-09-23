@@ -5804,7 +5804,7 @@ AppleScript	x	appletalk addresses	appletalk addresses
 AppleScript	x	appletalk machine	appletalk machine
 AppleScript	x	appletalk type	appletalk type
 AppleScript	x	appletalk zone	appletalk zone
-AppleScript	x	application dictionary	application dictionary
+AppleScript	y	application dictionary	application dictionary
 AppleScript	x	arc	arc
 AppleScript	x	arc angle	arc angle
 AppleScript	x	arcs	arcs
@@ -5819,14 +5819,14 @@ AppleScript	x	background color	background color
 AppleScript	x	background pattern	background pattern
 AppleScript	x	bic pixels	bic pixels
 AppleScript	x	blend pixels	blend pixels
-AppleScript	x	bounding rectangle	bounding rectangle
+AppleScript	y	bounding rectangle	bounding rectangle
 AppleScript	x	bus	bus
 AppleScript	x	bus slot	bus slot
 AppleScript	x	bus slots	bus slots
 AppleScript	x	cd rom drive	cd rom drive
 AppleScript	x	cell	cell
 AppleScript	x	cells	cells
-AppleScript	x	color table	color table
+AppleScript	y	color table	color table
 AppleScript	x	column	column
 AppleScript	x	columns	columns
 AppleScript	x	comm slot	comm slot
@@ -5834,7 +5834,7 @@ AppleScript	x	conduit	conduit
 AppleScript	x	copy pixels	copy pixels
 AppleScript	x	corner curve height	corner curve height
 AppleScript	x	corner curve width	corner curve width
-AppleScript	x	dash style	dash style
+AppleScript	y	dash style	dash style
 AppleScript	x	default font	default font
 AppleScript	x	default location	default location
 AppleScript	x	default size	default size
@@ -5846,7 +5846,7 @@ AppleScript	x	device type	device type
 AppleScript	x	digital audio	digital audio
 AppleScript	x	display	display
 AppleScript	x	dns form	dns form
-AppleScript	x	double integer	double integer
+AppleScript	y	double integer	double integer
 AppleScript	x	drawing area	drawing area
 AppleScript	x	drawing areas	drawing areas
 AppleScript	x	dvd drive	dvd drive
@@ -5854,19 +5854,19 @@ AppleScript	x	end point	end point
 AppleScript	x	ethernet	ethernet
 AppleScript	x	ethernet address	ethernet address
 AppleScript	x	ethernet addresses	ethernet addresses
-AppleScript	x	extended real	extended real
+AppleScript	y	extended real	extended real
 AppleScript	x	fill color	fill color
 AppleScript	x	fill pattern	fill pattern
 AppleScript	x	firewire	firewire
 AppleScript	x	firewire address	firewire address
 AppleScript	x	firewire addresses	firewire addresses
-AppleScript	x	fixed	fixed
-AppleScript	x	fixed point	fixed point
-AppleScript	x	fixed rectangle	fixed rectangle
+AppleScript	y	fixed	fixed
+AppleScript	y	fixed point	fixed point
+AppleScript	y	fixed rectangle	fixed rectangle
 AppleScript	x	floppy disk drive	floppy disk drive
 AppleScript	x	formula	formula
 AppleScript	x	formulas protected	formulas protected
-AppleScript	x	gif picture	gif picture
+AppleScript	y	gif picture	gif picture
 AppleScript	x	graphic group	graphic group
 AppleScript	x	graphic groups	graphic groups
 AppleScript	x	graphic line	graphic line
@@ -5883,23 +5883,23 @@ AppleScript	x	ip address	ip address
 AppleScript	x	ip addresses	ip addresses
 AppleScript	x	irda	irda
 AppleScript	x	irtalk	irtalk
-AppleScript	x	jpeg picture	jpeg picture
+AppleScript	y	jpeg picture	jpeg picture
 AppleScript	x	keyboard	keyboard
 AppleScript	x	lcd display	lcd display
 AppleScript	x	localtalk	localtalk
 AppleScript	x	localtalk address	localtalk address
 AppleScript	x	localtalk addresses	localtalk addresses
-AppleScript	x	location reference	location reference
-AppleScript	x	long fixed	long fixed
-AppleScript	x	long fixed point	long fixed point
-AppleScript	x	long fixed rectangle	long fixed rectangle
-AppleScript	x	long point	long point
-AppleScript	x	long rectangle	long rectangle
+AppleScript	y	location reference	location reference
+AppleScript	y	long fixed	long fixed
+AppleScript	y	long fixed point	long fixed point
+AppleScript	y	long fixed rectangle	long fixed rectangle
+AppleScript	y	long point	long point
+AppleScript	y	long rectangle	long rectangle
 AppleScript	x	lun	lun
-AppleScript	x	machine location	machine location
+AppleScript	y	machine location	machine location
 AppleScript	x	macintosh video	macintosh video
-AppleScript	x	menu	menu
-AppleScript	x	menu item	menu item
+AppleScript	y	menu	menu
+AppleScript	y	menu item	menu item
 AppleScript	x	microphone	microphone
 AppleScript	x	modem	modem
 AppleScript	x	modem port	modem port
@@ -5915,7 +5915,7 @@ AppleScript	x	not or pixels	not or pixels
 AppleScript	x	not xor pixels	not xor pixels
 AppleScript	x	nubus	nubus
 AppleScript	x	nubus card	nubus card
-AppleScript	x	null	null
+AppleScript	y	null	null
 AppleScript	x	or pixels	or pixels
 AppleScript	x	ordering	ordering
 AppleScript	x	oval	oval
@@ -5930,18 +5930,18 @@ AppleScript	x	pen width	pen width
 AppleScript	x	pixel	pixel
 AppleScript	x	pixel depth	pixel depth
 AppleScript	x	pixel map	pixel map
-AppleScript	x	pixel map record	pixel map record
+AppleScript	y	pixel map record	pixel map record
 AppleScript	x	pixel maps	pixel maps
 AppleScript	x	pixels	pixels
-AppleScript	x	plain text	plain text
-AppleScript	x	point	point
+AppleScript	y	plain text	plain text
+AppleScript	y	point	point
 AppleScript	x	point list	point list
 AppleScript	x	pointing device	pointing device
 AppleScript	x	polygon	polygon
 AppleScript	x	polygons	polygons
 AppleScript	x	port	port
 AppleScript	x	postscript	postscript
-AppleScript	x	postscript picture	postscript picture
+AppleScript	y	postscript picture	postscript picture
 AppleScript	x	printer	printer
 AppleScript	x	printer port	printer port
 AppleScript	x	protection	protection
@@ -5950,23 +5950,23 @@ AppleScript	x	read only	read only
 AppleScript	x	read/write	read/write
 AppleScript	x	rectangle	rectangle
 AppleScript	x	rectangles	rectangles
-AppleScript	x	rgb16 color	rgb16 color
-AppleScript	x	rgb96 color	rgb96 color
-AppleScript	x	rotation	rotation
+AppleScript	y	rgb16 color	rgb16 color
+AppleScript	y	rgb96 color	rgb96 color
+AppleScript	y	rotation	rotation
 AppleScript	x	rounded rectangle	rounded rectangle
 AppleScript	x	rounded rectangles	rounded rectangles
 AppleScript	x	row	row
 AppleScript	x	rows	rows
 AppleScript	x	s video	s video
 AppleScript	x	scale	scale
-AppleScript	x	scrap styles	scrap styles
+AppleScript	y	scrap styles	scrap styles
 AppleScript	x	scsi	scsi
 AppleScript	x	scsi address	scsi address
 AppleScript	x	scsi addresses	scsi addresses
 AppleScript	x	scsi bus	scsi bus
 AppleScript	x	serial	serial
-AppleScript	x	small integer	small integer
-AppleScript	x	small real	small real
+AppleScript	y	small integer	small integer
+AppleScript	y	small real	small real
 AppleScript	x	socket	socket
 AppleScript	x	speakers	speakers
 AppleScript	x	start angle	start angle
@@ -5975,11 +5975,11 @@ AppleScript	x	storage device	storage device
 AppleScript	x	sub over pixels	sub over pixels
 AppleScript	x	sub pin pixels	sub pin pixels
 AppleScript	x	svga	svga
-AppleScript	x	system dictionary	system dictionary
+AppleScript	y	system dictionary	system dictionary
 AppleScript	x	table	table
 AppleScript	x	tables	tables
 AppleScript	x	text color	text color
-AppleScript	x	tiff picture	tiff picture
+AppleScript	y	tiff picture	tiff picture
 AppleScript	x	token ring	token ring
 AppleScript	x	token ring address	token ring address
 AppleScript	x	token ring addresses	token ring addresses
@@ -5987,13 +5987,13 @@ AppleScript	x	trackball	trackball
 AppleScript	x	trackpad	trackpad
 AppleScript	x	transfer mode	transfer mode
 AppleScript	x	translation	translation
-AppleScript	x	type class info	type class info
-AppleScript	x	type element info	type element info
-AppleScript	x	type event info	type event info
-AppleScript	x	type parameter info	type parameter info
-AppleScript	x	type property info	type property info
-AppleScript	x	type suite info	type suite info
-AppleScript	x	unsigned integer	unsigned integer
+AppleScript	y	type class info	type class info
+AppleScript	y	type element info	type element info
+AppleScript	y	type event info	type event info
+AppleScript	y	type parameter info	type parameter info
+AppleScript	y	type property info	type property info
+AppleScript	y	type suite info	type suite info
+AppleScript	y	unsigned integer	unsigned integer
 AppleScript	x	update on change	update on change
 AppleScript	x	usb	usb
 AppleScript	x	usb address	usb address

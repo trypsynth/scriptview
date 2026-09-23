@@ -11,3 +11,4 @@ Some of it is a guess that happens to match every script we tried. We say so whe
 - [Applications](applications.md): how a script remembers an app, and how `osadecompile` names it.
 - [Output quirks](quirks.md): the odd things `osadecompile` does that we copy.
 - [How we tested](testing.md): probes, corpora and fuzzing.
+- [Sources](sources.md): papers, books and tools that helped.

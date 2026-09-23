@@ -6,7 +6,7 @@ The opcode names we use come from Jinmo's [applescript-disassembler](https://git
 
 ## Handlers
 
-Each handler is a typed vector of kind 16 or 17. Both work the same for us, and we don't know what the difference means:
+Each handler is a typed vector of kind 16 or 17. 16 is a plain procedure. 17 is a closure: a handler whose local variables a script object inside it still uses after the handler returns. Both decompile the same way:
 
 ```
 {name, _, positional parameters, labeled parameters, variable names, literals, code}
@@ -35,7 +35,7 @@ The bytes `a0` to `ff` pack a small operand into the opcode:
 
 Larger indexes use the `Extended` forms, which take a 16-bit word.
 
-Branches (`Jump`, `TestIf`, `And`, `Or`, `LinkRepeat`, `ErrorHandler`) take a signed offset. The offset counts from the byte right after the opcode. We first counted from the next instruction, and that cost us some time.
+Branches (`Jump`, `TestIf`, `And`, `Or`, `LinkRepeat`, `ErrorHandler`) take a signed offset. The words of `Tell`, `Consider` and `BeginTransaction` are offsets too: they point at the matching end instruction. The offset counts from the byte right after the opcode. We first counted from the next instruction, and that cost us some time.
 
 Some instructions we had wrong at first:
 
@@ -53,7 +53,9 @@ A command call pushes its arguments, then runs `MessageSend` with the event's li
 direct parameter (or PushIt), then for each labeled parameter: key, value, then the count
 ```
 
-A user handler call uses `PositionalMessageSend` with the handler name as a literal and the arguments on the stack. `Continue` and `PositionalContinue` do the same for `continue foo()`, which passes the call on to the parent script. Their stack is laid out differently: the target and the labeled parameters come first, then `PushNext`, then the direct parameter (or `PushIt` when there is none).
+The count is the number of keys and values together, so it's twice the number of labeled parameters. The direct parameter isn't counted.
+
+A user handler call with positional arguments, like `f(1, 2)`, uses `PositionalMessageSend` with the handler name as a literal. The stack holds the target (`PushIt` for a plain call, `PushMe` for `my f()`), the arguments, then the count. A user handler with labeled parameters, like `f from 1 to 2` or `f given x:1`, uses `MessageSend` with the handler's name instead of an event. `Continue` and `PositionalContinue` do the same for `continue foo()`, which passes the call on to the parent script. Their stack is laid out differently: the target and the labeled parameters come first, then `PushNext`, then the direct parameter (or `PushIt` when there is none).
 
 ## References
 
@@ -73,7 +75,7 @@ A user handler call uses `PositionalMessageSend` with the handler name as a lite
 
 Inside a `whose` filter, the thing being tested is a placeholder object (a kind 19 vector) that stands for `it`.
 
-`MakeComp` builds the comparisons in a filter. Kinds 0 to 8 match the order of the plain comparison opcodes (`Equal` to `Contains`). We think 9, 10 and 11 are `and`, `or` and `not`, but that's a guess.
+`MakeComp` builds the comparisons in a filter. Kinds 0 to 8 match the order of the plain comparison opcodes (`Equal` to `Contains`), and 9, 10 and 11 are `and`, `or` and `not`. `is in` is `Contains` with the two sides swapped. There's a slot for a kind 12, but we never saw the compiler use it.
 
 ## Values that become statements
 

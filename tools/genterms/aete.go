@@ -83,7 +83,13 @@ func parseAete(d []byte, scope string) (terms []term, err error) {
 				only = only && unpipedSuites[s]
 			}
 			if only {
-				terms = append(terms, term{scope: scope, kind: "x", code: word, name: word})
+				// Standard Additions' own aete names the Type Names suite,
+				// which switches the whole suite on while it is loaded.
+				kind := "x"
+				if suitesOf[word]["tpnm"] {
+					kind = "y"
+				}
+				terms = append(terms, term{scope: scope, kind: kind, code: word, name: word})
 			}
 		}
 	}()

@@ -356,12 +356,9 @@ func newDict() *dict {
 // unpiped as identifiers: those only defined in the aeut's legacy suites.
 var unpipedWords = map[string]bool{}
 
-// additionsWords are legacy AppleScript terms that Script Editor leaves
-// unpiped (see unpipedWords) except while Standard Additions is loaded.
-var additionsWords = map[string]bool{
-	"appletalk": true, "fixed": true, "ip": true, "menu": true, "null": true,
-	"point": true, "port": true, "rotation": true,
-}
+// typeNameWords are unpiped words from AppleScript's Type Names suite, which
+// Standard Additions switches on: they are terms while it is loaded.
+var typeNameWords = map[string]bool{}
 
 // synonymTerms and synonymEvents hold legacy codes that dictionaries list as
 // <synonym code="…"/>; they name a code only when nothing else does.
@@ -423,6 +420,9 @@ func loadDicts(tsv string) (map[string]*dict, map[string]string) {
 			systemApps[strings.ToLower(code)] = true
 		case "x":
 			unpipedWords[code] = true
+		case "y":
+			unpipedWords[code] = true
+			typeNameWords[code] = true
 		case "sc", "sp":
 			synonymTerms[code] = name
 		case "sv":

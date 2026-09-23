@@ -311,3 +311,25 @@ func containsInt(ints []int, want int) bool {
 	}
 	return false
 }
+
+func TestJunkAfterTrailer(t *testing.T) {
+	data := append(readFixture(t, "hello.scpt"), []byte("junk\r\n")...)
+	f, err := Parse(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := Decompile(f); got != "display dialog \"hello world\"\n" {
+		t.Errorf("got %q", got)
+	}
+}
+
+func TestShebangBeforeMagic(t *testing.T) {
+	data := append([]byte("#!/usr/bin/osascript\n"), readFixture(t, "hello.scpt")...)
+	f, err := Parse(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := Decompile(f); got != "display dialog \"hello world\"\n" {
+		t.Errorf("got %q", got)
+	}
+}

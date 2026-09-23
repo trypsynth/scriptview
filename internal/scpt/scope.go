@@ -141,14 +141,14 @@ func (dc *decompState) isTermWord(name string) bool {
 		if d != coreDict && d != builtinDict && d != dicts[""] && d != dicts["AppleScript"] && d != app {
 			continue
 		}
+		if d == dicts["AppleScript"] && typeNameWords[lower] && !dc.noAdditions {
+			return true
+		}
 		if d == builtinDict || d == coreDict || (d == dicts["AppleScript"] && unpipedWords[lower]) {
 			continue
 		}
 		if d == dicts[""] && dc.noAdditions {
 			continue // Standard Additions words only clash when they are loaded
-		}
-		if d == dicts[""] && additionsWords[lower] {
-			return true
 		}
 		if d.hasWord(lower) {
 			return true
