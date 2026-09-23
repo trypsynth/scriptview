@@ -1,0 +1,16 @@
+on getCurrentSessionElapsed()
+	return 1
+end getCurrentSessionElapsed
+on f(tb, W, s, h, L)
+	set a to tb's dailySeconds + getCurrentSessionElapsed()
+	set b to W's getMax(1, 2) + 1
+	set c to h + s's shadow_height()
+	set d to tb's dailySeconds + 1
+	set e to tb's dailySeconds + tb's weekly
+	if (name of current application) is in my pNames then beep
+	return first item of L whose it > 1
+end f
+tell application "Finder"
+	set x to first folder of home whose name is "a"
+	return first folder of home whose name is "a"
+end tell

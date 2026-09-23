@@ -551,7 +551,11 @@ func (dc *decompState) expr(id int16) string {
 			return "<" + op.tok + ">"
 		}
 		if n.typ == 'E' && n.flags&flagAltSyntax != 0 {
-			return dc.sub(n.children[1], op.prec) + " is in " + dc.sub(n.children[0], op.prec+1)
+			container := dc.sub(n.children[0], op.prec+1)
+			if dc.isMyCall(n.children[0]) {
+				container = dc.expr(n.children[0]) // x is in my list
+			}
+			return dc.sub(n.children[1], op.prec) + " is in " + container
 		}
 		if (n.typ == '=' || n.typ == '>') && n.flags == flagPossessive {
 			// `x is running` compiles to `running of x = true`.
@@ -569,11 +573,11 @@ func (dc *decompState) expr(id int16) string {
 		// Script Editor parenthesizes `my f()` only as the right operand of
 		// arithmetic.
 		left, right := dc.sub(n.children[0], op.prec), dc.sub(n.children[1], op.prec+1)
-		if op.prec >= 7 { // Script Editor parenthesizes `x of y` in arithmetic
-			if dc.isOfRef(n.children[0]) {
+		if op.prec >= 7 { // Script Editor parenthesizes references in arithmetic
+			if dc.isArithRef(n.children[0]) {
 				left = "(" + left + ")"
 			}
-			if dc.isOfRef(n.children[1]) {
+			if dc.isArithRef(n.children[1]) {
 				right = "(" + right + ")"
 			}
 		}
@@ -966,13 +970,22 @@ func (dc *decompState) targetCall(id int16) {
 // isOfRef reports whether id is a bare `x of y` reference (not my/its/'s).
 func (dc *decompState) isOfRef(id int16) bool {
 	n, ok := dc.nodes[id]
-	if !ok || n.typ != 'n' || n.flags&(flagPossessive|flagThe) != 0 || dc.isMyCall(id) {
+	if !ok || n.typ != 'n' || n.flags&flagThe != 0 || dc.isMyCall(id) {
 		return false
 	}
 	if p, ok := dc.nodes[child0(n)]; ok && (p.typ == '8' || p.typ == '9') {
 		return false
 	}
 	return true
+}
+
+// isArithRef reports whether id is a reference that Script Editor puts in
+// parentheses inside arithmetic: `(x of y) + 1`, `(x's y) + 1`, `(item v) - 2`.
+func (dc *decompState) isArithRef(id int16) bool {
+	if n, ok := dc.nodes[id]; ok && n.typ == '4' {
+		return true
+	}
+	return dc.isOfRef(id)
 }
 
 // unwrap skips 'l' wrappers (parentheses, the, continuations) around id.
