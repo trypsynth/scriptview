@@ -45,9 +45,9 @@ func main() {
 		os.Exit(2)
 	}
 
-	data, err := os.ReadFile(scriptPath(path))
+	data, err := readScript(scriptPath(path))
 	if err == nil && len(data) == 0 {
-		err = fmt.Errorf("%s is empty (a cloud placeholder or a script whose data lives in the resource fork?)", path)
+		err = fmt.Errorf("%s is empty, and has no resource fork or ._ file with a script in it", path)
 	}
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "scriptview: %v\n", err)
@@ -104,6 +104,47 @@ func main() {
 }
 
 // scriptPath maps a script bundle or applet directory to its main script.
+// readScript reads a script file. A classic Mac script keeps its compiled
+// data in the resource fork and leaves the data fork empty: then read the
+// resource fork (macOS only), or the AppleDouble file (._name) that carries
+// it on other file systems.
+func readScript(path string) ([]byte, error) {
+	data, err := os.ReadFile(path)
+	if err != nil || len(data) > 0 {
+		return data, err
+	}
+	if rsrc, err := os.ReadFile(path + "/..namedfork/rsrc"); err == nil && len(rsrc) > 0 {
+		return rsrc, nil
+	}
+	for _, double := range appleDoublePaths(path) {
+		if d, err := os.ReadFile(double); err == nil {
+			return d, nil
+		}
+	}
+	return data, nil
+}
+
+// appleDoublePaths lists where the AppleDouble file for path can be: next to
+// it, or in the __MACOSX folder that a zip file made on a Mac unpacks to.
+func appleDoublePaths(path string) []string {
+	abs, err := filepath.Abs(path)
+	if err != nil {
+		abs = path
+	}
+	name := "._" + filepath.Base(abs)
+	dir := filepath.Dir(abs)
+	out := []string{filepath.Join(dir, name)}
+	for rel, root := "", dir; ; {
+		out = append(out, filepath.Join(root, "__MACOSX", rel, name))
+		parent := filepath.Dir(root)
+		if parent == root {
+			return out
+		}
+		rel = filepath.Join(filepath.Base(root), rel)
+		root = parent
+	}
+}
+
 func scriptPath(path string) string {
 	if fi, err := os.Stat(path); err == nil && fi.IsDir() {
 		return filepath.Join(path, "Contents", "Resources", "Scripts", "main.scpt")

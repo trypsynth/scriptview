@@ -213,7 +213,7 @@ func (dc *decompState) allHandlers() []handlerCode {
 // [name, _, positional params, labeled params, variable names, literals, code].
 func (dc *decompState) handlerFrom(v fasValue) (handlerCode, bool) {
 	b, ok := v.(*fasBlock)
-	if !ok || (b.kind != 16 && b.kind != 17) || len(b.items) < 7 {
+	if !ok || b == nil || (b.kind != 16 && b.kind != 17) || len(b.items) < 7 {
 		return handlerCode{}, false
 	}
 	h := handlerCode{name: b.items[0]}

@@ -11,6 +11,7 @@ Some `.scpt` files hold other things:
 - A JavaScript for Automation script starts with `JsOsaDAS`. After that comes a binary property list with the source text in it.
 - Some files are only plain text with a `.scpt` name. `osadecompile` compiles those first, so its output can look different from the file.
 - A script bundle (`.scptd`) or an applet (`.app`) keeps the compiled script at `Contents/Resources/Scripts/main.scpt`.
+- A classic Mac OS script keeps the same data in its resource fork, as a `scpt` resource with ID 128, and has an empty data fork. Outside a Mac file system, the resource fork travels in an AppleDouble file (`._name`, or `__MACOSX/._name` in a zip), a MacBinary file or a BinHex file. All of these are simple containers: once you have the resource fork, you find the `scpt` resource in its resource map.
 
 ## Records
 

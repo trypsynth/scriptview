@@ -61,6 +61,11 @@ func Parse(data []byte) (*File, error) {
 			data = data[i+1:]
 		}
 	}
+	if !bytes.HasPrefix(data, Magic) {
+		if s, ok := unwrapScript(data); ok {
+			data = s // a classic resource fork, AppleDouble, MacBinary or BinHex file
+		}
+	}
 	if bytes.HasPrefix(data, Magic) {
 		// Files copied through other systems can have junk after the trailer.
 		if i := bytes.LastIndex(data, []byte{0xfa, 0xde, 0xde, 0xad}); i >= 0 {

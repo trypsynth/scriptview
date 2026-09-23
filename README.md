@@ -35,6 +35,8 @@ Other commands:
 
 scriptview also reads JavaScript for Automation (JXA) scripts and `.scpt` files that hold plain text.
 
+It reads classic Mac OS scripts too. Before Mac OS X, a compiled script kept its data in the file's resource fork. scriptview finds it in the resource fork itself (on a Mac), in the `._name` file or `__MACOSX` folder that a Mac makes when it copies or zips the file, and in MacBinary (`.bin`) and BinHex (`.hqx`) files.
+
 ## How well it works
 
 We compare scriptview with `osadecompile` on two sets of scripts:

@@ -333,3 +333,25 @@ func TestShebangBeforeMagic(t *testing.T) {
 		t.Errorf("got %q", got)
 	}
 }
+
+// TestClassicContainers reads a compiled script from a bare resource fork,
+// an AppleDouble file, MacBinary and BinHex, as classic Mac OS kept them.
+func TestClassicContainers(t *testing.T) {
+	want, err := os.ReadFile(filepath.Join(fixtureDir(t), "expected", "handlers2.txt"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"handlers2.rsrc", "handlers2.appledouble", "handlers2.bin", "handlers2.hqx"} {
+		data, err := os.ReadFile(filepath.Join(fixtureDir(t), "classic", name))
+		if err != nil {
+			t.Fatal(err)
+		}
+		f, err := Parse(data)
+		if err != nil {
+			t.Fatalf("%s: %v", name, err)
+		}
+		if got := Decompile(f); strings.TrimSpace(got) != strings.TrimSpace(string(want)) {
+			t.Errorf("%s: got\n%s", name, got)
+		}
+	}
+}
