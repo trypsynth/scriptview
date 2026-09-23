@@ -135,8 +135,10 @@ func (dc *decompState) commandParts(n nodeRec) (string, string) {
 	if direct := child(n, 1); direct != 0 {
 		if dn, ok := dc.nodes[direct]; ok {
 			arg := dc.operand(direct)
-			if dn.typ == '6' {
-				arg = "(" + arg + ")" // click (first item whose …)
+			if dn.typ == '6' || dn.typ == 'c' && dc.cmdLabels["as"] {
+				// click (first item whose …); do shell script (x as string),
+				// where `as string` would be the command's own parameter.
+				arg = "(" + arg + ")"
 			}
 			directPart = arg
 		} else if args := dc.argChain(direct); len(args) > 0 {
