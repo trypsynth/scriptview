@@ -268,6 +268,7 @@ var paramNames = map[string]string{
 // osTypeKind is the kind byte that follows an OpcodeOSType record header.
 const (
 	osKindCode     = 0x0a // 4-byte class/property/constant code
+	osKindCode2    = 0x2f // the same, in some AppleScript 1.0 files
 	osKindConstant = 0x0b // type(4) + value(4), e.g. boov/true
 	osKindEvent    = 0x2e // suite(4) + event(4) + result type(4) + flags…
 )

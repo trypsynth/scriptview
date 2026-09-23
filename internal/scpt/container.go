@@ -26,7 +26,7 @@ func unwrapScript(data []byte) ([]byte, bool) {
 // forkScript returns the compiled script in a file's data fork or, failing
 // that, its resource fork.
 func forkScript(dataFork, rsrcFork []byte) ([]byte, bool) {
-	if bytes.HasPrefix(dataFork, Magic) {
+	if fasdHeaderLen(dataFork) > 0 {
 		return dataFork, true
 	}
 	return resourceScript(rsrcFork)
@@ -36,11 +36,11 @@ func forkScript(dataFork, rsrcFork []byte) ([]byte, bool) {
 // ID 128, which Script Editor used.
 func resourceScript(fork []byte) ([]byte, bool) {
 	res := resources(fork, "scpt")
-	if s, ok := res[128]; ok && bytes.HasPrefix(s, Magic) {
+	if s, ok := res[128]; ok && fasdHeaderLen(s) > 0 {
 		return s, true
 	}
 	for _, s := range res {
-		if bytes.HasPrefix(s, Magic) {
+		if fasdHeaderLen(s) > 0 {
 			return s, true
 		}
 	}

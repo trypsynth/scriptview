@@ -57,31 +57,32 @@ func Parse(data []byte) (*File, error) {
 	}
 	if bytes.HasPrefix(data, []byte("#!")) {
 		// AppleScript's loader skips a #! line before the magic.
-		if i := bytes.IndexAny(data, "\n\r"); i >= 0 && bytes.HasPrefix(data[i+1:], Magic) {
+		if i := bytes.IndexAny(data, "\n\r"); i >= 0 && fasdHeaderLen(data[i+1:]) > 0 {
 			data = data[i+1:]
 		}
 	}
-	if !bytes.HasPrefix(data, Magic) {
+	if fasdHeaderLen(data) == 0 {
 		if s, ok := unwrapScript(data); ok {
 			data = s // a classic resource fork, AppleDouble, MacBinary or BinHex file
 		}
 	}
-	if bytes.HasPrefix(data, Magic) {
+	if fasdHeaderLen(data) > 0 {
 		// Files copied through other systems can have junk after the trailer.
 		if i := bytes.LastIndex(data, []byte{0xfa, 0xde, 0xde, 0xad}); i >= 0 {
 			data = data[:i+4]
 		}
 	}
-	if len(data) < len(Magic) || !bytes.HasPrefix(data, Magic) {
+	hdr := fasdHeaderLen(data)
+	if hdr == 0 {
 		if isPlainText(data) {
 			return &File{source: string(data)}, nil // uncompiled source saved as .scpt
 		}
 		return nil, ErrNotSCPT
 	}
-	if len(data) < len(Magic)+len(Trailer) {
+	if len(data) < hdr+len(Trailer) {
 		return nil, ErrTruncated
 	}
-	body := data[len(Magic):]
+	body := data[hdr:]
 	if n := trailerLen(data); n > 0 && n <= len(body) {
 		body = body[:len(body)-n]
 	}
@@ -90,7 +91,7 @@ func Parse(data []byte) (*File, error) {
 	if err := parseRecords(body, b); err != nil {
 		// Unknown record layout: fall back to the tolerant byte-wise scanner.
 		b = newBuilder()
-		scanRecords(data[len(Magic):], b)
+		scanRecords(data[hdr:], b)
 	}
 	return b.finish(), nil
 }
@@ -221,7 +222,7 @@ func (b *builder) osType(ref int16, kind byte, data []byte) {
 	var m map[int16]string
 	var code string
 	switch {
-	case kind == osKindCode && len(data) == 4:
+	case (kind == osKindCode || kind == osKindCode2) && len(data) == 4:
 		m, code = b.dc.osCode, fourCC(data)
 	case kind == osKindConstant && len(data) == 8:
 		m, code = b.dc.osCode, fourCC(data[4:])
@@ -290,6 +291,14 @@ func parseRecords(body []byte, b *builder) error {
 		case objList, objBinding, objPointerBlock:
 			if len(o.refs) > 0 {
 				b.dc.paramMap[o.ref] = o.refs
+			}
+		case objSymbol:
+			if c, ok := legacySymbol(o.data); ok {
+				if c.kind == osKindConstant {
+					b.osType(o.ref, osKindConstant, []byte(c.enum+c.code))
+				} else {
+					b.osType(o.ref, osKindCode, []byte(c.code))
+				}
 			}
 		case objFixnum:
 			b.integer(o.ref, int(int16(o.size)))

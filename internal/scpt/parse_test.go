@@ -355,3 +355,36 @@ func TestClassicContainers(t *testing.T) {
 		}
 	}
 }
+
+// TestOldHeader reads a script whose header has the single version field
+// that AppleScript 1.0 wrote ("FasdUAS 1.00").
+func TestOldHeader(t *testing.T) {
+	data := readFixture(t, "hello.scpt")
+	old := append([]byte("FasdUAS 1.00"), data[len(Magic):]...)
+	f, err := Parse(old)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := Decompile(f); got != "display dialog \"hello world\"\n" {
+		t.Errorf("got %q", got)
+	}
+	for _, bad := range []string{"FasdUAS 1.10", "FasdUAS x.00", "FasdUAS 1.101.1 "} {
+		if fasdHeaderLen([]byte(bad+"    ")) != 0 {
+			t.Errorf("%q accepted", bad)
+		}
+	}
+}
+
+// TestLegacySymbols decodes AppleScript 1.0 symbols: table index*8+1.
+func TestLegacySymbols(t *testing.T) {
+	for idx, want := range map[uint32]string{109: "ret ", 122: "true", 121: "fals", 2: "list"} {
+		v := idx*8 + 1
+		c, ok := legacySymbol([]byte{byte(v >> 24), byte(v >> 16), byte(v >> 8), byte(v)})
+		if !ok || c.code != want {
+			t.Errorf("symbol %d: got %v %v, want %s", idx, c, ok, want)
+		}
+	}
+	if _, ok := legacySymbol([]byte{0, 0, 3, 0xd2}); ok {
+		t.Error("untagged value accepted")
+	}
+}

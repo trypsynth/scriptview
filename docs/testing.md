@@ -27,6 +27,10 @@ For the bytecode decompiler, we first compared its output with the syntax tree o
 
 A better test is a round trip: decompile the bytecode, compile the result again with `osacompile`, and compare the new bytecode with the original. If they're the same, the decompiled source means exactly what the original meant. `tools/corpus/roundtrip.py` does this. It found several bugs that the first test missed, such as `use` statements in the wrong place and constant lists that printed as garbage.
 
+## Classic scripts
+
+For scripts from before Mac OS X, we used the 48 compiled scripts on Apple's AppleScript Developer's Toolkit disc from 1993, from an archive.org mirror. Current macOS won't open a single one of them, so there's nothing to compare against. We read the output by hand, and checked that every script decompiles with no placeholders left. Apple owns these scripts, so they aren't in the repository. The tests use synthetic files instead.
+
 ## Fuzzing
 
 `go test -fuzz FuzzDecompile ./internal/scpt` feeds scriptview damaged files. It found five bugs:

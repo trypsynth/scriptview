@@ -78,6 +78,16 @@ func (dc *decompState) decodeValue(ref int16, depth int) fasValue {
 		return nil
 	}
 	switch o.typ {
+	case objSymbol:
+		if c, ok := legacySymbol(o.data); ok {
+			switch {
+			case c.code == "true":
+				return true
+			case c.code == "fals":
+				return false
+			}
+			return c
+		}
 	case objFixnum:
 		return int(int16(o.size))
 	case objBool:
@@ -96,7 +106,7 @@ func (dc *decompState) decodeValue(ref int16, depth int) fasValue {
 		}
 	case objCodeID:
 		switch {
-		case o.kind == osKindCode && len(o.data) == 4:
+		case (o.kind == osKindCode || o.kind == osKindCode2) && len(o.data) == 4:
 			return fasCode{kind: osKindCode, code: fourCC(o.data)}
 		case o.kind == osKindConstant && len(o.data) == 8:
 			return fasCode{kind: osKindConstant, enum: fourCC(o.data[:4]), code: fourCC(o.data[4:])}

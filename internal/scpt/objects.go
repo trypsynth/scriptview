@@ -19,7 +19,7 @@ import (
 //
 // Object types (the names follow AppleScript's own loader):
 const (
-	objSymbol           = 0x01 // symbol: size!=0 → 8-byte value, else nil
+	objSymbol           = 0x01 // symbol: size bytes of value (old files: true, false)
 	objList             = 0x02 // cons cell: size refs, [head, tail]
 	objFixnum           = 0x03 // small integer: the value is the size field
 	objValueBlock       = 0x04 // typed vector: kind(1) then size refs
@@ -81,11 +81,10 @@ func readObjects(body []byte) ([]*object, error) {
 		switch o.typ {
 		case objSymbol, objList, objBinding, objPointerBlock:
 			if o.typ == objSymbol {
-				// A symbol with a non-zero size carries an 8-byte value.
-				if n != 0 {
-					if o.data, err = r.readBytes(8); err != nil {
-						return nil, err
-					}
+				// A symbol's payload is size bytes: none in current files, a
+				// 4-byte runtime value (true, false) in AppleScript 1.0 ones.
+				if o.data, err = r.readBytes(n); err != nil {
+					return nil, err
 				}
 				break
 			}

@@ -2,6 +2,8 @@
 
 A compiled script starts with the 16 bytes `FasdUAS 1.101.10`. That reads like one string, but it's four 4-byte fields: `Fasd`, `UAS `, and two versions, `1.10` and `1.10`. `UAS` is the prefix Apple's runtime uses for its own names. Nobody has written down what `Fasd` means. The AppleScript team came from Lisp, where compiled files are "fast load" files written by a "fast dump", so our guess is "fast dump".
 
+AppleScript 1.0 wrote only one version: `FasdUAS 1.00`, or `FasdUAS 0.98` for a beta. Those headers are 12 bytes, and the records start right after them.
+
 The file ends with a trailer that starts with `ascr` and ends with the bytes `FA DE DE AD`. This is the Open Scripting Architecture's storage trailer: `ascr` names the scripting component that made the data, then come a 16-bit version, a 16-bit length and `FADEDEAD`. The length can count a pad byte before `ascr`. Everything between the magic and the trailer is the script.
 
 Scripts copied through non-Mac systems sometimes have junk bytes after `FADEDEAD`. Deleting everything after it repairs them.
@@ -97,3 +99,15 @@ Object 0 is the root of the script. It is a typed vector of kind 15 with four it
 - The table is a list: `[_, [handler names], handler, handler, ...]`. Each handler is a kind 16 or 17 vector. See [The bytecode](bytecode.md) for what's inside.
 
 A script object inside the script looks the same as the root: a kind 15 vector with a name and its own table.
+
+## AppleScript 1.0 files
+
+Scripts from 1993 and 1994 (FASD versions 0.98 and 1.00) use the same records, with three differences:
+
+- Many built-in terms are symbols (`01` records) with a 4-byte value instead of term records. The value is an index into a table inside the AppleScript runtime, stored as `index * 8 + 1`. Index 109 is `return`, 14 is `string`, 121 and 122 are `false` and `true`.
+- Some term records use kind `2f` instead of `0a` for a class code.
+- An empty list is a list cell (`02`) with no references.
+
+Current macOS refuses these files with "data format obsolete" (-1758), and its runtime no longer has the symbol table. We rebuilt the part of the table that the scripts we found use, from how each symbol is used. It's in `internal/scpt/legacy.go`. A script that uses a symbol we haven't seen prints it as a `<ref>` placeholder.
+
+Old Japanese scripts store their identifiers and comments in Shift JIS rather than Mac Roman. We don't decode those yet, so Japanese text comes out garbled.

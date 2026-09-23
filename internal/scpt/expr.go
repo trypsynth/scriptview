@@ -17,6 +17,9 @@ func (dc *decompState) litExpr(n nodeRec) string {
 // litRef resolves the payload ref of a literal: a negative ref names an
 // integer or term; a positive one points at a text, real, date, or app record.
 func (dc *decompState) litRef(ch int16) string {
+	if o, ok := dc.objects[ch]; ok && o.typ == objList && len(o.refs) == 0 {
+		return "{}" // an empty list cell, as AppleScript 1.0 stored {}
+	}
 	if ch < 0 {
 		if v, ok := dc.intByRef[ch]; ok {
 			return fmt.Sprintf("%d", v)
@@ -420,7 +423,7 @@ var prepositions = map[string]string{
 	"arnd": "around", "asdf": "aside from", "at  ": "at", "belw": "below",
 	"bnth": "beneath", "bsid": "beside", "btwn": "between", "by  ": "by",
 	"for ": "for", "from": "from", "isto": "instead of", "into": "into",
-	"on  ": "on", "onto": "onto", "outo": "out of", "over": "over",
+	"of  ": "of", "on  ": "on", "onto": "onto", "outo": "out of", "over": "over",
 	"snce": "since", "thru": "thru", "undr": "under", "to  ": "to", "in  ": "in",
 }
 
