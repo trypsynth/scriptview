@@ -91,7 +91,13 @@ func (dc *decompState) callExpr(n nodeRec) string {
 	if args := dc.commandArgs(n); args != "" {
 		if n.flags&flagAltSyntax != 0 {
 			if n.flags&3 == 3 {
-				return args + " " + name // postfix form: x exists, x count, end run
+				// Postfix form: x exists, x count, end run. Keyword
+				// parameters follow the name: x «event …» given ….
+				direct, rest := dc.commandParts(n)
+				if direct != "" && rest != "" {
+					return direct + " " + name + " " + rest
+				}
+				return args + " " + name
 			}
 			return name + " of " + args // `count of x`, `set eof of f to 0`
 		}
@@ -102,17 +108,31 @@ func (dc *decompState) callExpr(n nodeRec) string {
 
 // commandArgs renders a command's direct parameter and keyword parameters.
 func (dc *decompState) commandArgs(n nodeRec) string {
+	direct, rest := dc.commandParts(n)
+	if direct == "" {
+		return rest
+	}
+	if rest == "" {
+		return direct
+	}
+	return direct + " " + rest
+}
+
+// commandParts renders a command's direct parameter and, separately, its
+// keyword parameters.
+func (dc *decompState) commandParts(n nodeRec) (string, string) {
 	ev := dc.evCode[child0(n)]
 	var parts []string
+	directPart := ""
 	if direct := child(n, 1); direct != 0 {
 		if dn, ok := dc.nodes[direct]; ok {
 			arg := dc.operand(direct)
 			if dn.typ == '6' {
 				arg = "(" + arg + ")" // click (first item whose …)
 			}
-			parts = append(parts, arg)
+			directPart = arg
 		} else if args := dc.argChain(direct); len(args) > 0 {
-			parts = append(parts, strings.Join(args, ", "))
+			directPart = strings.Join(args, ", ")
 		}
 	}
 	var given, with, without []string
@@ -171,7 +191,7 @@ func (dc *decompState) commandArgs(n nodeRec) string {
 			parts[i] = label + " (" + strings.TrimPrefix(parts[i], label+" ") + ")"
 		}
 	}
-	return strings.Join(parts, " ")
+	return directPart, strings.Join(parts, " ")
 }
 
 // hasArgs reports whether command node id takes any arguments, which would
