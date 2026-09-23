@@ -770,7 +770,9 @@ func (dc *decompState) expr(id int16) string {
 			dc.inMy = false
 			container := dc.expr(n.children[1])
 			dc.inMy = inMy
-			if c, ok := dc.nodes[n.children[1]]; ok && !inMy && c.typ != 'l' && dc.endsInInterleavedCall(n.children[1]) {
+			if c, ok := dc.nodes[n.children[1]]; ok && (c.typ == 'c' || binOps[c.typ].tok != "") {
+				container = "(" + container + ")" // (a & b)'s length
+			} else if ok && !inMy && c.typ != 'l' && dc.endsInInterleavedCall(n.children[1]) {
 				container = "(" + container + ")" // (x's foo:y)'s bar
 			}
 			return container + "'s " + dc.expr(n.children[0])
@@ -788,8 +790,8 @@ func (dc *decompState) expr(id int16) string {
 			return prefix + words[p.typ] + dc.expr(n.children[1])
 		}
 		container := dc.expr(n.children[1])
-		if dc.isCommand(n.children[1]) {
-			container = "(" + container + ")" // hours of (current date)
+		if c, ok := dc.nodes[n.children[1]]; dc.isCommand(n.children[1]) || ok && (c.typ == 'c' || binOps[c.typ].tok != "") {
+			container = "(" + container + ")" // hours of (current date), x of (a & b)
 		}
 		part := dc.expr(n.children[0])
 		if p, ok := dc.nodes[n.children[0]]; ok && p.typ == 'm' && dc.osCode[child0(p)] != "" {

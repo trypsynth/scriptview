@@ -1,0 +1,15 @@
+-- Decompiled from run-only bytecode: comments and original formatting are not recoverable.
+
+set p to POSIX path of (path to desktop as alias)
+set q to (path to desktop as text) & "::"
+set r to POSIX path of ((path to me as text) & "::")
+set s to quoted form of POSIX path of p
+set text item delimiters of AppleScript to ","
+set t to every text item of "a,b"
+set u to t as string
+set v to "x" & (count t) as string
+set w to items 2 thru -1 of t as text
+set x to name of (info for p)
+tell application "Finder"
+	set y to POSIX path of (container of (path to me) as alias)
+end tell
