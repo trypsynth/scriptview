@@ -169,7 +169,16 @@ func (dc *decompState) describeRef(id int16) string {
 // but no syntax tree.
 func (f *File) RunOnly() bool {
 	dc := f.dc
-	if dc == nil || dc.objects == nil || len(dc.nodes) > 0 {
+	if dc == nil || dc.objects == nil {
+		return false
+	}
+	// The root's second item is the syntax tree; run-only scripts have none.
+	// (Script objects inside closures can still carry fragments of one.)
+	root, ok := dc.objects[0]
+	if !ok || len(root.refs) < 2 {
+		return false
+	}
+	if tree, ok := dc.objects[root.refs[1]]; ok && tree.typ != objSymbol {
 		return false
 	}
 	return len(dc.handlerTable()) > 0
