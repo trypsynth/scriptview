@@ -1,0 +1,8 @@
+set r to {message:"x", buttons:1}
+set m to message of r
+display alert "a" message (|message| of r)
+display alert "a" message |message| of r
+display dialog (message of r) buttons {"OK"}
+display dialog "x" buttons (|buttons| of r)
+set message to 2
+display alert |message|

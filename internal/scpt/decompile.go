@@ -50,6 +50,9 @@ type decompState struct {
 	// repeatWith counts enclosing `repeat with` loops, inside which Script
 	// Editor parenthesizes a statement's targeted call: (x's foo:y).
 	repeatWith int
+	// cmdLabels holds the parameter labels of the command whose arguments
+	// are being rendered; variables named like one need pipes.
+	cmdLabels map[string]bool
 	// noAdditions is set when the script's use statements leave out
 	// `use scripting additions`; its identifiers then cannot clash with
 	// Standard Additions terms, so those never force |pipes|.

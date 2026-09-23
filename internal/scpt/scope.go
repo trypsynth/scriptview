@@ -131,6 +131,9 @@ func (dc *decompState) usedApps() []string {
 // that it must be written |piped| to stay an identifier.
 func (dc *decompState) isTermWord(name string) bool {
 	lower := strings.ToLower(name)
+	if dc.cmdLabels[lower] {
+		return true // display alert "a" message (|message| of r)
+	}
 	// Only the innermost application's terms clash, even when its
 	// dictionary is unknown.
 	var app *dict

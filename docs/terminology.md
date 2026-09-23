@@ -31,6 +31,7 @@ AppleScript lets you use a reserved word as a variable name if you put pipes aro
 Rules we found:
 
 - Only the innermost app counts. Inside `tell application "Finder"` inside `tell application "System Events"`, a variable named like a System Events property doesn't need pipes. This is true even when the inner app isn't installed and has no dictionary.
+- Inside a command's arguments, that command's parameter labels count too. In `display alert "a" message (|message| of r)` the variable needs pipes, because `message` is a label of `display alert`. In `display dialog (message of r)` it doesn't.
 - Standard Additions words only count when Standard Additions is loaded. A script with `use` statements but no `use scripting additions` doesn't load it.
 - Words from a few old suites don't need pipes: QuickDraw Graphics (`pixel`, `oval`, `polygon`), Table and Macintosh Connectivity. These are left over from the 1990s. AppleScript's dictionary still lists them, but nothing switches them on, so the compiler doesn't treat them as words.
 - The old Type Names suite (`point`, `fixed`, `menu`, `null`, `rotation`, `fixed point` and more) is switched on by Standard Additions. Standard Additions has an old `aete` resource next to its `.sdef`, and that `aete` names the suite `tpnm`. Inside Macintosh says that naming a standard suite in an `aete` turns on the whole suite from AppleScript's `aeut`. So these words need pipes when Standard Additions is loaded, and don't when it isn't. Without Standard Additions, `fixed point` is even a syntax error.

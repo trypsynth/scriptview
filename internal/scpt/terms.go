@@ -324,6 +324,26 @@ type dict struct {
 	// words caches the set of lowercase term names, for spotting user
 	// identifiers that must be written |piped|.
 	words map[string]bool
+	// labels caches each event's parameter labels (lowercase).
+	labels map[string]map[string]bool
+}
+
+// eventLabels returns the lowercase parameter labels of event in d.
+func (d *dict) eventLabels(event string) map[string]bool {
+	if d == nil {
+		return nil
+	}
+	if d.labels == nil {
+		d.labels = map[string]map[string]bool{}
+		for key, name := range d.params {
+			ev, _, _ := strings.Cut(key, "/")
+			if d.labels[ev] == nil {
+				d.labels[ev] = map[string]bool{}
+			}
+			d.labels[ev][strings.ToLower(name)] = true
+		}
+	}
+	return d.labels[event]
 }
 
 // hasWord reports whether name (lowercase) is a term in d.

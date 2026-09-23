@@ -88,6 +88,14 @@ func (dc *decompState) callExpr(n nodeRec) string {
 		return name + dc.callArgs(n, true)
 	}
 
+	saved := dc.cmdLabels
+	dc.cmdLabels = map[string]bool{}
+	for _, d := range dc.inScope() {
+		for label := range d.eventLabels(dc.evCode[n.children[0]]) {
+			dc.cmdLabels[label] = true
+		}
+	}
+	defer func() { dc.cmdLabels = saved }()
 	if args := dc.commandArgs(n); args != "" {
 		if n.flags&flagAltSyntax != 0 {
 			if n.flags&3 == 3 {
