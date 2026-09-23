@@ -111,8 +111,9 @@ func (bh *bcHandler) objectAlias(in instr, stack *[]stackVal) (int16, error) {
 		}
 	}
 	id := b.node('n', part, container.id)
-	if kind == 0 && bh.isObjCTarget(container.id) {
-		// current application's NSString, x's |length|: the ASObjC idiom.
+	if (kind == 0 || kind == 3) && bh.isObjCTarget(container.id) {
+		// current application's NSString, x's |length|, current
+		// application's class "NSEvent": the ASObjC idiom.
 		b.out.nodes[id] = nodeRec{typ: 'n', flags: flagPossessive, children: []int16{part, container.id}}
 	}
 	return id, nil

@@ -1,6 +1,9 @@
 package scpt
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 // DecompileBytecode rebuilds source from bytecode alone. It is used for
 // run-only scripts; for others it serves to validate the bytecode path.
@@ -106,6 +109,14 @@ func (b *bcBuilder) scriptItems(v fasValue, top bool) ([]int16, error) {
 		}
 	}
 	items = append(props, items...)
+	if n := len(items); !top && n > 0 && len(b.out.nodes[items[n-1]].children) == 0 {
+		items = items[:n-1] // no blank line before `end script`
+	}
+	if top {
+		if globals := b.globals(table[2:]); len(globals) > 0 {
+			items = append([]int16{b.node('l', b.node('p', b.cons(globals)))}, items...)
+		}
+	}
 	if len(runBody) > 0 {
 		items = append(items, runBody...)
 	}
@@ -142,6 +153,40 @@ func (b *bcBuilder) callsAdditions() bool {
 		}
 	}
 	return false
+}
+
+// globals returns the variables that handlers reach as globals, which the
+// source must have declared (`global x`): top-level code sees its variables
+// as globals without one, but a handler only with a declaration.
+func (b *bcBuilder) globals(entries []fasValue) []int16 {
+	seen := map[string]bool{"result": true, "applescript": true}
+	var out []int16
+	for _, entry := range entries {
+		h, ok := b.src.handlerFrom(entry)
+		if !ok {
+			continue
+		}
+		if c, ok := h.name.(fasCode); ok && c.code == "aevtoapp" {
+			continue // a run handler's variables are globals anyway
+		}
+		prog, _ := disassemble(h.code)
+		for _, in := range prog {
+			if !strings.HasPrefix(in.name, "PushGlobal") && !strings.HasPrefix(in.name, "PopGlobal") {
+				continue
+			}
+			idx := in.args[len(in.args)-1]
+			if idx < 0 || idx >= len(h.literals) {
+				continue
+			}
+			name, ok := h.literals[idx].(string)
+			if !ok || seen[strings.ToLower(name)] {
+				continue
+			}
+			seen[strings.ToLower(name)] = true
+			out = append(out, b.node('o', b.nameRef(name)))
+		}
+	}
+	return out
 }
 
 // handlerBody decompiles a handler's code into statements.

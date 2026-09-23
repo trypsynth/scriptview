@@ -1,0 +1,17 @@
+-- Decompiled from run-only bytecode: comments and original formatting are not recoverable.
+
+global config
+property p : 1
+on f()
+	set y to config + p
+	return result
+end f
+
+script S
+	property q : 1
+	on g()
+		return q + config
+	end g
+end script
+
+set config to 2

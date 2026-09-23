@@ -1,0 +1,4 @@
+use framework "AppKit"
+set m to current application's class "NSEvent"'s modifierFlags()
+set n to current application's NSEvent's modifierFlags()
+set o to (current application's class "NSEvent"'s modifierFlags()) div 2

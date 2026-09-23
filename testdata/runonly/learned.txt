@@ -19,7 +19,6 @@ script s
 	on beep
 		continue beep
 	end beep
-	
 end script
 
 set L to {1, 2, 3}
