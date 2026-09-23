@@ -184,12 +184,12 @@ func (bh *bcHandler) messageSend(in instr, stack *[]stackVal) (int16, error) {
 	var keys, values []int16
 	for i := 0; i < len(args); i += 2 {
 		keys = append(keys, bh.keyOf(args[i].id))
-		values = append(values, args[i+1].id)
+		values = append(values, b.stmtValue(args[i+1])) // a GetData here is an explicit get
 	}
 	name := bh.lit(in.args[0])
 	directID := b.ref()
 	if !direct.it {
-		directID = direct.id
+		directID = b.stmtValue(direct) // log (get class of x)
 	}
 	labels := b.ref()
 	if len(keys) > 0 {

@@ -96,7 +96,6 @@ func (bh *bcHandler) tellStmt(pc int, stack *[]stackVal) (int16, int, bool, erro
 	if err != nil {
 		return 0, 0, false, err
 	}
-	stmts = bh.foldDestructuring(stmts)
 	var value int16
 	for _, v := range rest {
 		if !v.undefined && !v.assigned && !v.it {
@@ -113,6 +112,10 @@ func (bh *bcHandler) tellStmt(pc int, stack *[]stackVal) (int16, int, bool, erro
 	}
 	if value != 0 {
 		stmts = append(stmts, b.node('l', value))
+	}
+	stmts = bh.foldDestructuring(stmts)
+	if bh.prog[j-1].name == "GetResult" && bh.prog[j-2].name == "StoreResult" && j-2 > pc {
+		stmts = append(stmts, b.node('l')) // a blank line before end tell
 	}
 	return b.node('O', b.node('k', b.cons(stmts)), target.id), j + 1, false, nil
 }

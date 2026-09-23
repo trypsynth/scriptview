@@ -1,0 +1,6 @@
+tell application "Finder"
+	set db to bounds of window of desktop
+	set {dw, dh} to {item 3 of db, item 4 of db}
+	log (get name of startup disk)
+	
+end tell

@@ -256,6 +256,25 @@ func (e errUnsupported) Error() string {
 	return fmt.Sprintf("unsupported %s at %05x: %s", e.in.name, e.in.off, e.why)
 }
 
+// sharedContainer reports whether list items are properties of one and the
+// same container node, as `{a, b} of x` compiles, and returns the parts.
+func (b *bcBuilder) sharedContainer(items []int16) ([]int16, int16, bool) {
+	if len(items) < 2 {
+		return nil, 0, false
+	}
+	var parts []int16
+	container := int16(0)
+	for _, id := range items {
+		n := b.out.nodes[id]
+		if n.typ != 'n' || n.flags != 0 || len(n.children) != 2 || container != 0 && n.children[1] != container {
+			return nil, 0, false
+		}
+		container = n.children[1]
+		parts = append(parts, n.children[0])
+	}
+	return parts, container, true
+}
+
 // stmtValue returns the expression for a value used as a statement: an
 // evaluated reference is an explicit get (`get every mailbox of …`).
 func (b *bcBuilder) stmtValue(v stackVal) int16 {
@@ -271,12 +290,17 @@ func (bh *bcHandler) stmts(lo, hi int) ([]int16, error) {
 	if err != nil {
 		return out, err
 	}
-	out = bh.foldDestructuring(out)
 	// Leftover values at a block end are the block's result expression.
 	for _, v := range stack {
 		if !v.undefined && !v.it && !v.assigned {
 			out = append(out, bh.b.node('l', bh.b.stmtValue(v)))
 		}
+	}
+	out = bh.foldDestructuring(out)
+	// A blank line or comment after a block's last statement compiles to
+	// StoreResult, GetResult at the block's end.
+	if j, ok := bh.index[hi]; ok && j >= 2 && bh.index[lo] <= j-2 && bh.prog[j-1].name == "GetResult" && bh.prog[j-2].name == "StoreResult" {
+		out = append(out, bh.b.node('l'))
 	}
 	return out, nil
 }
@@ -576,6 +600,12 @@ func (bh *bcHandler) run(lo, hi int, stack []stackVal) ([]int16, []stackVal, err
 			for i := n.count - 1; i >= 0; i-- {
 				v, _ := pop(in)
 				items[i] = v.id
+			}
+			if parts, container, ok := b.sharedContainer(items); ok {
+				// {name, artist} of current track: one container, kept on
+				// the stack with Dup and GCSwap.
+				push(b.node('n', b.node('J', b.cons(parts)), container))
+				break
 			}
 			push(b.node('J', b.cons(items)))
 		case "MakeRecord":
