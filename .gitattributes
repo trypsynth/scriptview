@@ -1,0 +1,4 @@
+# Golden outputs compare byte for byte, so keep LF line endings everywhere.
+* text=auto eol=lf
+*.scpt binary
+*.scptd binary

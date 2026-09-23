@@ -20,9 +20,17 @@ Commands:
   tree        print the raw syntax node graph (for format debugging)
   disasm      print the compiled bytecode as annotated assembly
   bytecode    decompile from the bytecode alone (as for run-only scripts)
+  version     print the version
 `
 
+// version is set at build time for releases.
+var version = "dev"
+
 func main() {
+	if len(os.Args) == 2 && (os.Args[1] == "version" || os.Args[1] == "--version") {
+		fmt.Println("scriptview", version)
+		return
+	}
 	if len(os.Args) != 3 {
 		fmt.Fprint(os.Stderr, helpText)
 		os.Exit(2)

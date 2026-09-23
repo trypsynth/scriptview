@@ -6,7 +6,9 @@ On a Mac you can do this with `osadecompile`. scriptview tries to print exactly 
 
 ## Install
 
-You need Go 1.26 or later.
+Download a binary for macOS, Linux or Windows from the [releases page](https://github.com/trypsynth/scriptview/releases).
+
+Or build it yourself with Go 1.26 or later:
 
 ```sh
 go install github.com/trypsynth/scriptview/cmd/scriptview@latest
