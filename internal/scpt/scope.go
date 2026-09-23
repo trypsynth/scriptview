@@ -179,9 +179,10 @@ func scopeDict(scope string) *dict {
 // inScope returns the dictionaries to search, innermost tell target first,
 // then the AppleScript built-ins and the always-loaded dictionaries.
 func (dc *decompState) inScope() []*dict {
+	// Only the innermost application's terminology is in scope.
 	var out []*dict
-	for i := len(dc.scopes) - 1; i >= 0; i-- {
-		if d := scopeDict(dc.scopes[i]); d != nil {
+	if len(dc.scopes) > 0 {
+		if d := scopeDict(dc.scopes[len(dc.scopes)-1]); d != nil {
 			out = append(out, d)
 		}
 	}
