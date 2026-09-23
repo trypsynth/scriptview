@@ -175,8 +175,8 @@ func (dc *decompState) commandParts(n nodeRec) (string, string) {
 			without = append(without, label)
 		default:
 			value := dc.expr(cell[1])
-			if hasOf && dc.isBareOfRef(cell[1]) {
-				value = "(" + value + ")" // offset of x in (item 1 of y)
+			if hasOf && dc.isBareOfRef(cell[1]) || dc.isBareOfRef(cell[1]) && strings.HasPrefix(value, label+" ") {
+				value = "(" + value + ")" // offset of x in (item 1 of y), output volume (output volume of s)
 			}
 			if dc.isCommand(cell[1]) && dc.hasArgs(cell[1]) {
 				cmdParts[len(parts)] = label
@@ -797,7 +797,7 @@ func (dc *decompState) expr(id int16) string {
 			return prefix + words[p.typ] + dc.expr(n.children[1])
 		}
 		container := dc.expr(n.children[1])
-		if c, ok := dc.nodes[n.children[1]]; dc.isCommand(n.children[1]) || ok && (c.typ == 'c' || binOps[c.typ].tok != "") {
+		if c, ok := dc.nodes[n.children[1]]; dc.isCommand(n.children[1]) || ok && (c.typ == 'c' || c.typ == '6' || binOps[c.typ].tok != "") {
 			container = "(" + container + ")" // hours of (current date), x of (a & b)
 		}
 		part := dc.expr(n.children[0])
@@ -1015,6 +1015,8 @@ func (dc *decompState) prec(id int16) int {
 		return precNot
 	case 'c':
 		return precAs
+	case '6': // a whose clause runs to the end of the expression
+		return 0
 	}
 	return precAtom
 }

@@ -16,10 +16,13 @@ import (
 
 // bcBuilder synthesizes nodes and term references.
 type bcBuilder struct {
-	src     *decompState // the parsed file (for literal values)
-	out     *decompState // the synthetic tree being built
-	nextID  int16
-	nextRef int16
+	// useTargets maps a use statement's target (as fasString prints it) to
+	// its node, so `use name : …` can pick up its name.
+	useTargets map[string]int16
+	src        *decompState // the parsed file (for literal values)
+	out        *decompState // the synthetic tree being built
+	nextID     int16
+	nextRef    int16
 	// scopes holds the name tables of the script objects enclosing the
 	// code being decompiled, outermost first.
 	scopes [][]string
@@ -190,6 +193,14 @@ func (b *bcBuilder) literal(v fasValue) int16 {
 			items[i] = b.literal(it)
 		}
 		return b.node('J', b.cons(items))
+	case fasBinding:
+		// A record literal the compiler stored as a value.
+		var keys, values []int16
+		for i := range x.keys {
+			keys = append(keys, b.keyRef(x.keys[i]))
+			values = append(values, b.literal(x.values[i]))
+		}
+		return b.node('K', b.cells(keys, values))
 	case nil:
 		return b.node('m', b.termRef(fasCode{kind: osKindConstant, enum: "enum", code: "msng"}))
 	case *fasBlock:
@@ -475,6 +486,8 @@ func (bh *bcHandler) run(lo, hi int, stack []stackVal) ([]int16, []stackVal, err
 			}
 			var inner []int16
 			blk, _ := bh.lit(in.args[0]).(*fasBlock)
+			// The object's code sees this handler's variables one level up.
+			b.scopes = append(b.scopes, bh.h.vars)
 			switch {
 			case blk != nil && blk.kind == 15 && len(blk.items) >= 4:
 				inner, err = b.scriptItems(blk.items[3], false)
@@ -485,6 +498,7 @@ func (bh *bcHandler) run(lo, hi int, stack []stackVal) ([]int16, []stackVal, err
 			default:
 				err = errUnsupported{in, "script object literal"}
 			}
+			b.scopes = b.scopes[:len(b.scopes)-1]
 			if err != nil {
 				return out, stack, err
 			}
@@ -508,7 +522,9 @@ func (bh *bcHandler) run(lo, hi int, stack []stackVal) ([]int16, []stackVal, err
 			if !ok || !ok2 {
 				return out, stack, errUnsupported{in, "handler literal"}
 			}
+			b.scopes = append(b.scopes, bh.h.vars) // one level up from the new handler
 			def, err := b.handlerDef(h, blk)
+			b.scopes = b.scopes[:len(b.scopes)-1]
 			if err != nil {
 				return out, stack, err
 			}

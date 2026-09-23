@@ -106,6 +106,12 @@ func (bh *bcHandler) tellStmt(pc int, stack *[]stackVal) (int16, int, bool, erro
 		}
 	}
 	if value != 0 && len(stmts) == 0 && j+1 < len(bh.prog) && consumesValue(bh.prog[j+1].name) {
+		if bh.isCurrentApp(target.id) {
+			// The compiler wraps some Standard Additions calls in scripts
+			// that use frameworks in a tell to current application of its
+			// own; the source has only the call.
+			return value, j + 1, true, nil
+		}
 		id := b.node('O', value, target.id)
 		b.out.nodes[id] = nodeRec{typ: 'O', flags: flagAltSyntax, children: []int16{value, target.id}}
 		return id, j + 1, true, nil
@@ -257,8 +263,12 @@ func (bh *bcHandler) tryStmt(pc int) (int16, int, error) {
 		var keys, values []int16
 		msg := b.ref()
 		if len(he.args) >= 1 {
-			if name, ok := bh.lit(he.args[0]).(string); ok {
-				msg = b.node('o', b.nameRef(name))
+			switch v := bh.lit(he.args[0]).(type) {
+			case string:
+				msg = b.node('o', b.nameRef(v))
+			case nil:
+			default:
+				msg = b.literal(v) // on error "x": a message to match
 			}
 		}
 		if len(he.args) >= 2 {

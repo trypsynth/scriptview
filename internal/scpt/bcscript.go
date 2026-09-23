@@ -102,6 +102,16 @@ func (b *bcBuilder) scriptItems(v fasValue, top bool) ([]int16, error) {
 		if c, ok := name.(fasCode); ok && c.code == "pare" && entry == nil {
 			continue // no explicit parent
 		}
+		// `use O : script "x"` stores O as a property referring to the
+		// used script.
+		if blk, ok := entry.(*fasBlock); ok && blk.kind == 20 && len(blk.items) == 1 && name != nil {
+			if use, ok := b.useTargets[b.useKey(blk.items[0])]; ok {
+				n := b.out.nodes[use]
+				n.children[0] = b.keyRef(name)
+				b.out.nodes[use] = n
+				continue
+			}
+		}
 		// Anything else is a property with its initial value.
 		if name != nil {
 			prop := b.node('j', b.keyRef(name), b.literal(entry))
@@ -291,7 +301,14 @@ func (b *bcBuilder) specBlock(x *fasBlock) (int16, bool) {
 		if len(it) == 0 || it[0] == nil {
 			return part
 		}
-		return b.node('n', part, b.literal(it[0]))
+		container := it[0]
+		if c, ok := container.(*fasBlock); ok && c.kind == 15 {
+			return part // the script itself: use scripting additions
+		}
+		if c, ok := container.(*fasBlock); ok && c.kind == 20 && len(c.items) == 1 {
+			container = c.items[0] // only the outermost reference says "a reference to"
+		}
+		return b.node('n', part, b.literal(container))
 	}
 	key := func(v fasValue) int16 { return b.keyRef(v) }
 	switch {
@@ -344,6 +361,15 @@ func (b *bcBuilder) specBlock(x *fasBlock) (int16, bool) {
 	return 0, false
 }
 
+// useKey identifies a use target regardless of its container, which is the
+// script itself in the use statement and absent in the named property.
+func (b *bcBuilder) useKey(v fasValue) string {
+	if blk, ok := v.(*fasBlock); ok && len(blk.items) > 0 {
+		return fmt.Sprintf("%d:%s", blk.kind, b.src.fasString(blk.items[1:]))
+	}
+	return b.src.fasString(v)
+}
+
 // useStatements builds `use …` statements from the required-imports
 // property: block4{count, block0{records…}}.
 func (b *bcBuilder) useStatements(v fasValue) []int16 {
@@ -362,6 +388,7 @@ func (b *bcBuilder) useStatements(v fasValue) []int16 {
 			continue
 		}
 		var target int16
+		var targetValue fasValue
 		var keys, values []int16
 		for i, k := range bind.keys {
 			kc, _ := k.(fasCode)
@@ -371,7 +398,7 @@ func (b *bcBuilder) useStatements(v fasValue) []int16 {
 				if blk, ok := val.(*fasBlock); ok && blk.kind == 20 && len(blk.items) == 1 {
 					val = blk.items[0] // the reference, not `a reference to`
 				}
-				target = b.literal(val)
+				target, targetValue = b.literal(val), val
 				if t := b.out.nodes[target]; t.typ == '2' {
 					t.flags = flagAltSyntax // use scripting additions (plural)
 					b.out.nodes[target] = t
@@ -388,7 +415,12 @@ func (b *bcBuilder) useStatements(v fasValue) []int16 {
 		if len(keys) > 0 {
 			labels = b.cells(keys, values)
 		}
-		out = append(out, b.node('l', b.node('x', b.ref(), target, labels)))
+		use := b.node('x', b.ref(), target, labels)
+		if b.useTargets == nil {
+			b.useTargets = map[string]int16{}
+		}
+		b.useTargets[b.useKey(targetValue)] = use
+		out = append(out, b.node('l', use))
 	}
 	return out
 }
@@ -404,8 +436,6 @@ func (b *bcBuilder) scriptInit(blk *fasBlock) ([]int16, error) {
 	for _, v := range h.vars {
 		own[v] = true
 	}
-	b.scopes = append(b.scopes, h.vars)
-	defer func() { b.scopes = b.scopes[:len(b.scopes)-1] }()
 	stmts, err := b.handlerBody(h)
 	if err != nil {
 		return nil, err

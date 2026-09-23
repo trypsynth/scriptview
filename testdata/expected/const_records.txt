@@ -1,0 +1,2 @@
+set r to {button returned:"OK", msg:"a", n:{1, 2}}
+set e to {}

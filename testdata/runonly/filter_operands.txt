@@ -1,0 +1,7 @@
+-- Decompiled from run-only bytecode: comments and original formatting are not recoverable.
+
+tell application "System Events"
+	if (every application process whose name = "Finder") ≠ {} then
+		beep
+	end if
+end tell

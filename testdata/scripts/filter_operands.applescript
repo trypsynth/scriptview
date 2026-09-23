@@ -1,0 +1,3 @@
+tell application "System Events"
+	if (every application process whose name = "Finder") ≠ {} then beep
+end tell

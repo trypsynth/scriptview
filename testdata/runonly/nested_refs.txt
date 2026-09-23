@@ -1,0 +1,8 @@
+-- Decompiled from run-only bytecode: comments and original formatting are not recoverable.
+
+use framework "Foundation"
+
+property FileManager : a reference to defaultManager of current application's NSFileManager
+tell application "System Events"
+	set w to a reference to every window of process "Finder"
+end tell

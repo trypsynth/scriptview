@@ -232,6 +232,12 @@ func (bh *bcHandler) errorCommand(in instr, stack *[]stackVal) (int16, error) {
 	return b.node('R', b.ref(), msgID, labels), nil
 }
 
+// isCurrentApp reports whether id is the constant current application.
+func (bh *bcHandler) isCurrentApp(id int16) bool {
+	n := bh.b.out.nodes[id]
+	return n.typ == 'm' && bh.b.out.osCode[child0(n)] == "cura"
+}
+
 // isObjCTarget reports whether id is `current application` or a reference
 // through it, where Script Editor output uses possessive ('s) syntax.
 func (bh *bcHandler) isObjCTarget(id int16) bool {

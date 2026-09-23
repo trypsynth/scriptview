@@ -1,0 +1,3 @@
+use framework "Foundation"
+property FileManager : a reference to current application's NSFileManager's defaultManager
+tell application "System Events" to set w to a reference to every window of process "Finder"

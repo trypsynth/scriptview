@@ -1,0 +1,8 @@
+use framework "Foundation"
+use scripting additions
+set s to "a:b"
+set pos to (offset of ":" in s) + 1
+set r to random number from 1 to 5
+set s to get volume settings
+set volume output volume (output volume of s)
+set volume output volume (output volume of s) without output muted
