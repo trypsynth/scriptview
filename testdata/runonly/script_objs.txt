@@ -18,7 +18,7 @@ end considering
 ignoring white space
 	set c to "a b" = "ab"
 end ignoring
-set y to a reference to counter
+set y to a reference to my counter
 set x to contents of y
 set d to date "Monday, January 1, 2024 at 12:00:00 AM"
 set m to month of d

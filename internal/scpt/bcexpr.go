@@ -116,12 +116,11 @@ func (bh *bcHandler) objectAlias(in instr, stack *[]stackVal) (int16, error) {
 	if cn := b.out.nodes[container.id]; (kind == 3 || kind == 4) && cn.typ == 'f' {
 		return part, nil // POSIX file "/x", not … of me
 	}
-	if cn := b.out.nodes[container.id]; kind == 0 && cn.typ == 'f' {
-		if p := b.out.nodes[part]; p.typ == 'o' {
-			return part, nil // a script property of me: just its name
-		}
-	}
 	id := b.node('n', part, container.id)
+	if cn := b.out.nodes[container.id]; kind == 0 && cn.typ == 'f' && b.out.nodes[part].typ == 'o' {
+		b.out.nodes[id] = nodeRec{typ: 'n', flags: flagAltSyntax, children: []int16{part, container.id}} // my counter
+		return id, nil
+	}
 	if (kind == 0 || kind == 3) && bh.isObjCTarget(container.id) {
 		// current application's NSString, x's |length|, current
 		// application's class "NSEvent": the ASObjC idiom.

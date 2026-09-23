@@ -1,0 +1,8 @@
+script S
+	property name : "02"
+	property parent : AppleScript
+	property n : 1
+	on t()
+		return {n, my extra}
+	end t
+end script

@@ -480,6 +480,10 @@ func (b *bcBuilder) scriptInit(blk *fasBlock) ([]int16, error) {
 				continue
 			}
 		}
+		if n.typ == 'j' { // property parent : …, in declaration order
+			props = append(props, st)
+			continue
+		}
 		rest = append(rest, st)
 	}
 	return append(props, rest...), nil

@@ -96,8 +96,9 @@ The compiler throws some things away:
 - Comments.
 - Line breaks and parentheses you added for readability.
 - Your choice of words where AppleScript has synonyms, such as `is equal to` compared with `=`. With no flags, everything comes out in the default spelling.
-- `global` declarations, and `using terms from` blocks. The terms are already resolved to codes.
+- Where a `using terms from` block ends. The compiler only marks where it starts, so we close it at the end of the enclosing block.
+- Where `global` and `use` statements were. We put them at the top, unless Standard Additions commands show that a `use` must have come after them.
 - Whether you wrote `on run` or put the statements at the top level.
 - The order of statements at the top level, compared with handlers and properties.
 
-On the scripts we tried, about 99.8% decompile without errors, and about a quarter come out exactly like the canonical tree output.
+To check the result, we compile the decompiled source again and compare the new bytecode with the original (see [How we tested](testing.md)). On our GitHub corpus, about 80% of the older set and 90% of the newer set come back identical. Most of the rest use apps that aren't installed on the test Mac: their terms print as raw codes, and raw codes compile differently than terms from a loaded dictionary.
