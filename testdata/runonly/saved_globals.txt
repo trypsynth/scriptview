@@ -1,0 +1,9 @@
+-- Decompiled from run-only bytecode: comments and original formatting are not recoverable.
+
+property p : 1
+on f()
+	return p
+end f
+
+set p to 2
+set g to 3

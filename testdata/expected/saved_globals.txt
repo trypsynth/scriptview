@@ -1,0 +1,6 @@
+property p : 1
+set p to 2
+set g to 3
+on f()
+	return p
+end f

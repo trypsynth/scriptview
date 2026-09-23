@@ -53,6 +53,10 @@ func (b *bcBuilder) scriptItems(v fasValue, top bool) ([]int16, error) {
 			lastHandler = i
 		}
 	}
+	globalNames := map[string]bool{}
+	if top {
+		globalNames = b.globalAccesses(table[2:])
+	}
 	for i, entry := range table[2:] {
 		var name fasValue
 		if i < len(names) {
@@ -112,6 +116,10 @@ func (b *bcBuilder) scriptItems(v fasValue, top bool) ([]int16, error) {
 				continue
 			}
 		}
+		// A top-level variable's saved value, not a property.
+		if n, ok := name.(string); ok && top && globalNames[strings.ToLower(n)] {
+			continue
+		}
 		// Anything else is a property with its initial value.
 		if name != nil {
 			prop := b.node('j', b.keyRef(name), b.literal(entry))
@@ -163,6 +171,29 @@ func (b *bcBuilder) callsAdditions() bool {
 		}
 	}
 	return false
+}
+
+// globalAccesses returns the (lowercase) names that any handler reaches
+// with PushGlobal or PopGlobal.
+func (b *bcBuilder) globalAccesses(entries []fasValue) map[string]bool {
+	out := map[string]bool{}
+	for _, entry := range entries {
+		h, ok := b.src.handlerFrom(entry)
+		if !ok {
+			continue
+		}
+		prog, _ := disassemble(h.code)
+		for _, in := range prog {
+			if strings.HasPrefix(in.name, "PushGlobal") || strings.HasPrefix(in.name, "PopGlobal") {
+				if idx := in.args[len(in.args)-1]; idx >= 0 && idx < len(h.literals) {
+					if name, ok := h.literals[idx].(string); ok {
+						out[strings.ToLower(name)] = true
+					}
+				}
+			}
+		}
+	}
+	return out
 }
 
 // globals returns the variables that handlers reach as globals, which the
