@@ -38,9 +38,9 @@ scriptview also reads JavaScript for Automation (JXA) scripts and `.scpt` files 
 We compare scriptview with `osadecompile` on two sets of scripts:
 
 - The 194 compiled scripts that ship with macOS: all 194 match.
-- 2,309 scripts from public AppleScript repositories on GitHub: 2,304 match.
+- 6,142 compiled scripts from about 1,370 public AppleScript repositories on GitHub: 6,133 match.
 
-The scripts that don't match use apps that aren't installed, or apps whose terminology scriptview doesn't have. scriptview includes the terminology of the apps that ship with macOS. For other apps it prints raw codes such as `«class pURL»`, which is what `osadecompile` does when it can't find the app.
+The 9 that don't match depend on the Mac we tested on: they use apps that are installed there, and whose terminology scriptview doesn't have. scriptview includes the terminology of the apps that ship with macOS. For other apps it prints raw codes such as `«class pURL»`, which is what `osadecompile` does when it can't find the app.
 
 When scriptview runs on a Mac, it checks whether a script's apps are installed, like `osadecompile` does. On other systems it shows those apps by their file name, for example `application "Firefox.app"`.
 

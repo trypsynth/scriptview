@@ -17,13 +17,15 @@ A heads-up if you run the probes yourself: compiling a script that talks to an a
 Probes only find what you think to test. To find the rest, we compared scriptview with `osadecompile` on two big sets of real scripts:
 
 - The compiled scripts that ship with macOS, in `/Library/Scripts` and `/System/Library`. There are 194.
-- Scripts from the most popular AppleScript repositories on GitHub. We compiled the `.applescript` files ourselves, and added any `.scpt` files the repositories had. There are 2,309.
+- Scripts from about 1,370 AppleScript repositories on GitHub. We compiled the `.applescript` files ourselves, and added any `.scpt` files the repositories had. There are 6,142.
 
 `tools/corpus/compare.py` runs both tools on a list of files and saves a diff for each file that doesn't match. We fixed the most common diff, ran it again, and repeated. The GitHub set was the most useful. It has old scripts from old compilers, scripts that use Objective-C, and all sorts of odd formatting.
 
 We can't include these scripts in the repository, because other people wrote them. The script and the instructions are there so you can build your own set.
 
-For the bytecode decompiler, we compared its output with the syntax tree output of the same file, with all flags set to zero. That tells us how close the bytecode gets without needing run-only copies of everything.
+For the bytecode decompiler, we first compared its output with the syntax tree output of the same file, with all flags set to zero. That turned out to be a weak test, because zeroing the flags also removes parentheses that the source needs.
+
+A better test is a round trip: decompile the bytecode, compile the result again with `osacompile`, and compare the new bytecode with the original. If they're the same, the decompiled source means exactly what the original meant. `tools/corpus/roundtrip.py` does this. It found several bugs that the first test missed, such as `use` statements in the wrong place and constant lists that printed as garbage.
 
 ## Fuzzing
 
