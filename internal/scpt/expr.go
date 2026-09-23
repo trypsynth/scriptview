@@ -194,6 +194,16 @@ func (dc *decompState) commandParts(n nodeRec) (string, string) {
 	return directPart, strings.Join(parts, " ")
 }
 
+// isIntLiteral reports whether id is an integer literal.
+func (dc *decompState) isIntLiteral(id int16) bool {
+	n, ok := dc.nodes[id]
+	if !ok || n.typ != 'm' {
+		return false
+	}
+	_, isInt := dc.intByRef[child0(n)]
+	return isInt
+}
+
 // hasArgs reports whether command node id takes any arguments, which would
 // run on into the parameters that follow it.
 func (dc *decompState) hasArgs(id int16) bool {
@@ -839,22 +849,27 @@ func (dc *decompState) expr(id int16) string {
 				}
 			}
 		}
-		return dc.className(n.children[0]) + " " + dc.sub(n.children[1], precAtom)
+		class := dc.className(n.children[0])
+		if dc.osCode[n.children[0]] == "****" {
+			class = "any" // any button: anything, indexed by a class
+		}
+		return class + " " + dc.sub(n.children[1], precAtom)
 
 	case '7': // <class> <from> thru <to>
 		if len(n.children) < 3 {
 			return "<range>"
 		}
-		if n.flags&flagThe == 0 { // `text from x to y`
-			return dc.className(n.children[0]) + " from " + dc.sub(n.children[1], precAtom) + " to " + dc.sub(n.children[2], precAtom)
+		cls := dc.pluralOf(n.children[0])
+		if strings.HasPrefix(cls, "every «") {
+			cls = strings.TrimPrefix(cls, "every ") // raw codes: «class x» 1 thru 2
+		}
+		if n.flags&flagThe == 0 && !(dc.isIntLiteral(n.children[1]) && dc.isIntLiteral(n.children[2])) {
+			// `characters from x to y`; with two numbers it prints as thru.
+			return cls + " from " + dc.sub(n.children[1], precAtom) + " to " + dc.sub(n.children[2], precAtom)
 		}
 		thru := " thru "
 		if n.flags&flagAltSyntax != 0 {
 			thru = " through "
-		}
-		cls := dc.pluralOf(n.children[0])
-		if strings.HasPrefix(cls, "every «") {
-			cls = strings.TrimPrefix(cls, "every ") // raw codes: «class x» 1 thru 2
 		}
 		return cls + " " + dc.sub(n.children[1], precAtom) + thru + dc.sub(n.children[2], precAtom)
 
@@ -874,6 +889,7 @@ func (dc *decompState) expr(id int16) string {
 		return "it"
 
 	case 'M': // continue: pass a call to the parent script
+		dc.targetCall(child(n, 0)) // continue initWithFrame:frame
 		return "continue " + dc.expr(child(n, 0))
 
 	case 'e': // get
