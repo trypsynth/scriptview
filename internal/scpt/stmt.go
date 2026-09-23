@@ -554,8 +554,12 @@ func (dc *decompState) repeatStmt(n nodeRec, depth int) []string {
 // stmtExpr renders an expression that a statement consists of or assigns.
 func (dc *decompState) stmtExpr(id int16) string {
 	s := dc.expr(id)
-	if n, ok := dc.nodes[id]; ok && dc.repeatWith > 0 && n.typ == 'n' && n.flags&(flagPossessive|flagAltSyntax) != 0 && dc.isInterleavedCall(child0(n)) {
-		return "(" + s + ")"
+	n, ok := dc.nodes[id]
+	if !ok || dc.repeatWith == 0 {
+		return s
+	}
+	if n.typ == '6' || n.typ == 'n' && n.flags&(flagPossessive|flagAltSyntax) != 0 && dc.isInterleavedCall(child0(n)) {
+		return "(" + s + ")" // (x's foo:y), (items of x whose …)
 	}
 	return s
 }

@@ -15,7 +15,7 @@ Script Editor adds parentheses in these places, even when the tree has no parent
 
 ### The `repeat with` rule
 
-This one surprised us. Inside a `repeat with` loop, Script Editor puts parentheses around an Objective-C style call when it is a whole statement, the value of a `set`, or the value of a `return`:
+This one surprised us. Inside a `repeat with` loop, Script Editor puts parentheses around an Objective-C style call or a `whose` filter when it is a whole statement, the value of a `set`, or the value of a `return`:
 
 ```applescript
 repeat with anItem in theList
@@ -23,6 +23,8 @@ repeat with anItem in theList
 end repeat
 set y to anItem's objectForKey:"b"
 ```
+
+The same goes for `set h to (items of L whose it > 1)`. Other expressions, such as `item 1 of L` or `x's y`, don't get them.
 
 It happens at any depth inside the loop, even inside a nested `repeat 3 times`. It doesn't happen in `repeat n times`, `repeat while` or `repeat until` loops on their own. Our guess is that the printer sets a flag when it prints the `repeat with` line and doesn't clear it until the loop ends. We copy the behavior.
 

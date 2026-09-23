@@ -1,0 +1,15 @@
+on f(x, L, y)
+	repeat with i in L
+		tell application "Finder" to set a to (first folder of x whose name is y)
+		set b to item 1 of L
+		set c to x's y
+		set d to f(x, L, y)
+		set e to every item of L
+		set g to i + 1
+		set h to (items of L whose it > 1)
+		set k to items 1 thru 2 of L
+		set m to L as text
+		set n to not y
+		return (items of L whose it > 1)
+	end repeat
+end f
