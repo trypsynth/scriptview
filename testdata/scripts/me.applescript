@@ -1,0 +1,6 @@
+set a to name of me
+set b to my name
+on f()
+end f
+set c to f() of me
+set d to my f()

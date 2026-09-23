@@ -1,0 +1,78 @@
+on isVoiceOverRunning()
+	set isRunning to false
+	tell application "System Events"
+		set isRunning to (name of processes) contains "VoiceOver"
+	end tell
+	return isRunning
+end isVoiceOverRunning
+
+on isVoiceOverRunningWithAppleScript()
+	if isVoiceOverRunning() then
+		set isRunningWithAppleScript to true
+		tell application "VoiceOver"
+			try
+				set x to bounds of vo cursor
+			on error
+				set isRunningWithAppleScript to false
+			end try
+		end tell
+		return isRunningWithAppleScript
+	end if
+	return false
+end isVoiceOverRunningWithAppleScript
+
+on getLastPhrase()
+	set phrase to ""
+	try
+		tell application "VoiceOver"
+			tell last phrase
+				set phrase to content
+			end tell
+		end tell
+	on error
+		set phrase to ""
+	end try
+	return phrase
+end getLastPhrase
+
+on getCurrentIndentationLevel(phrase)
+	set len to count of (phrase as string)
+	set currentPosition to 1
+	set currentCharacter to text item 1 of phrase
+	set tabs to 0
+	set spaces to 0
+	repeat while currentCharacter = " " or currentCharacter = "	"
+		set currentPosition to (currentPosition + 1)
+		if currentCharacter = " " then
+			set spaces to (spaces + 1)
+		else if currentCharacter = "	" then
+			set tabs to (tabs + 1)
+		end if
+		set currentCharacter to text item currentPosition of phrase
+		if currentPosition ≥ len then
+			exit repeat
+		end if
+	end repeat
+	set ret to ""
+	if tabs > 0 then
+		set ret to ((tabs as string) & " tabs")
+		if spaces > 0 then
+			set ret to (ret & ", ")
+		end if
+	end if
+	if spaces > 0 then
+		set ret to ((ret & spaces as string) & " spaces")
+	end if
+	if ret = "" then
+		set ret to "No indentation"
+	end if
+	return ret
+end getCurrentIndentationLevel
+
+if isVoiceOverRunningWithAppleScript() then
+	set indentation to getCurrentIndentationLevel(getLastPhrase())
+	tell application "VoiceOver"
+		output indentation
+	end tell
+end if
+

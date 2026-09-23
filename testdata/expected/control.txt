@@ -1,0 +1,34 @@
+set x to 1
+if x = 1 then
+	set y to 1
+else if x = 2 then
+	set y to 2
+else
+	set y to 3
+end if
+if x = 1 then
+	set y to 4
+else
+	set y to 5
+end if
+repeat
+	exit repeat
+end repeat
+repeat 3 times
+	set x to x + 1
+end repeat
+repeat with i from 1 to 10
+	set x to x + i
+end repeat
+repeat with i from 10 to 1 by -1
+	set x to x + i
+end repeat
+repeat with v in {1, 2, 3}
+	set x to x + v
+end repeat
+repeat until x > 100
+	set x to x + 1
+end repeat
+repeat while x < 200
+	set x to x + 1
+end repeat

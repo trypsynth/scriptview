@@ -1,0 +1,14 @@
+-- Decompiled from run-only bytecode: comments and original formatting are not recoverable.
+
+use framework "Foundation"
+
+set x1 to fmt's m:a / 2
+set x2 to fmt's m:a * 2
+set x3 to fmt's m:(a - 2)
+set x4 to fmt's m:(a + 2)
+set x5 to fmt's m:a ^ 2
+set x6 to fmt's m:a div 2
+set x7 to fmt's m:a mod 2
+set x8 to fmt's m:-a
+set x9 to fmt's m:(a & "b")
+set y1 to fmt's m:(a = 2)

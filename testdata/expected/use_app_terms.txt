@@ -1,0 +1,7 @@
+use Finder : application "Finder"
+use scripting additions
+property selection : a reference to Finder's selection
+on run
+	get Finder's home
+	get home of Finder
+end run

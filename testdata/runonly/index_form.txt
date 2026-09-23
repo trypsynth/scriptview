@@ -1,0 +1,8 @@
+-- Decompiled from run-only bytecode: comments and original formatting are not recoverable.
+
+set c to 1
+tell application "Finder"
+	get window index c
+	get window id c
+	get window c
+end tell

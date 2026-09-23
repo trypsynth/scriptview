@@ -1,0 +1,44 @@
+on isVoiceOverRunning()
+	set isRunning to false
+	tell application "System Events"
+		set isRunning to (name of processes) contains "VoiceOver"
+	end tell
+	return isRunning
+end isVoiceOverRunning
+
+on isVoiceOverRunningWithAppleScript()
+	if isVoiceOverRunning() then
+		set isRunningWithAppleScript to true
+		tell application "VoiceOver"
+			try
+				set x to bounds of vo cursor
+			on error
+				set isRunningWithAppleScript to false
+			end try
+		end tell
+		return isRunningWithAppleScript
+	end if
+	return false
+end isVoiceOverRunningWithAppleScript
+
+tell application "System Events"
+	set theVisibleApps to (name of application processes where visible is true)
+end tell
+
+repeat with thisApp in theVisibleApps
+	try
+		tell application thisApp
+			try
+				close every document without saving
+			on error
+				close every window
+			end try
+		end tell
+	end try
+end repeat
+if isVoiceOverRunningWithAppleScript() then
+	tell application "VoiceOver"
+		output "Done!"
+	end tell
+end if
+

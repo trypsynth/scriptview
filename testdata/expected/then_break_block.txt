@@ -1,0 +1,5 @@
+tell application "System Events" to if (count of processes) > 0 then ¬
+	tell application "Finder"
+		set x to name of startup disk
+		if x is "" then beep
+	end tell

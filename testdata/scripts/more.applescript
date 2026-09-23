@@ -1,0 +1,59 @@
+set l to {1, 2, 3, 4}
+set big to every item of l where it > 1
+set w to every word of "a b c"
+set c3 to characters 1 thru 3 of "hello"
+set lastItem to item -1 of l
+set r to rest of l
+set rv to reverse of l
+set s to some item of l
+set n to number of items in l
+set t to (current date) + 2 * days
+set p to POSIX file "/tmp/x"
+set f to POSIX path of p
+set u to "日本語 ünïcödé"
+set cl to the clipboard
+set the clipboard to "x"
+set ch to ASCII character 9
+set x to l as list
+set rec to {a:1, b:"z"}
+set av to a of rec
+set x to x & {5}
+set end of l to 6
+set beginning of l to 0
+set z to text 2 thru -1 of "hello"
+set zz to text item 1 of "a,b"
+set lng to length of "abc"
+set cls to class of 1
+set big2 to 2 ^ 31
+set sm to 1.0E-10
+set bg to 1.5E+20
+set i to 536870911
+set ni to -536870912
+set b to not true
+set q to quote & "x" & quote
+set hx to «data rdat0102»
+ignoring application responses
+	tell application "Finder" to activate
+end ignoring
+repeat with i from 1 to 3
+	if i = 2 then exit repeat
+end repeat
+try
+	error number -128
+on error number n
+	set e to n
+end try
+tell application "Finder"
+	with transaction
+		set y to 1
+	end transaction
+end tell
+set res to result
+set aa to {{1, 2}, {3, 4}}'s item 1
+tell application "Finder"
+	set ff to name of every file of desktop whose name extension is "txt"
+	set d to first item of (get selection)
+	move d to trash
+	make new folder at desktop with properties {name:"New"}
+	set dd to (count items of desktop)
+end tell

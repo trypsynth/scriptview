@@ -1,0 +1,26 @@
+set a to 1 + ¬
+	2
+set b to ¬
+	"x"
+set c to {1, ¬
+	2, 3}
+display dialog ¬
+	"hi" buttons {"OK"}
+set d to length ¬
+	of "abc"
+if a > 0 and ¬
+	b = "x" then set e to 1
+display dialog "a" buttons {"OK"} ¬
+	default button 1
+tell application "Finder" to ¬
+	activate
+if true then ¬
+	beep
+set x to {1 ¬
+	, 2}
+set y to "a" & ¬
+	"b" & ¬
+	"c"
+set z to (1 + ¬
+	(2 * ¬
+		3))

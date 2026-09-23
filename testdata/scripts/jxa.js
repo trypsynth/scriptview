@@ -1,0 +1,3 @@
+var app = Application.currentApplication()
+app.includeStandardAdditions = true
+app.displayDialog("hello from JXA")

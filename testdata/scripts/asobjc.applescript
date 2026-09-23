@@ -1,0 +1,13 @@
+use AppleScript version "2.4"
+use scripting additions
+use framework "Foundation"
+
+property NSString : a reference to current application's NSString
+
+set s to current application's NSString's stringWithString:"hello"
+set u to (s's uppercaseString()) as text
+set arr to current application's NSArray's arrayWithArray:{3, 1, 2}
+set sorted to (arr's sortedArrayUsingSelector:"compare:") as list
+set d to current application's NSDictionary's dictionaryWithObjects:{1, 2} forKeys:{"a", "b"}
+set v to (d's objectForKey:"a") as integer
+return {u, sorted, v}

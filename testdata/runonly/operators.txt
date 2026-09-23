@@ -1,0 +1,28 @@
+-- Decompiled from run-only bytecode: comments and original formatting are not recoverable.
+
+set a to 5
+set b to 3
+set r1 to a + b
+set r2 to a - b
+set r3 to a * b
+set r4 to a / b
+set r5 to a div b
+set r6 to a mod b
+set r7 to a ^ b
+set c1 to a = b
+set c2 to a ≠ b
+set c3 to a < b
+set c4 to a ≤ b
+set c5 to a > b
+set c6 to a ≥ b
+set l1 to c1 and c2
+set l2 to c1 or c2
+set l3 to not c1
+set n to -a
+set s to "x" & "y"
+set t1 to "abc" starts with "a"
+set t2 to "abc" ends with "c"
+set t3 to "abc" contains "b"
+set t4 to "abc" contains "b"
+set t5 to "abc" does not contain "z"
+set k to a as string

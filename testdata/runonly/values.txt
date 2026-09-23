@@ -1,0 +1,16 @@
+-- Decompiled from run-only bytecode: comments and original formatting are not recoverable.
+
+set a to {1, "two", 3.5}
+set b to {name:"x", age:3}
+set c to missing value
+set d to true
+set e to 100000
+set f to -7
+set g to item 2 of a
+set h to name of b
+set end of a to 4
+copy a to z
+set {p, q} to {1, 2}
+set w to text 1 thru 2 of "hello"
+set u to count a
+set dt to current date

@@ -1,0 +1,6 @@
+set c to 1
+tell application "Finder"
+	get window index c
+	get window id c
+	get window c
+end tell

@@ -1,0 +1,5 @@
+use framework "Foundation"
+set a to (anItem's objectForKey:"mount-point")
+set b to anItem's objectForKey:"mount-point"
+my (statusMenu's itemWithTitle:"R"'s setEnabled:0)
+my ((statusMenu's itemWithTitle:"R")'s setEnabled:0)

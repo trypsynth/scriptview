@@ -1,0 +1,50 @@
+-- Decompiled from run-only bytecode: comments and original formatting are not recoverable.
+
+use AppleScript version "2.4"
+use scripting additions
+
+property items_ : {1, 2, 3}
+on pushItem onto L as list at i as integer : 0 given value:v : missing value
+	return L
+end pushItem
+
+on make2 from a to b
+	set x to text a thru b of "abcdefgh"
+	set y to characters a thru b of "abcdefgh"
+	return {x, y}
+end make2
+
+script s
+	property p : 1
+	on beep
+		continue beep
+	end beep
+	
+end script
+
+set L to {1, 2, 3}
+set f to item 1 of L
+set g to item 2 of L
+set h to item 1 of L
+tell application "Finder"
+	set w to window named "x"
+	if exists window 1 then
+		beep
+	end if
+	if exists window 1 then
+		beep
+	end if
+end tell
+with timeout of 1 second
+	set z to 2
+end timeout
+tell me
+	pushItem onto L at 1 given value:3
+end tell
+set q to "a" & "b"
+if q = "ab" then
+	set q to "c"
+end if
+tell application "System Events"
+	set n to name of every process
+end tell

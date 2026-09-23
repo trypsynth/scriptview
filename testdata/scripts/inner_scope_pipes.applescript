@@ -1,0 +1,10 @@
+tell application "Mail"
+	set a to address of item 1 of (to recipients of message 1 of inbox)
+	using terms from application "Calendar"
+		set b to |address| of a
+	end using terms from
+end tell
+tell application "System Events"
+	tell application "Finder" to set c to |miniaturizable| of window 1
+	set d to miniaturizable of window 1 of process "Finder"
+end tell

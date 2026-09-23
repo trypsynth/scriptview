@@ -1,0 +1,15 @@
+on f(x)
+	return x
+end f
+set a to 2 * (f(1))
+set b to f(1) * 2
+set c to 2 + f(1)
+set d to 2 - f(1)
+set e to 2 / (f(1))
+set g to 2 ^ (f(1))
+set h to "a" & f(1)
+set i to 2 div (f(1))
+set j to f(1) + f(2)
+set k to 2 * (f(1))
+set l to 2 = f(1)
+set m to 2 mod (f(1))

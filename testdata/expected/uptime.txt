@@ -1,0 +1,37 @@
+on isVoiceOverRunning()
+	set isRunning to false
+	tell application "System Events"
+		set isRunning to (name of processes) contains "VoiceOver"
+	end tell
+	return isRunning
+end isVoiceOverRunning
+
+on isVoiceOverRunningWithAppleScript()
+	if isVoiceOverRunning() then
+		set isRunningWithAppleScript to true
+		tell application "VoiceOver"
+			try
+				set x to bounds of vo cursor
+			on error
+				set isRunningWithAppleScript to false
+			end try
+		end tell
+		return isRunningWithAppleScript
+	end if
+	return false
+end isVoiceOverRunningWithAppleScript
+
+if isVoiceOverRunningWithAppleScript() then
+	set uptime to (do shell script "up=$(uptime | sed -E 's/^[^,]*up *//; s/mins/minutes/; s/hrs?/hours/;
+s/([[:digit:]]+):0?([[:digit:]]+)/\\1 hours, \\2 minutes/;
+s/^1 hours/1 hour/; s/ 1 hours/ 1 hour/;
+s/min,/minutes,/; s/ 0 minutes,/ less than a minute,/; s/ 1 minutes/ 1 minute/;
+s/  / /; s/, *[[:digit:]]* users?.*//')
+
+	echo $up
+	")
+	tell application "VoiceOver"
+		output uptime
+	end tell
+end if
+

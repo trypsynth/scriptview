@@ -1,0 +1,44 @@
+on isVoiceOverRunning()
+	set isRunning to false
+	tell application "System Events"
+		set isRunning to (name of processes) contains "VoiceOver"
+	end tell
+	return isRunning
+end isVoiceOverRunning
+
+on isVoiceOverRunningWithAppleScript()
+	if isVoiceOverRunning() then
+		set isRunningWithAppleScript to true
+		tell application "VoiceOver"
+			try
+				set x to bounds of vo cursor
+			on error
+				set isRunningWithAppleScript to false
+			end try
+		end tell
+		return isRunningWithAppleScript
+	end if
+	return false
+end isVoiceOverRunningWithAppleScript
+
+on getLastPhrase()
+	set phrase to ""
+	try
+		tell application "VoiceOver"
+			tell last phrase
+				set phrase to content
+			end tell
+		end tell
+	on error
+		set phrase to ""
+	end try
+	return phrase
+end getLastPhrase
+
+if isVoiceOverRunningWithAppleScript() then
+	set phrase to getLastPhrase()
+	tell application "VoiceOver"
+		output phrase
+	end tell
+end if
+

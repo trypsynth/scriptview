@@ -1,0 +1,25 @@
+property counter : 0
+global g
+set g to 1
+
+on add(a, b)
+	return a + b
+end add
+
+on greet given name:n
+	return "hi " & n
+end greet
+
+set counter to counter + my add(1, 2)
+set s to greet given name:"bob"
+considering case
+	set c to "a" = "A"
+end considering
+ignoring white space
+	set c to "a b" = "ab"
+end ignoring
+set y to a reference to counter
+set x to contents of y
+set d to date "Monday, January 1, 2024 at 12:00:00 AM"
+set m to month of d
+tell me to add(1, 1)

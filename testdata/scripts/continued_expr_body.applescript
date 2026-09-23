@@ -1,0 +1,15 @@
+on v3add(a, b)
+	¬
+		¬
+			{x:(x of a) + (x of b), y:(y of a) + (y of b) ¬
+				} ¬
+				
+end v3add
+on g(a)
+	set b to a
+	¬
+		¬
+			{x:b ¬
+				} ¬
+				
+end g

@@ -1,0 +1,45 @@
+on run
+	set l to {{1, 2}, {3}}
+	if (count of l) > 1 then set l to l & {4}
+	set AppleScript's text item delimiters to ","
+	set tid to text item delimiters of AppleScript
+	set c to class of l
+	set f to l's item 1
+	set x to beginning of l
+	set r to -1.5
+	set u to "caf√© \"q\" \\ ƒ"
+	with timeout of 10 seconds
+		tell application id "com.apple.finder"
+			set n to name of it
+		end tell
+	end timeout
+	using terms from application "Finder"
+		set z to 1
+	end using terms from
+	set cur to current application
+	set y to its x
+	tell Helper to bump()
+	return
+end run
+
+on open theFiles
+	repeat with i from 1 to count of theFiles
+		log (item i of theFiles)
+	end repeat
+end open
+
+on idle
+	return 30
+end idle
+
+on doIt of a given b:c
+	return a
+end doIt
+
+script Helper
+	property v : 1
+	on bump()
+		set v to v + 1
+	end bump
+end script
+
