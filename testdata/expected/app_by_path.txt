@@ -1,0 +1,3 @@
+tell application "/System/Applications/Music.app"
+	get persistent ID of user playlist 1
+end tell

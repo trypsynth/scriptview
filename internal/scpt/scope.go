@@ -170,6 +170,11 @@ func (dc *decompState) isBuiltin(ref int16) bool {
 
 // scopeDict returns the terminology of the application named scope.
 func scopeDict(scope string) *dict {
+	if strings.HasPrefix(scope, "/") || strings.Contains(scope, ":") && !strings.Contains(scope, "://") {
+		// An application named by its path: "/System/Applications/Music.app".
+		scope = scope[strings.LastIndexAny(strings.TrimRight(scope, "/:"), "/:")+1:]
+		scope = strings.TrimSuffix(strings.TrimRight(scope, "/:"), ".app")
+	}
 	if alias, ok := scopeAliases[scope]; ok {
 		scope = alias
 	}
