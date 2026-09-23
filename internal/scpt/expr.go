@@ -150,7 +150,7 @@ func (dc *decompState) commandArgs(n nodeRec) string {
 			if hasOf && dc.isBareOfRef(cell[1]) {
 				value = "(" + value + ")" // offset of x in (item 1 of y)
 			}
-			if dc.isCommand(cell[1]) {
+			if dc.isCommand(cell[1]) && dc.hasArgs(cell[1]) {
 				cmdParts[len(parts)] = label
 			}
 			parts = append(parts, label+" "+value)
@@ -172,6 +172,16 @@ func (dc *decompState) commandArgs(n nodeRec) string {
 		}
 	}
 	return strings.Join(parts, " ")
+}
+
+// hasArgs reports whether command node id takes any arguments, which would
+// run on into the parameters that follow it.
+func (dc *decompState) hasArgs(id int16) bool {
+	n := dc.nodes[id]
+	if n.typ == 'e' {
+		return true
+	}
+	return child(n, 1) > 0 || child(n, 2) > 0
 }
 
 // isBareOfRef reports whether id is `x of y`, or a coercion of one, with no
@@ -292,7 +302,11 @@ func (dc *decompState) callArgs(n nodeRec, isCall bool) string {
 	var given, withs, withouts []string
 	for _, cell := range dc.cells(child(n, 2)) {
 		if prep, ok := prepositions[dc.osCode[cell[0]]]; ok {
-			direct += " " + prep + " " + dc.operand(cell[1])
+			value := dc.expr(cell[1])
+			if dc.isCommand(cell[1]) && dc.hasArgs(cell[1]) {
+				value = "(" + value + ")" // on (path to desktop), but on current date
+			}
+			direct += " " + prep + " " + value
 			continue
 		}
 		switch dc.boolLit(cell[1]) {
@@ -694,7 +708,8 @@ func (dc *decompState) expr(id int16) string {
 		if n.flags&(flagPossessive|flagAltSyntax) != 0 {
 			dc.targetCall(n.children[0]) // a call with a target: x's foo:y, my foo:y
 		}
-		if c, ok := dc.nodes[n.children[1]]; ok && c.typ == 'f' && n.flags&flagAltSyntax != 0 {
+		if c, ok := dc.nodes[dc.unwrapBreak(n.children[1])]; ok && c.typ == 'f' && n.flags&flagAltSyntax != 0 {
+			// A `¬` break before `my` wraps `me`; Script Editor drops it.
 			p, ok := dc.nodes[n.children[0]]
 			parens := ok && (binOps[p.typ].tok != "" || (p.typ == 'n' && dc.isInterleavedCall(child0(p))))
 			saved := dc.inMy
@@ -988,6 +1003,14 @@ func (dc *decompState) isArithRef(id int16) bool {
 	return dc.isOfRef(id)
 }
 
+// unwrapBreak skips a wrapper that only records a `¬` break before id.
+func (dc *decompState) unwrapBreak(id int16) int16 {
+	if n, ok := dc.nodes[id]; ok && n.typ == 'l' && n.flags&(flagParens|flagThe) == 0 && n.flags&flagContinuation != 0 {
+		return firstPositive(n)
+	}
+	return id
+}
+
 // unwrap skips 'l' wrappers (parentheses, the, continuations) around id.
 func (dc *decompState) unwrap(id int16) int16 {
 	for i := 0; i < 16; i++ {
@@ -1046,6 +1069,6 @@ func (dc *decompState) isMyCall(id int16) bool {
 	if !ok || n.typ != 'n' {
 		return false
 	}
-	c, ok := dc.nodes[child(n, 1)]
+	c, ok := dc.nodes[dc.unwrapBreak(child(n, 1))]
 	return ok && c.typ == 'f' && n.flags&flagAltSyntax != 0
 }

@@ -92,9 +92,10 @@ func aliasPath(rec []byte) (string, bool) {
 
 // Tags of an alias record's extended data.
 const (
-	aliasTagHFSPath    = 2
-	aliasTagPOSIXPath  = 18 // relative to the volume's mount point
-	aliasTagMountPoint = 19
+	aliasTagHFSPath     = 2
+	aliasTagUnicodeName = 14
+	aliasTagPOSIXPath   = 18 // relative to the volume's mount point
+	aliasTagMountPoint  = 19
 )
 
 // aliasTag returns one tagged item of an alias record's extended data, which

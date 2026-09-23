@@ -692,6 +692,13 @@ func aliasAppName(blob []byte) (string, bool) {
 		return "", false
 	}
 	name := macRoman(blob[fn+1 : fn+1+l])
+	// The Pascal name is Mac Roman and cut to 31 bytes; the extended data
+	// has the full name in UTF-16: a character count, then the characters.
+	if u, ok := aliasTag(blob[i+4:], aliasTagUnicodeName); ok && len(u) >= 2 {
+		if n := int(binary.BigEndian.Uint16(u)); 2+2*n <= len(u) && n > 0 {
+			name = decodeUTF16BE(u[2 : 2+2*n])
+		}
+	}
 	// Script Editor names an application it can find by its display name,
 	// like the applications that ship with macOS.
 	if appInstalled(blob[i+4:], name) {
