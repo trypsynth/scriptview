@@ -1,0 +1,9 @@
+-- Decompiled from run-only bytecode: comments and original formatting are not recoverable.
+
+on run {input, parameters}
+	return input
+end run
+
+on open {a, b}
+	return a
+end open

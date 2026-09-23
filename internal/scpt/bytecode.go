@@ -241,6 +241,11 @@ func (dc *decompState) handlerFrom(v fasValue) (handlerCode, bool) {
 		if len(p.items) >= 2 {
 			if names, ok := p.items[1].(*fasBlock); ok {
 				h.params = names.items
+				if _, event := h.name.(fasCode); event {
+					// An event handler's direct parameter is a bare name;
+					// a list of names is a pattern: on run {input, parameters}.
+					h.pattern, h.params, h.hasPattern = stringsOf(names.items), nil, true
+				}
 			}
 		}
 	case string:
