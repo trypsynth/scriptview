@@ -123,6 +123,23 @@ func (b *bcBuilder) keyRef(v fasValue) int16 {
 	return b.nameRef(b.src.fasString(v))
 }
 
+// constantList returns the items of a list literal that the compiler stored
+// as a value: block4{count, block0{items…}}.
+func constantList(x *fasBlock) ([]fasValue, bool) {
+	if x.kind != 4 || len(x.items) != 2 {
+		return nil, false
+	}
+	n, ok := x.items[0].(int)
+	if ok && n == 0 && x.items[1] == nil {
+		return []fasValue{}, true
+	}
+	items, ok2 := x.items[1].(*fasBlock)
+	if !ok || !ok2 || items.kind != 0 || len(items.items) < n {
+		return nil, false
+	}
+	return items.items[:n], true
+}
+
 // literal builds an expression node for a literal value.
 func (b *bcBuilder) literal(v fasValue) int16 {
 	switch x := v.(type) {
@@ -176,6 +193,9 @@ func (b *bcBuilder) literal(v fasValue) int16 {
 	case nil:
 		return b.node('m', b.termRef(fasCode{kind: osKindConstant, enum: "enum", code: "msng"}))
 	case *fasBlock:
+		if items, ok := constantList(x); ok {
+			return b.literal(items)
+		}
 		if id, ok := b.specBlock(x); ok {
 			return id
 		}
@@ -208,6 +228,15 @@ func (bh *bcHandler) lit(i int) fasValue {
 		return bh.h.literals[i]
 	}
 	return nil
+}
+
+// varRef returns a name reference for variable i, which is a term when the
+// variable's name spells one.
+func (bh *bcHandler) varRef(i int) int16 {
+	if c, ok := bh.h.varTerms[i]; ok {
+		return bh.b.termRef(c)
+	}
+	return bh.b.nameRef(bh.varName(i))
 }
 
 func (bh *bcHandler) varName(i int) string {
@@ -294,7 +323,7 @@ func (bh *bcHandler) run(lo, hi int, stack []stackVal) ([]int16, []stackVal, err
 		case "PushGlobal", "PushGlobalExtended":
 			push(b.literal(bh.lit(in.args[len(in.args)-1])))
 		case "PushVariable", "PushVariableExtended":
-			push(b.node('o', b.nameRef(bh.varName(in.args[len(in.args)-1]))))
+			push(b.node('o', bh.varRef(in.args[len(in.args)-1])))
 		case "PushParentVariable", "PopParentVariable":
 			// Operands: scope level and index into that script object's names.
 			name := bh.parentName(in.args[0], in.args[1])
@@ -431,14 +460,7 @@ func (bh *bcHandler) run(lo, hi int, stack []stackVal) ([]int16, []stackVal, err
 			if err != nil {
 				return out, stack, err
 			}
-			name := bh.varName(in.args[0])
-			var key int16
-			if name == "" {
-				key = b.termRef(fasCode{kind: osKindCode, code: "pare"})
-			} else {
-				key = b.nameRef(name)
-			}
-			emit(b.node('j', key, v.id))
+			emit(b.node('j', bh.varRef(in.args[0]), v.id))
 			stack = append(stack, stackVal{id: v.id, assigned: true, count: -1})
 		case "DefineProcedure":
 			blk, ok := bh.lit(in.args[0]).(*fasBlock)
@@ -583,7 +605,7 @@ func (bh *bcHandler) run(lo, hi int, stack []stackVal) ([]int16, []stackVal, err
 			if strings.HasPrefix(name, "PopGlobal") {
 				target = b.literal(bh.lit(in.args[len(in.args)-1]))
 			} else {
-				target = b.node('o', b.nameRef(bh.varName(in.args[len(in.args)-1])))
+				target = b.node('o', bh.varRef(in.args[len(in.args)-1]))
 			}
 			if v.scriptDef {
 				emit(v.id) // script name … end script

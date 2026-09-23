@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"encoding/binary"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -399,7 +400,7 @@ func loadDicts(tsv string) (map[string]*dict, map[string]string) {
 			d = newDict()
 			out[f[0]] = d
 		}
-		code, name := f[2], f[3]
+		code, name := normalizeCode(f[2]), f[3]
 		switch f[1] {
 		case "c":
 			d.classes[code] = name
@@ -481,6 +482,36 @@ func fourCC(b []byte) string {
 }
 
 // isFourCC reports whether b is made of printable Mac Roman / ASCII bytes.
+// normalizeCode spells each four-byte part of a dictionary code the way
+// fourCC spells codes read from scripts, so codes with control bytes (such
+// as "ks$\x00", return key) match.
+func normalizeCode(code string) string {
+	parts := strings.Split(code, "/")
+	for i, p := range parts {
+		if b, ok := macRomanBytes(p); ok && len(b) == 4 {
+			parts[i] = fourCC(b)
+		}
+	}
+	return strings.Join(parts, "/")
+}
+
+// macRomanBytes encodes s as Mac Roman.
+func macRomanBytes(s string) ([]byte, bool) {
+	var out []byte
+	for _, r := range s {
+		if r < 0x80 {
+			out = append(out, byte(r))
+			continue
+		}
+		i := slices.Index(macRomanHigh, r)
+		if i < 0 {
+			return nil, false
+		}
+		out = append(out, byte(0x80+i))
+	}
+	return out, true
+}
+
 func isFourCC(b []byte) bool {
 	for _, c := range b {
 		if c < 0x20 || c == 0x7f {

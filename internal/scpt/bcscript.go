@@ -101,9 +101,38 @@ func (b *bcBuilder) scriptItems(v fasValue, top bool) ([]int16, error) {
 		items = append(items, runBody...)
 	}
 	if len(uses) > 0 {
-		items = append(append(uses, b.node('l')), items...)
+		if !b.usesAdditions(uses) && b.callsAdditions() {
+			// Standard Additions commands compile only before a `use` that
+			// leaves them out, so these came last.
+			items = append(append(items, b.node('l')), uses...)
+		} else {
+			items = append(append(uses, b.node('l')), items...)
+		}
 	}
 	return items, nil
+}
+
+// usesAdditions reports whether use statements include `use scripting additions`.
+func (b *bcBuilder) usesAdditions(uses []int16) bool {
+	for _, u := range uses {
+		x := b.out.nodes[child0(b.out.nodes[u])]
+		if t, ok := b.out.nodes[child(x, 1)]; ok && t.typ == '2' && b.out.osCode[child0(t)] == "osax" {
+			return true
+		}
+	}
+	return false
+}
+
+// callsAdditions reports whether the script calls a Standard Additions command.
+func (b *bcBuilder) callsAdditions() bool {
+	for _, h := range b.src.allHandlers() {
+		for _, lit := range h.literals {
+			if c, ok := lit.(fasCode); ok && c.kind == osKindEvent && dicts[""].events[c.code] != "" {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // handlerBody decompiles a handler's code into statements.
@@ -129,7 +158,11 @@ func (b *bcBuilder) handlerDef(h handlerCode, blk *fasBlock) (int16, error) {
 	body := b.node('k', b.cons(stmts))
 	var params []int16
 	for _, p := range h.params {
-		params = append(params, b.node('o', b.nameRef(p)))
+		if name, ok := p.(string); ok {
+			params = append(params, b.node('o', b.nameRef(name)))
+		} else {
+			params = append(params, b.literal(p))
+		}
 	}
 	nameRef := b.keyRef(h.name)
 	var sig int16

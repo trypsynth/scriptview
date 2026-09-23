@@ -116,7 +116,13 @@ func (dc *decompState) commandArgs(n nodeRec) string {
 		}
 	}
 	var given, with, without []string
-	for _, cell := range dc.cells(child(n, 2)) {
+	cells := dc.cells(child(n, 2))
+	hasOf := false
+	cmdParts := map[int]string{} // part index → its parameter label
+	for _, cell := range cells {
+		hasOf = hasOf || dc.paramLabel(ev, cell[0]) == "of"
+	}
+	for _, cell := range cells {
 		label := dc.paramLabel(ev, cell[0])
 		if _, user := dc.refName[cell[0]]; user && dc.boolLit(cell[1]) == "" {
 			// A user-defined label on a command handler: `given label:value`.
@@ -140,7 +146,14 @@ func (dc *decompState) commandArgs(n nodeRec) string {
 		case "false":
 			without = append(without, label)
 		default:
-			parts = append(parts, label+" "+dc.expr(cell[1]))
+			value := dc.expr(cell[1])
+			if hasOf && dc.isBareOfRef(cell[1]) {
+				value = "(" + value + ")" // offset of x in (item 1 of y)
+			}
+			if dc.isCommand(cell[1]) {
+				cmdParts[len(parts)] = label
+			}
+			parts = append(parts, label+" "+value)
 		}
 	}
 	// Boolean parameters merge: `with a and b without c`.
@@ -153,7 +166,22 @@ func (dc *decompState) commandArgs(n nodeRec) string {
 	if len(given) > 0 {
 		parts = append(parts, "given "+strings.Join(given, ", "))
 	}
+	for i, label := range cmdParts {
+		if i < len(parts)-1 { // default location (path to …) without invisibles
+			parts[i] = label + " (" + strings.TrimPrefix(parts[i], label+" ") + ")"
+		}
+	}
 	return strings.Join(parts, " ")
+}
+
+// isBareOfRef reports whether id is `x of y`, or a coercion of one, with no
+// parentheses: inside `offset of … in …` its `of` would bind to the command.
+func (dc *decompState) isBareOfRef(id int16) bool {
+	v, ok := dc.nodes[id]
+	if ok && v.typ == 'c' {
+		v, ok = dc.nodes[child0(v)]
+	}
+	return ok && v.typ == 'n' && v.flags&flagPossessive == 0
 }
 
 // interleaved renders an Objective-C style handler name such as

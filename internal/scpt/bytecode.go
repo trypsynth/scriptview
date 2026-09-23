@@ -162,10 +162,11 @@ func (dc *decompState) decodeValue(ref int16, depth int) fasValue {
 // handlerCode is one handler's (or the implicit run handler's) bytecode and
 // the tables its instructions index into.
 type handlerCode struct {
-	name     fasValue // identifier string or fasCode event
-	params   []string
-	pattern  []string // a list-pattern direct parameter: on run {a, b}
+	name     fasValue   // identifier string or fasCode event
+	params   []fasValue // names, or terms for names that spell one (on f(key))
+	pattern  []string   // a list-pattern direct parameter: on run {a, b}
 	vars     []string
+	varTerms map[int]fasCode // variables whose names spell a term: key
 	literals []fasValue
 	code     []byte
 }
@@ -216,6 +217,16 @@ func (dc *decompState) handlerFrom(v fasValue) (handlerCode, bool) {
 	}
 	h := handlerCode{name: b.items[0]}
 	h.vars = stringsOf(b.items[4])
+	if names, ok := b.items[4].([]fasValue); ok {
+		for i, v := range names {
+			if c, ok := v.(fasCode); ok {
+				if h.varTerms == nil {
+					h.varTerms = map[int]fasCode{}
+				}
+				h.varTerms[i] = c
+			}
+		}
+	}
 	if lits, ok := b.items[5].([]fasValue); ok {
 		h.literals = lits
 	}
@@ -228,11 +239,11 @@ func (dc *decompState) handlerFrom(v fasValue) (handlerCode, bool) {
 	case *fasBlock:
 		if len(p.items) >= 2 {
 			if names, ok := p.items[1].(*fasBlock); ok {
-				h.params = stringsOf(names.items)
+				h.params = names.items
 			}
 		}
 	case string:
-		h.params = []string{p}
+		h.params = []fasValue{p}
 	case []fasValue:
 		// A pattern parameter: on run {input, parameters}.
 		h.pattern = stringsOf(p)
@@ -383,7 +394,11 @@ func Disassemble(f *File) string {
 	for _, h := range dc.allHandlers() {
 		fmt.Fprintf(&sb, "handler %s", dc.fasString(h.name))
 		if len(h.params) > 0 {
-			fmt.Fprintf(&sb, "(%s)", strings.Join(h.params, ", "))
+			names := make([]string, len(h.params))
+			for i, p := range h.params {
+				names[i] = dc.fasString(p)
+			}
+			fmt.Fprintf(&sb, "(%s)", strings.Join(names, ", "))
 		}
 		fmt.Fprintf(&sb, "  vars=%v\n", h.vars)
 		prog, err := disassemble(h.code)

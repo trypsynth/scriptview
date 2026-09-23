@@ -171,7 +171,7 @@ func (bh *bcHandler) repeatStmt(pc int) (int16, int, error) {
 			if len(setup) < 3 {
 				return 0, 0, errUnsupported{top, "missing range"}
 			}
-			v := b.nameRef(bh.varName(top.args[0]))
+			v := bh.varRef(top.args[0])
 			children := []int16{body, v, setup[0].id, setup[1].id}
 			if setup[2].count != 1 {
 				children = append(children, setup[2].id)
@@ -181,7 +181,7 @@ func (bh *bcHandler) repeatStmt(pc int) (int16, int, error) {
 			if len(setup) < 1 {
 				return 0, 0, errUnsupported{top, "missing collection"}
 			}
-			v := b.nameRef(bh.varName(top.args[0]))
+			v := bh.varRef(top.args[0])
 			stmt = b.node('X', body, v, setup[0].id)
 		}
 	default:

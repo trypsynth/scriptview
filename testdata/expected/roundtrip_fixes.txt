@@ -1,0 +1,11 @@
+on f(key)
+	return key
+end f
+on g(L, s)
+	set a to offset of "x" in (item 2 of L)
+	set b to offset of ")" in (reverse of every character of s as text)
+	if s is in {"jpg", "jpeg", "png"} then return {}
+	return choose folder with prompt "Where?" default location (path to downloads folder) without invisibles
+end g
+do shell script "echo hi"
+use framework "Foundation"
