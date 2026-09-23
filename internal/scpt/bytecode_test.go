@@ -3,6 +3,7 @@ package scpt
 import (
 	"bufio"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -127,4 +128,46 @@ func TestRunOnlyGolden(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestRunOnlyRoundTrip compiles each run-only fixture's decompiled source
+// again with osacompile (macOS only) and checks that the bytecode matches.
+func TestRunOnlyRoundTrip(t *testing.T) {
+	if _, err := exec.LookPath("osacompile"); err != nil {
+		t.Skip("osacompile not available")
+	}
+	paths, _ := filepath.Glob("../../testdata/runonly/*.scpt")
+	for _, path := range paths {
+		t.Run(filepath.Base(path), func(t *testing.T) {
+			orig := mustParse(t, path)
+			src, err := DecompileBytecode(orig)
+			if err != nil {
+				t.Fatal(err)
+			}
+			dir := t.TempDir()
+			in, out := filepath.Join(dir, "src.applescript"), filepath.Join(dir, "out.scpt")
+			if err := os.WriteFile(in, []byte(src), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			if msg, err := exec.Command("osacompile", "-o", out, in).CombinedOutput(); err != nil {
+				t.Fatalf("recompile: %v\n%s", err, msg)
+			}
+			if got, want := Disassemble(mustParse(t, out)), Disassemble(orig); got != want {
+				t.Errorf("bytecode differs after a round trip\n--- source\n%s", src)
+			}
+		})
+	}
+}
+
+func mustParse(t *testing.T, path string) *File {
+	t.Helper()
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	f, err := Parse(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return f
 }
