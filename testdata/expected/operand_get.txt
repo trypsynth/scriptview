@@ -1,0 +1,11 @@
+set r to {a:1}
+set x to (a of r) + 1
+set y to (get a of r) + 1
+set z to "s" & (a of r)
+if a of r = 1 then beep
+script S
+	property option_down : false
+end script
+tell S
+	set its option_down to (1 div 2 = 0)
+end tell

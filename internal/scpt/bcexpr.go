@@ -100,6 +100,12 @@ func (bh *bcHandler) objectAlias(in instr, stack *[]stackVal) (int16, error) {
 		part = b.node('<')
 	}
 	if container.it {
+		if p := b.out.nodes[part]; kind == 0 && p.typ == 'o' {
+			// A plain name alone would be a variable: its option_down.
+			id := b.node('n', part, b.node('g'))
+			b.out.nodes[id] = nodeRec{typ: 'n', flags: flagPossessive, children: []int16{part, b.out.nodes[id].children[1]}}
+			return id, nil
+		}
 		return part, nil // implicit container: the tell target or whose's it
 	}
 	if cn := b.out.nodes[container.id]; (kind == 3 || kind == 4) && cn.typ == 'f' {

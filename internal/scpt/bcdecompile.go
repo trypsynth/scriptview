@@ -596,7 +596,9 @@ func (bh *bcHandler) run(lo, hi int, stack []stackVal) ([]int16, []stackVal, err
 			if err != nil {
 				return out, stack, err
 			}
-			push(b.node(binaryNodeType[name], l.id, r.id))
+			// Operators evaluate references themselves, so a GetData on an
+			// operand is an explicit get: x div (get y's mask).
+			push(b.node(binaryNodeType[name], b.stmtValue(l), b.stmtValue(r)))
 		case "Not", "Negate":
 			v, err := pop(in)
 			if err != nil {
