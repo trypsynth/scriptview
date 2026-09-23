@@ -419,7 +419,7 @@ func (bh *bcHandler) foldDestructuring(stmts []int16) []int16 {
 				}
 				keys, targets = append(keys, key), append(targets, t)
 			}
-			if len(keys) >= 2 && j < len(stmts) && bh.stmtValue(stmts[j]) == x {
+			if len(keys) >= 2 && j < len(stmts) && bh.isValue(stmts[j], x) {
 				// set {year:y, month:m} to d
 				out = append(out, b.node('l', b.node('r', x, b.node('K', b.cells(keys, targets)))))
 				i = j
@@ -441,7 +441,7 @@ func (bh *bcHandler) foldDestructuring(stmts []int16) []int16 {
 			targets = append(targets, t)
 		}
 		// The duplicated value itself is left over as an expression statement.
-		if len(targets) < 2 || j >= len(stmts) || bh.stmtValue(stmts[j]) != x {
+		if len(targets) < 2 || j >= len(stmts) || !bh.isValue(stmts[j], x) {
 			out = append(out, stmts[i])
 			continue
 		}

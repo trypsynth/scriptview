@@ -100,7 +100,7 @@ func (bh *bcHandler) objectAlias(in instr, stack *[]stackVal) (int16, error) {
 		part = b.node('<')
 	}
 	if container.it {
-		if p := b.out.nodes[part]; kind == 0 && p.typ == 'o' {
+		if p := b.out.nodes[part]; kind == 0 && (p.typ == 'o' || p.typ == '1' && isClassOnly(b.out.osCode[child0(p)])) {
 			// A plain name alone would be a variable: its option_down.
 			id := b.node('n', part, b.node('g'))
 			b.out.nodes[id] = nodeRec{typ: 'n', flags: flagPossessive, children: []int16{part, b.out.nodes[id].children[1]}}
@@ -263,4 +263,17 @@ func (bh *bcHandler) isObjCTarget(id int16) bool {
 		}
 	}
 	return false
+}
+
+// isClassOnly reports whether code is a class, and not a property, in
+// AppleScript's own terminology: alone it would name the class (file), so a
+// property with that code needs its.
+func isClassOnly(code string) bool {
+	for _, d := range []*dict{dicts["AppleScript"], dicts[""], builtinDict} {
+		if _, ok := d.props[code]; ok && d != builtinDict {
+			return false
+		}
+	}
+	_, class := dicts["AppleScript"].classes[code]
+	return class
 }

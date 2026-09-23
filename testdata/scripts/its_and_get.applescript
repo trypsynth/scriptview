@@ -1,0 +1,8 @@
+tell application "Finder"
+	tell window 1
+		set {x1, y1, x2, y2} to (get bounds)
+	end tell
+	tell item 1 of desktop
+		set p to POSIX path of ((its container) as alias)
+	end tell
+end tell

@@ -868,6 +868,12 @@ func isReference(n nodeRec) bool {
 
 // stmtValue returns the expression of an expression statement, looking
 // through an explicit get.
+// isValue reports whether statement stmt is the value x on its own,
+// possibly under an explicit get.
+func (bh *bcHandler) isValue(stmt, x int16) bool {
+	return child0(bh.b.out.nodes[stmt]) == x || bh.stmtValue(stmt) == x
+}
+
 func (bh *bcHandler) stmtValue(stmt int16) int16 {
 	v := child0(bh.b.out.nodes[stmt])
 	if n := bh.b.out.nodes[v]; n.typ == 'e' {

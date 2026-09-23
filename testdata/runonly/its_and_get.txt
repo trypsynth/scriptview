@@ -1,0 +1,10 @@
+-- Decompiled from run-only bytecode: comments and original formatting are not recoverable.
+
+tell application "Finder"
+	tell window 1
+		set {x1, y1, x2, y2} to get bounds
+	end tell
+	tell item 1 of desktop
+		set p to POSIX path of (container as alias)
+	end tell
+end tell
