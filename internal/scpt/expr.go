@@ -222,6 +222,13 @@ func (dc *decompState) hasArgs(id int16) bool {
 	return child(n, 1) > 0 || child(n, 2) > 0
 }
 
+// isTargetedCall reports whether id is a handler call, which binds to the
+// nearest `'s` target.
+func (dc *decompState) isTargetedCall(id int16) bool {
+	n, ok := dc.nodes[dc.unwrap(id)]
+	return ok && n.typ == 'I' && !dc.isBuiltin(child0(n))
+}
+
 // isBareOfRef reports whether id is `x of y`, or a coercion of one, with no
 // parentheses: inside `offset of … in …` its `of` would bind to the command.
 func (dc *decompState) isBareOfRef(id int16) bool {
@@ -770,8 +777,8 @@ func (dc *decompState) expr(id int16) string {
 			dc.inMy = false
 			container := dc.expr(n.children[1])
 			dc.inMy = inMy
-			if c, ok := dc.nodes[n.children[1]]; ok && (c.typ == 'c' || binOps[c.typ].tok != "") {
-				container = "(" + container + ")" // (a & b)'s length
+			if c, ok := dc.nodes[n.children[1]]; ok && (c.typ == 'c' || binOps[c.typ].tok != "" || dc.isOfRef(n.children[1]) && c.flags&flagPossessive == 0 && dc.isTargetedCall(n.children[0])) {
+				container = "(" + container + ")" // (a & b)'s length, (class "X" of y)'s f()
 			} else if ok && !inMy && c.typ != 'l' && dc.endsInInterleavedCall(n.children[1]) {
 				container = "(" + container + ")" // (x's foo:y)'s bar
 			}

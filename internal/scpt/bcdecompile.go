@@ -209,6 +209,22 @@ type bcHandler struct {
 	h     handlerCode
 	prog  []instr
 	index map[int]int // offset → instruction index
+	// blankTails marks StoreResult, GetResult pairs already turned into a
+	// trailing blank line, so an enclosing block doesn't count them again.
+	blankTails map[int]bool
+}
+
+// blankTail reports whether instructions j-2 and j-1 are an unclaimed
+// StoreResult, GetResult pair, and claims it.
+func (bh *bcHandler) blankTail(j int) bool {
+	if j < 2 || bh.prog[j-1].name != "GetResult" || bh.prog[j-2].name != "StoreResult" || bh.blankTails[j-2] {
+		return false
+	}
+	if bh.blankTails == nil {
+		bh.blankTails = map[int]bool{}
+	}
+	bh.blankTails[j-2] = true
+	return true
 }
 
 // stackVal is an operand-stack entry: an expression node, or a marker.
@@ -299,7 +315,7 @@ func (bh *bcHandler) stmts(lo, hi int) ([]int16, error) {
 	out = bh.foldDestructuring(out)
 	// A blank line or comment after a block's last statement compiles to
 	// StoreResult, GetResult at the block's end.
-	if j, ok := bh.index[hi]; ok && j >= 2 && bh.index[lo] <= j-2 && bh.prog[j-1].name == "GetResult" && bh.prog[j-2].name == "StoreResult" {
+	if j, ok := bh.index[hi]; ok && j >= 2 && bh.index[lo] <= j-2 && bh.blankTail(j) {
 		out = append(out, bh.b.node('l'))
 	}
 	return out, nil
@@ -605,6 +621,10 @@ func (bh *bcHandler) run(lo, hi int, stack []stackVal) ([]int16, []stackVal, err
 				// {name, artist} of current track: one container, kept on
 				// the stack with Dup and GCSwap.
 				push(b.node('n', b.node('J', b.cons(parts)), container))
+				break
+			}
+			if name == "MakeList" {
+				push(b.node('v', b.cons(items))) // written with brackets: ["a"]
 				break
 			}
 			push(b.node('J', b.cons(items)))

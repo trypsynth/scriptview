@@ -201,7 +201,7 @@ func (b *bcBuilder) handlerBody(h handlerCode) ([]int16, error) {
 	}
 	bh.index[len(h.code)] = len(prog)
 	stmts, err := bh.stmts(0, len(h.code))
-	if n := len(prog); err == nil && n >= 3 && prog[n-3].name == "StoreResult" && prog[n-2].name == "GetResult" && prog[n-1].name == "Return" {
+	if n := len(prog); err == nil && n >= 3 && prog[n-1].name == "Return" && bh.blankTail(n-1) {
 		// A blank line (or comment) after the last statement compiles to
 		// this tail instead of a bare Return.
 		stmts = append(stmts, b.node('l'))
