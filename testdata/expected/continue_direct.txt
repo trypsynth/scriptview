@@ -1,0 +1,6 @@
+on path to thing from domain : user domain
+	continue path to thing from domain
+end path to
+on beep n
+	continue beep n
+end beep

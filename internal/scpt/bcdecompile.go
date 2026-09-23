@@ -454,7 +454,13 @@ func (bh *bcHandler) run(lo, hi int, stack []stackVal) ([]int16, []stackVal, err
 		case "PushNext":
 			stack = append(stack, stackVal{next: true, count: -1})
 		case "Continue", "PositionalContinue":
-			// [target, args…, count, PushNext, PushIt] → continue handler(…)
+			// [target, args…, count, PushNext, PushIt] → continue handler(…);
+			// a direct parameter takes PushIt's place.
+			var direct *stackVal
+			if n := len(stack); n >= 2 && stack[n-2].next && !stack[n-1].it && !stack[n-1].next {
+				direct = &stack[n-1]
+				stack = stack[:n-1]
+			}
 			for len(stack) > 0 && (stack[len(stack)-1].it || stack[len(stack)-1].next) {
 				stack = stack[:len(stack)-1]
 			}
@@ -471,7 +477,10 @@ func (bh *bcHandler) run(lo, hi int, stack []stackVal) ([]int16, []stackVal, err
 				return out, stack, err
 			}
 			if cn := b.out.nodes[call]; cn.typ == 'I' && len(cn.children) > 1 {
-				if d := b.out.nodes[cn.children[1]]; d.typ == 'f' {
+				if d := b.out.nodes[cn.children[1]]; direct != nil {
+					cn.children[1] = direct.id
+					b.out.nodes[call] = cn
+				} else if d.typ == 'f' {
 					cn.children[1] = b.ref() // the implicit `me` target
 					b.out.nodes[call] = cn
 				}
@@ -583,6 +592,14 @@ func (bh *bcHandler) run(lo, hi int, stack []stackVal) ([]int16, []stackVal, err
 			} else {
 				emit(b.node('r', v.id, target))
 			}
+		case "MatchLiteral":
+			// A literal in a destructuring pattern: set {a, 5} to x.
+			v, err := pop(in)
+			if err != nil {
+				return out, stack, err
+			}
+			stack = append(stack, stackVal{id: v.id, assigned: true, count: -1})
+			emit(b.node('r', v.id, b.literal(bh.lit(in.args[0]))))
 		case "Clone":
 			v, err := pop(in)
 			if err != nil {

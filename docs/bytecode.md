@@ -43,6 +43,7 @@ Some instructions we had wrong at first:
 - `PopVariable`, `PopGlobal` and `SetData` store the top of the stack without removing it. The compiler follows them with a `Pop` when it doesn't need the value.
 - `DefineProperty`, `DefineProcedure` and `DefineActor` each take a word.
 - `HandleError` takes two words: literal indexes for the error variable and for the labeled parameter bindings.
+- `MatchLiteral` takes one word, a literal index. It checks one slot of a list pattern that holds a literal instead of a variable, as in `set {a, 5} to x`.
 
 ## Commands
 
@@ -52,7 +53,7 @@ A command call pushes its arguments, then runs `MessageSend` with the event's li
 direct parameter (or PushIt), then for each labeled parameter: key, value, then the count
 ```
 
-A user handler call uses `PositionalMessageSend` with the handler name as a literal and the arguments on the stack. `Continue` and `PositionalContinue` do the same for `continue foo()`, which passes the call on to the parent script.
+A user handler call uses `PositionalMessageSend` with the handler name as a literal and the arguments on the stack. `Continue` and `PositionalContinue` do the same for `continue foo()`, which passes the call on to the parent script. Their stack is laid out differently: the target and the labeled parameters come first, then `PushNext`, then the direct parameter (or `PushIt` when there is none).
 
 ## References
 

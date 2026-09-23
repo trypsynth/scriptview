@@ -300,7 +300,7 @@ var opWords = map[string]int{
 	"MessageSend": 1, "PositionalMessageSend": 1, "Continue": 1, "PositionalContinue": 1,
 	"Tell": 1, "Consider": 1, "ErrorHandler": 1, "EndErrorHandler": 1, "HandleError": 2,
 	"PushParentVariable": 2, "PopParentVariable": 2, "DefineActor": 1, "DefineProcedure": 1, "DefineProperty": 1,
-	"RepeatInRange": 1, "RepeatInCollection": 1, "BeginTransaction": 1,
+	"RepeatInRange": 1, "RepeatInCollection": 1, "BeginTransaction": 1, "MatchLiteral": 1,
 }
 
 // instr is one decoded instruction.
