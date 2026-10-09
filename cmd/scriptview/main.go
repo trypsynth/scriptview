@@ -8,7 +8,9 @@ import (
 	"github.com/trypsynth/scriptview/internal/scpt"
 )
 
-const helpText = `Usage: scriptview <command> <file.scpt | bundle.scptd | applet.app>
+const helpText = `Usage: scriptview [command] <file.scpt | bundle.scptd | applet.app>
+
+With no command, scriptview decompiles the file.
 
 Commands:
   strings     print string literals found in the bytecode
@@ -21,22 +23,31 @@ Commands:
   disasm      print the compiled bytecode as annotated assembly
   bytecode    decompile from the bytecode alone (as for run-only scripts)
   version     print the version
+  help        print this help
 `
 
 // version is set at build time for releases.
 var version = "dev"
 
 func main() {
-	if len(os.Args) == 2 && (os.Args[1] == "version" || os.Args[1] == "--version") {
-		fmt.Println("scriptview", version)
-		return
+	args := os.Args[1:]
+	if len(args) == 1 {
+		switch args[0] {
+		case "version", "--version", "-v":
+			fmt.Println("scriptview", version)
+			return
+		case "help", "--help", "-h":
+			fmt.Print(helpText)
+			return
+		}
+		args = []string{"decompile", args[0]}
 	}
-	if len(os.Args) != 3 {
+	if len(args) != 2 {
 		fmt.Fprint(os.Stderr, helpText)
 		os.Exit(2)
 	}
 
-	cmd, path := os.Args[1], os.Args[2]
+	cmd, path := args[0], args[1]
 
 	switch cmd {
 	case "strings", "idents", "ints", "handlers", "decompile", "dump", "tree", "disasm", "bytecode":

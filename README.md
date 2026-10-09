@@ -17,8 +17,10 @@ go install github.com/trypsynth/scriptview/cmd/scriptview@latest
 ## Use
 
 ```sh
-scriptview decompile MyScript.scpt
+scriptview MyScript.scpt
 ```
+
+This prints the script's source. It's the same as `scriptview decompile MyScript.scpt`.
 
 You can also give it a script bundle (`.scptd`) or an applet (`.app`). scriptview finds the compiled script inside.
 
