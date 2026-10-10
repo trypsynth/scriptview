@@ -57,9 +57,19 @@ A run-only script has no source code in it, only bytecode. scriptview decompiles
 - Comments.
 - Line breaks (`¬`) and other formatting choices.
 - Some choices of words, for example `is equal to` compared with `=`.
-- `global` declarations and `using terms from` blocks.
+- Where a `using terms from` block ends, and where `global` and `use` statements were.
 
 scriptview adds a comment at the top of the output to tell you that it decompiled a run-only script.
+
+To test this, we compile the decompiled source again and compare the bytecode with the original. On the GitHub scripts, about 80% of the older set and 90% of the newer set come back identical.
+
+## Limitations
+
+- Terms from apps that don't ship with macOS print as raw codes, such as `«class pURL»`, unless the app is installed and you're on a Mac.
+- Run-only scripts lose their comments and formatting (see above).
+- A value that was worked out when the script was compiled can't be turned back into the code that made it. For example, `property lib : load script …` comes out as the loaded script itself.
+- Old Japanese scripts store their text in Shift JIS, which scriptview doesn't decode yet, so Japanese names and comments come out garbled.
+- AppleScript 1.0 scripts (1993 and 1994) use a table of built-in terms that we rebuilt by hand. A term we haven't seen yet shows up as a `<ref>` placeholder. If you find one, please open an issue.
 
 ## How it works
 
