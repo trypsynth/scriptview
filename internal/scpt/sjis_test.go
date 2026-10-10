@@ -4,10 +4,10 @@ import "testing"
 
 func TestDecodeShiftJIS(t *testing.T) {
 	for in, want := range map[string]string{
-		"\x82\xa0\x82\xa2": "あい",
+		"\x82\xa0\x82\xa2":        "あい",
 		"\x83t\x83@\x83C\x83\x8b": "ファイル",
-		"\x8a\xbf\x8e\x9a Talk7": "漢字 Talk7",
-		"\xb1\xb2": "ｱｲ", // half-width katakana
+		"\x8a\xbf\x8e\x9a Talk7":  "漢字 Talk7",
+		"\xb1\xb2":                "ｱｲ", // half-width katakana
 	} {
 		got, ok := decodeShiftJIS([]byte(in))
 		if !ok || got != want {
