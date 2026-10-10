@@ -285,6 +285,7 @@ func parseRecords(body []byte, b *builder) error {
 	if err != nil {
 		return err
 	}
+	b.dc.shiftJIS = looksJapanese(legacyTexts(objs))
 	for _, o := range objs {
 		b.dc.objects[o.ref] = o
 		switch o.typ {
@@ -313,7 +314,7 @@ func parseRecords(body []byte, b *builder) error {
 		case objString:
 			if len(o.data) >= 2 {
 				if tl := int(binary.BigEndian.Uint16(o.data)); 2+tl <= len(o.data) {
-					b.dc.comments[o.ref] = macRoman(o.data[2 : 2+tl])
+					b.dc.comments[o.ref] = b.dc.legacyText(o.data[2 : 2+tl])
 				}
 			}
 		case objDataBlockRaw:
@@ -322,7 +323,7 @@ func parseRecords(body []byte, b *builder) error {
 			b.osType(o.ref, o.kind, o.data)
 		case objUserID:
 			if o.kind == identTypeMarker {
-				b.ident(o.ref, identNames(o.data))
+				b.ident(o.ref, b.dc.identNames(o.data))
 			}
 		case objDataBlock, objLongDataBlock:
 			b.blob(o.ref, o.kind, o.data)
@@ -338,23 +339,6 @@ func parseRecords(body []byte, b *builder) error {
 
 // identNames decodes a 0x0b identifier payload: (len(2), name)… — typically a
 // lowercase form followed by the original spelling.
-func identNames(data []byte) []string {
-	var names []string
-	for i := 0; i+2 <= len(data); {
-		n := int(binary.BigEndian.Uint16(data[i:]))
-		i += 2
-		if i+n > len(data) {
-			break
-		}
-		if raw := data[i : i+n]; utf8.Valid(raw) {
-			names = append(names, string(raw))
-		} else {
-			names = append(names, macRoman(raw))
-		}
-		i += n
-	}
-	return names
-}
 
 // scanRecords is the legacy tolerant scanner: it walks the body byte by byte,
 // decoding anything that looks like a known record.
@@ -810,4 +794,31 @@ func readComment(r *reader) (int16, string, bool) {
 	text := string(b[6 : 6+tl])
 	r.pos += 4 + n
 	return id, text, true
+}
+
+// legacyTexts returns the byte strings that classic Mac OS stored in the
+// script system's encoding: Mac Roman strings and identifier names.
+func legacyTexts(objs []*object) [][]byte {
+	var out [][]byte
+	for _, o := range objs {
+		switch {
+		case o.typ == objString && len(o.data) >= 2:
+			if n := int(binary.BigEndian.Uint16(o.data)); 2+n <= len(o.data) {
+				out = append(out, o.data[2:2+n])
+			}
+		case o.typ == objUserID && o.kind == identTypeMarker:
+			for i := 0; i+2 <= len(o.data); {
+				n := int(binary.BigEndian.Uint16(o.data[i:]))
+				i += 2
+				if i+n > len(o.data) {
+					break
+				}
+				if raw := o.data[i : i+n]; !utf8.Valid(raw) {
+					out = append(out, raw)
+				}
+				i += n
+			}
+		}
+	}
+	return out
 }

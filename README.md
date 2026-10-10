@@ -37,7 +37,7 @@ Other commands:
 
 scriptview also reads JavaScript for Automation (JXA) scripts and `.scpt` files that hold plain text.
 
-It reads classic Mac OS scripts too, back to AppleScript 1.0 in 1993. Current macOS refuses to open many of these ("data format obsolete"). Before Mac OS X, a compiled script kept its data in the file's resource fork. scriptview finds it in the resource fork itself (on a Mac), in the `._name` file or `__MACOSX` folder that a Mac makes when it copies or zips the file, and in MacBinary (`.bin`) and BinHex (`.hqx`) files.
+It reads classic Mac OS scripts too, back to AppleScript 1.0 in 1993, including Japanese ones. Current macOS refuses to open many of these ("data format obsolete"). Before Mac OS X, a compiled script kept its data in the file's resource fork. scriptview finds it in the resource fork itself (on a Mac), in the `._name` file or `__MACOSX` folder that a Mac makes when it copies or zips the file, and in MacBinary (`.bin`) and BinHex (`.hqx`) files.
 
 ## How well it works
 
@@ -68,7 +68,6 @@ To test this, we compile the decompiled source again and compare the bytecode wi
 - Terms from apps that don't ship with macOS print as raw codes, such as `«class pURL»`, unless the app is installed and you're on a Mac.
 - Run-only scripts lose their comments and formatting (see above).
 - A value that was worked out when the script was compiled can't be turned back into the code that made it. For example, `property lib : load script …` comes out as the loaded script itself.
-- Old Japanese scripts store their text in Shift JIS, which scriptview doesn't decode yet, so Japanese names and comments come out garbled.
 - AppleScript 1.0 scripts (1993 and 1994) use a table of built-in terms that we rebuilt by hand. A term we haven't seen yet shows up as a `<ref>` placeholder. If you find one, please open an issue.
 
 ## How it works

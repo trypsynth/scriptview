@@ -110,4 +110,4 @@ Scripts from 1993 and 1994 (FASD versions 0.98 and 1.00) use the same records, w
 
 Current macOS refuses these files with "data format obsolete" (-1758), and its runtime no longer has the symbol table. We rebuilt the part of the table that the scripts we found use, from how each symbol is used. It's in `internal/scpt/legacy.go`. A script that uses a symbol we haven't seen prints it as a `<ref>` placeholder.
 
-Old Japanese scripts store their identifiers and comments in Shift JIS rather than Mac Roman. We don't decode those yet, so Japanese text comes out garbled.
+Classic Mac OS kept text in the encoding of the script system it ran: Mac Roman for Western languages, and a Shift JIS variant for Japanese. A compiled script doesn't say which one it used. scriptview reads a file as Japanese when every one of its old byte strings with non-ASCII bytes decodes as Shift JIS, and together they hold several kana or kanji. Western text almost never passes: a Mac Roman accented letter like `é` is a Shift JIS lead byte, and the byte after it rarely makes a valid pair. The Shift JIS table comes from macOS's CP932 converter, through `tools/gensjis`.

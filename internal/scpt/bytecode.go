@@ -101,7 +101,7 @@ func (dc *decompState) decodeValue(ref int16, depth int) fasValue {
 			return math.Float64frombits(binary.BigEndian.Uint64(o.data))
 		}
 	case objUserID:
-		if names := identNames(o.data); len(names) > 0 {
+		if names := dc.identNames(o.data); len(names) > 0 {
 			return bestName(names)
 		}
 	case objCodeID:

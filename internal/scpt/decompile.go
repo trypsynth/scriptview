@@ -50,6 +50,8 @@ type decompState struct {
 	// repeatWith counts enclosing `repeat with` loops, inside which Script
 	// Editor parenthesizes a statement's targeted call: (x's foo:y).
 	repeatWith int
+	// shiftJIS is set when the file's old byte strings are Japanese.
+	shiftJIS bool
 	// cmdLabels holds the parameter labels of the command whose arguments
 	// are being rendered; variables named like one need pipes.
 	cmdLabels map[string]bool
