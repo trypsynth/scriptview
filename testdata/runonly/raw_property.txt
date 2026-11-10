@@ -4,3 +4,5 @@ tell application "Finder"
 	get every «class OTst» of its «class FCcn»
 	get its «class FCcn»
 end tell
+set a to «class pTrk» of application "Finder"
+set b to «property pTrk» of application "Finder"

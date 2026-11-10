@@ -59,6 +59,9 @@ type decompState struct {
 	// digit, and a raw property code of the tell target is written
 	// its «class x».
 	fromBytecode bool
+	// propertyRefs marks bytecode property references (MakeObjectAlias), as
+	// against constant references the compiler folded into literals.
+	propertyRefs map[int16]bool
 	// cmdLabels holds the parameter labels of the command whose arguments
 	// are being rendered; variables named like one need pipes.
 	cmdLabels map[string]bool

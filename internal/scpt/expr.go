@@ -857,6 +857,11 @@ func (dc *decompState) expr(id int16) string {
 		if n.flags&flagThe != 0 {
 			return part + " in " + container
 		}
+		if dc.propertyRefs[id] && strings.HasPrefix(part, "«class ") && dc.isAppLiteral(n.children[1]) {
+			// «class x» of application "A" compiles to a constant reference
+			// when A's dictionary is missing; «property x» stays a property.
+			part = "«property " + strings.TrimPrefix(part, "«class ")
+		}
 		return part + " of " + container
 
 	case 'r': // assignment in expression context — its value
@@ -1216,4 +1221,14 @@ func (dc *decompState) rangeBound(id, class int16) string {
 func (dc *decompState) isLabeledCall(id int16) bool {
 	n, ok := dc.nodes[id]
 	return ok && n.typ == 'I' && len(n.children) > 2 && !dc.isBuiltin(n.children[0]) && child(n, 2) != 0
+}
+
+// isAppLiteral reports whether id is an application specifier literal.
+func (dc *decompState) isAppLiteral(id int16) bool {
+	n, ok := dc.nodes[id]
+	if !ok || n.typ != 'm' {
+		return false
+	}
+	_, app := dc.appByID[child0(n)]
+	return app
 }

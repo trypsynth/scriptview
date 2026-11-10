@@ -81,7 +81,7 @@ Inside a `whose` filter, the thing being tested is a placeholder object (a kind 
 
 ## Terms without a dictionary
 
-When an app's dictionary isn't installed, its terms print as raw codes, and a raw code compiles differently depending on where it stands. `«class FCcn»` alone is a class, but the bytecode may read property `FCcn` of the tell target. Run-only output writes `its «class FCcn»` there, which compiles back to the property. `osadecompile` prints a bare `«class FCcn»` either way, so output from the syntax tree does too.
+When an app's dictionary isn't installed, its terms print as raw codes, and a raw code compiles differently depending on where it stands. `«class FCcn»` alone is a class, but the bytecode may read property `FCcn` of the tell target. Run-only output writes `its «class FCcn»` there, which compiles back to the property. With a constant container the compiler goes further: `«class pTrk» of application "iTunes"` becomes one constant reference, not a property read. Run-only output writes `«property pTrk» of application "iTunes"` when the bytecode reads the property, which AppleScript also accepts. `osadecompile` prints a bare `«class FCcn»` either way, so output from the syntax tree does too.
 
 ## Values that become statements
 

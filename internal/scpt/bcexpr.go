@@ -122,6 +122,9 @@ func (bh *bcHandler) objectAlias(in instr, stack *[]stackVal) (int16, error) {
 		return part, nil // POSIX file "/x", not … of me
 	}
 	id := b.node('n', part, container.id)
+	if kind == 0 {
+		b.out.propertyRefs[id] = true
+	}
 	if cn := b.out.nodes[container.id]; kind == 0 && cn.typ == 'f' && b.out.nodes[part].typ == 'o' {
 		b.out.nodes[id] = nodeRec{typ: 'n', flags: flagAltSyntax, children: []int16{part, container.id}} // my counter
 		return id, nil
