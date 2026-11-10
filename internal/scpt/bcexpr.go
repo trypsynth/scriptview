@@ -125,8 +125,8 @@ func (bh *bcHandler) objectAlias(in instr, stack *[]stackVal) (int16, error) {
 		}
 		return part, nil // implicit container: the tell target or whose's it
 	}
-	if cn := b.out.nodes[container.id]; (kind == 3 || kind == 4) && cn.typ == 'f' {
-		return part, nil // POSIX file "/x", not … of me
+	if cn := b.out.nodes[container.id]; (kind == 3 || kind == 4) && cn.typ == 'f' && b.out.osCode[bh.keyOf(cls.id)] == "psxf" {
+		return part, nil // POSIX file "/x", not … of me; but application (name) of me
 	}
 	id := b.node('n', part, container.id)
 	if kind == 0 {
@@ -174,7 +174,7 @@ func (bh *bcHandler) positionalCall(in instr, stack *[]stackVal) (int16, error) 
 	*stack = s[:len(s)-1]
 	ids := make([]int16, len(args))
 	for i, a := range args {
-		ids[i] = a.id
+		ids[i] = b.stmtValue(a) // an evaluated reference is an explicit get: f(get x of y)
 	}
 	call := b.node('I', b.keyRef(bh.lit(in.args[0])), b.cons(ids), b.ref())
 	if target.it {

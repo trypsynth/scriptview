@@ -83,6 +83,12 @@ Inside a `whose` filter, the thing being tested is a placeholder object (a kind 
 
 When an app's dictionary isn't installed, its terms print as raw codes, and a raw code compiles differently depending on where it stands. `«class FCcn»` alone is a class, but the bytecode may read property `FCcn` of the tell target. Run-only output writes `its «class FCcn»` there, which compiles back to the property. With a constant container the compiler goes further: `«class pTrk» of application "iTunes"` becomes one constant reference, not a property read. Run-only output writes `«property pTrk» of application "iTunes"` when the bytecode reads the property, which AppleScript also accepts. `osadecompile` prints a bare `«class FCcn»` either way, so output from the syntax tree does too.
 
+## Explicit gets
+
+`GetData` evaluates a reference. Most of the time it's invisible, but where the compiler wouldn't evaluate on its own, it's an explicit `get` in the source: `f(get name of me)`, `item 1 of (get name of every process whose …)`, `repeat with x in (get every folder of …)`. A plain `f(name of me)` passes the reference without a `GetData`.
+
+`POSIX file "/x"` with a literal path compiles with `me` as its container (`PushMe`). That `of me` isn't in the source, so the output leaves it out. Any other reference keeps it: `application (name) of me`.
+
 ## Shared containers
 
 The compiler evaluates a container once and keeps it on the stack with `Dup` and `GCSwap` when several references use it. In `x's text 1 thru text item -2`, the end of the range is an element of the range's own container, so the output leaves the container out of it: `text 1 thru text item -2 of x`. Writing it out, `text 1 thru (text item -2 of x) of x`, would evaluate `x` twice.

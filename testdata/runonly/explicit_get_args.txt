@@ -1,0 +1,18 @@
+-- Decompiled from run-only bytecode: comments and original formatting are not recoverable.
+
+use framework "Foundation"
+
+on f(x)
+	return x
+end f
+
+set a to POSIX file "/x"
+set y to "/y"
+set b to POSIX file y
+set c to application (name of me)
+set d to file "x"
+set n to current application's NSString's stringWithString:(current application's NSString's |string|())
+set m to current application's NSString's stringWithString:"a"
+set k to f(get name of me)
+set k2 to f(name of me)
+set c to application (name) of me
