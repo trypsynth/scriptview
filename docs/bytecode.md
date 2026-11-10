@@ -79,6 +79,10 @@ Inside a `whose` filter, the thing being tested is a placeholder object (a kind 
 
 `MakeComp` builds the comparisons in a filter. Kinds 0 to 8 match the order of the plain comparison opcodes (`Equal` to `Contains`), and 9, 10 and 11 are `and`, `or` and `not`. `is in` is `Contains` with the two sides swapped. There's a slot for a kind 12, but we never saw the compiler use it.
 
+## Terms without a dictionary
+
+When an app's dictionary isn't installed, its terms print as raw codes, and a raw code compiles differently depending on where it stands. `«class FCcn»` alone is a class, but the bytecode may read property `FCcn` of the tell target. Run-only output writes `its «class FCcn»` there, which compiles back to the property. `osadecompile` prints a bare `«class FCcn»` either way, so output from the syntax tree does too.
+
 ## Values that become statements
 
 A statement's value goes to `StoreResult`, which saves it as `result`. The last statement of a handler has no `StoreResult`. Its value stays on the stack for the implicit `Return` at the end. When we rebuild a block, any value left on the stack at the end is the block's last statement.

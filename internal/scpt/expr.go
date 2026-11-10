@@ -33,7 +33,7 @@ func (dc *decompState) litRef(ch int16) string {
 		return descLiteral(d)
 	}
 	if v, ok := dc.realByID[ch]; ok {
-		if dc.exactReals {
+		if dc.fromBytecode {
 			return formatReal(v)
 		}
 		return formatRealRounded(v)
@@ -807,7 +807,13 @@ func (dc *decompState) expr(id int16) string {
 		if n.flags&flagPossessive != 0 {
 			if c, ok := dc.nodes[n.children[1]]; ok && c.typ == 'g' && n.flags&flagImplicitIts != 0 {
 				if code := dc.osCode[child0(dc.nodes[n.children[0]])]; dc.className4(code) == "" {
-					return dc.expr(n.children[0]) // name: a property of the tell target
+					part := dc.expr(n.children[0])
+					if dc.fromBytecode && strings.HasPrefix(part, "«") {
+						// Alone, «class x» compiles as a class; its keeps
+						// it a property when the app's dictionary is missing.
+						return "its " + part
+					}
+					return part // name: a property of the tell target
 				}
 				return "its " + dc.expr(n.children[0]) // its file: file alone is the class
 			}

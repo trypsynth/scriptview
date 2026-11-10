@@ -1,0 +1,6 @@
+-- Decompiled from run-only bytecode: comments and original formatting are not recoverable.
+
+tell application "Finder"
+	get every «class OTst» of its «class FCcn»
+	get its «class FCcn»
+end tell
