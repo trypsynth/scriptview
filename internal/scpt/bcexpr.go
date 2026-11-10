@@ -66,8 +66,8 @@ func (bh *bcHandler) objectAlias(in instr, stack *[]stackVal) (int16, error) {
 		return 0, err
 	}
 	if container.gotten {
-		if cn := b.out.nodes[container.id]; cn.typ == 'n' || cn.typ == '1' {
-			container.id = b.node('e', container.id) // item 1 of (get selection)
+		if cn := b.out.nodes[container.id]; cn.typ == 'n' || cn.typ == '1' || cn.typ == '6' {
+			container.id = b.node('e', container.id) // item 1 of (get selection), (get x whose …)
 		}
 	}
 	var part int16
@@ -92,6 +92,13 @@ func (bh *bcHandler) objectAlias(in instr, stack *[]stackVal) (int16, error) {
 		}
 		part = b.node('5', bh.keyOf(cls.id), idx.id, b.termRef(fasCode{kind: osKindCode, code: code}))
 	case 6: // class from thru to
+		// An end that is an element of the range's own container leaves
+		// the container out: x's text 1 thru text item -2.
+		for _, end := range []*stackVal{&idx, &idx2} {
+			if en := b.out.nodes[end.id]; en.typ == 'n' && len(en.children) == 2 && en.children[1] == container.id {
+				end.id = en.children[0]
+			}
+		}
 		n := b.node('7', bh.keyOf(cls.id), idx.id, idx2.id)
 		b.out.nodes[n] = nodeRec{typ: '7', flags: flagThe, children: []int16{bh.keyOf(cls.id), idx.id, idx2.id}}
 		part = n

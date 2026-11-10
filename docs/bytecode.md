@@ -83,6 +83,12 @@ Inside a `whose` filter, the thing being tested is a placeholder object (a kind 
 
 When an app's dictionary isn't installed, its terms print as raw codes, and a raw code compiles differently depending on where it stands. `«class FCcn»` alone is a class, but the bytecode may read property `FCcn` of the tell target. Run-only output writes `its «class FCcn»` there, which compiles back to the property. With a constant container the compiler goes further: `«class pTrk» of application "iTunes"` becomes one constant reference, not a property read. Run-only output writes `«property pTrk» of application "iTunes"` when the bytecode reads the property, which AppleScript also accepts. `osadecompile` prints a bare `«class FCcn»` either way, so output from the syntax tree does too.
 
+## Shared containers
+
+The compiler evaluates a container once and keeps it on the stack with `Dup` and `GCSwap` when several references use it. In `x's text 1 thru text item -2`, the end of the range is an element of the range's own container, so the output leaves the container out of it: `text 1 thru text item -2 of x`. Writing it out, `text 1 thru (text item -2 of x) of x`, would evaluate `x` twice.
+
+A top-level variable that held a script object when the file was saved, such as `set lib to load script …`, keeps that script in the script's table. It isn't a `script` definition, so the output leaves it out.
+
 ## Values that become statements
 
 A statement's value goes to `StoreResult`, which saves it as `result`. The last statement of a handler has no `StoreResult`. Its value stays on the stack for the implicit `Return` at the end. When we rebuild a block, any value left on the stack at the end is the block's last statement.

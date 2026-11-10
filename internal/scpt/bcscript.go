@@ -93,6 +93,9 @@ func (b *bcBuilder) scriptItems(v fasValue, top bool) ([]int16, error) {
 				items = append(items, def, b.node('l'))
 				continue
 			case 15:
+				if n, ok := name.(string); ok && top && globalNames[strings.ToLower(n)] {
+					continue // a top-level variable's saved value: set BS to load script …
+				}
 				// A script object: {name, _, _, table}.
 				if len(e.items) >= 4 {
 					inner, err := b.scriptItems(e.items[3], false)

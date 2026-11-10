@@ -1,0 +1,7 @@
+-- Decompiled from run-only bytecode: comments and original formatting are not recoverable.
+
+tell application "System Events"
+	set a to item 1 of (get name of every process whose frontmost = true)
+end tell
+set p to "a/b/c"
+set w to text 1 thru text item -2 of p
