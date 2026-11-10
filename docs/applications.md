@@ -41,6 +41,7 @@ What we do:
 Apps that were renamed need care:
 
 - `System Preferences` prints as `System Settings`, and `iCal` prints as `Calendar`. macOS knows the old names.
+- `AppleScript Editor`, Script Editor's name in Mac OS X 10.6 to 10.9, gets Script Editor's terms. `osadecompile` prints it as `Script Editor` when it can find the app by its bundle ID. We print the alias's file name, `AppleScript Editor.app`, because that depends on what's installed.
 - `Address Book` usually prints as `Contacts` too. But two scripts in our tests printed `Address Book.app`. Their alias records looked the same as the others except for the file ID. Our best guess is that macOS tried the ID first, and on our Mac that ID belonged to some other file. You can't predict that without the same disk, so we don't try.
 
 ## Apps by URL

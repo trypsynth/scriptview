@@ -19,6 +19,7 @@ Codes clash all the time. Some rules we found by testing:
 - Outside of that, the kind of word decides. In a place where a property can go, a property beats a class, and a class beats a constant. In a place where a class goes, the class wins first.
 - In a spot that can only be a property, such as `x of y`, a constant is never used. `«class extn» of x` stays raw, even though Standard Additions has a constant `extensions folder` with the same code.
 - Inside one dictionary, a later definition replaces an earlier one. Parameters and AppleScript's own properties are the exception: the first one wins.
+- Classes and properties that only the old QuickDraw Graphics, Table and Macintosh Connectivity suites define stay raw: `«class ccel»`, not `cell`, and `«class prot»`, not `rotation`. AppleScript's `aeut` still lists these suites, but nothing switches them on (see Pipes below), so AppleScript never prints those names, not even at the top level. `tools/genterms` leaves them out.
 - Hidden terms and synonyms are the last choice. We only use them if nothing else names the code.
 - `use application "Finder"` makes Finder's words work in the whole script, as if everything were inside a `tell`.
 
@@ -32,6 +33,7 @@ Rules we found:
 
 - Only the innermost app counts. Inside `tell application "Finder"` inside `tell application "System Events"`, a variable named like a System Events property doesn't need pipes. This is true even when the inner app isn't installed and has no dictionary.
 - Inside a command's arguments, that command's parameter labels count too. In `display alert "a" message (|message| of r)` the variable needs pipes, because `message` is a label of `display alert`. In `display dialog (message of r)` it doesn't.
+- Inside an app's `tell` block, `type`, `specifier` and `any` need pipes (`r's |type|`), though no dictionary has a term with those names. They're value types in the app's scripting definition: the Cocoa standard suite declares parameters with `type="type"` and `type="specifier"`. Outside a `tell`, `r's type` is fine. An app with no dictionary doesn't count.
 - Standard Additions words only count when Standard Additions is loaded. A script with `use` statements but no `use scripting additions` doesn't load it.
 - Words from a few old suites don't need pipes: QuickDraw Graphics (`pixel`, `oval`, `polygon`), Table and Macintosh Connectivity. These are left over from the 1990s. AppleScript's dictionary still lists them, but nothing switches them on, so the compiler doesn't treat them as words.
 - The old Type Names suite (`point`, `fixed`, `menu`, `null`, `rotation`, `fixed point` and more) is switched on by Standard Additions. Standard Additions has an old `aete` resource next to its `.sdef`, and that `aete` names the suite `tpnm`. Inside Macintosh says that naming a standard suite in an `aete` turns on the whole suite from AppleScript's `aeut`. So these words need pipes when Standard Additions is loaded, and don't when it isn't. Without Standard Additions, `fixed point` is even a syntax error.
