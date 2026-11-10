@@ -96,7 +96,7 @@ func (dc *decompState) tellStmt(n nodeRec, depth int) []string {
 	if len(n.children) < 2 {
 		return []string{indent + "-- tell (incomplete)"}
 	}
-	target := dc.expr(n.children[1])
+	target := dc.tellTarget(n.children[1])
 	if app := dc.appOf(n.children[1]); app != "" {
 		dc.scopes = append(dc.scopes, app)
 		defer func() { dc.scopes = dc.scopes[:len(dc.scopes)-1] }()
@@ -533,8 +533,8 @@ func (dc *decompState) repeatStmt(n nodeRec, depth int) []string {
 	case 'X':
 		if len(n.children) >= 3 {
 			coll := dc.expr(n.children[2])
-			if c, ok := dc.nodes[n.children[2]]; ok && c.typ == 'e' {
-				coll = "(" + coll + ")" // repeat with x in (get …)
+			if c, ok := dc.nodes[n.children[2]]; ok && (c.typ == 'e' || c.typ == '6') {
+				coll = "(" + coll + ")" // repeat with x in (get …), (every x whose …)
 			}
 			header += " with " + dc.name(n.children[1]) + " in " + coll
 		}
@@ -566,4 +566,33 @@ func (dc *decompState) stmtExpr(id int16) string {
 		return "(" + s + ")" // (x's foo:y), (items of x whose …)
 	}
 	return s
+}
+
+// tellTarget renders a tell block's target. Script Editor parenthesizes a
+// whose filter, a command or an Objective-C style call there:
+// tell (first process whose frontmost is true), tell (make new x).
+func (dc *decompState) tellTarget(id int16) string {
+	s := dc.expr(id)
+	n, ok := dc.nodes[id]
+	if !ok {
+		return s
+	}
+	if n.typ == '6' || dc.isCommand(id) || dc.isObjCCall(id) {
+		return "(" + s + ")"
+	}
+	return s
+}
+
+// isObjCCall reports whether id is an Objective-C style call, alone or
+// through a possessive: x's foo:y.
+func (dc *decompState) isObjCCall(id int16) bool {
+	n, ok := dc.nodes[id]
+	for steps := 0; ok && n.typ == 'n' && n.flags&flagPossessive != 0 && steps < 64; steps++ {
+		n, ok = dc.nodes[child0(n)]
+	}
+	if !ok || n.typ != 'I' {
+		return false
+	}
+	_, objc := dc.interleaved(n)
+	return objc
 }

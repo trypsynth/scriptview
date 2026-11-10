@@ -32,6 +32,19 @@ func formatReal(v float64) string {
 	return s
 }
 
+// formatRealRounded prints a real as Script Editor does: like formatReal,
+// but rounded to 12 decimal places outside exponent notation (3.14159265359).
+func formatRealRounded(v float64) string {
+	if a := math.Abs(v); a != 0 && (a >= 1e4 || a <= 1e-3) {
+		return formatReal(v)
+	}
+	s := strings.TrimRight(strconv.FormatFloat(v, 'f', 12, 64), "0")
+	if strings.HasSuffix(s, ".") {
+		s += "0"
+	}
+	return s
+}
+
 // displayAppName renders an application alias's file name the way Script
 // Editor does on a stock Mac: by name for applications that ship with macOS,
 // and as the bare file name ("Foo.app") for ones it cannot find.

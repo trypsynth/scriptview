@@ -49,7 +49,7 @@ The loader reads objects depth first, in the order they are first used. So the s
 | `0f` | A descriptor: a kind byte, then raw bytes. |
 | `10` | A vector of references with no kind byte. |
 | `11` | Raw bytes. UTF-16 text and bytecode use this. |
-| `12`, `13` | Like `0f` and `11`, with a 32-bit length for large data. |
+| `12`, `13` | Like `0f` and `11`, with a 32-bit length for large data. A string over 64 KB of UTF-16 is a `13`. |
 
 A few of these need more detail.
 

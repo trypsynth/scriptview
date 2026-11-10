@@ -15,7 +15,12 @@ Script Editor adds parentheses in these places, even when the tree has no parent
 - A reference used as an element's index: `column (item i of L) of w`. Without them the `of` would apply to the whole element. Run-only output needs this rule, because only the syntax tree keeps the source's parentheses.
 - A coercion as the direct parameter of a command that has an `as` parameter: `do shell script ("x" as string)`. `osadecompile` leaves these out when an old compiler stored the coercion, but then the text compiles to the `as` parameter instead. We keep them.
 
-No parentheses go around `my x` or `my f(x)` in a command's parameters: `offset of my decPt() in x`, `offset of "," in my xValue`. In arithmetic they still do: `counter + (my add(1, 2))`.
+- A `tell` target that is a `whose` filter, a command or an Objective-C style call: `tell (first process whose frontmost is true)`, `tell (make new document)`, `tell (NSString's stringWithString:x)`.
+- A `whose` filter after `a reference to` or `repeat with x in`: `repeat with t in (every tab whose title is "a")`.
+- A command after `not`: `not (exists file "x")`. A call to one of the script's own handlers doesn't get them: `not f()`.
+- A command passed to an Objective-C style call: `x's addObject:(do shell script "ls")`. A raw `«constant …»` doesn't get them.
+
+`my x` and `my f(x)` get parentheses only next to arithmetic operators: `1 + (my i)`, `2 * (my f(1))`. Comparisons, `&`, `is in` and command parameters leave them bare: `x is not in my list`, `my f(1) is in L`, `offset of my decPt() in x`. In a range, a property stays bare and a call doesn't: `text my i thru -1`, `text (my f(1)) thru -1`.
 
 ### The `repeat with` rule
 
@@ -55,5 +60,8 @@ tell application "System Events" to if (count of processes) > 0 then ¬
 
 - `given` labels with no dictionary term print with a class name, or with an AppleScript property name such as `time`.
 - An explicit `index` stays: `window index 2`. Without it, `window 2`.
+- Inside `|pipes|`, a backslash, a bar and a tab are escaped: `|\\n|`, `|\||`, `|a\tb|`. `app` is reserved, as short for `application`.
+- Reals print with at most 12 decimal places, without trailing zeros: `3.141592653589793` prints as `3.14159265359`, and `9.99999999999999` as `10.0`. Exponent notation keeps every digit: `1.23456789012345E+15`. Run-only output keeps every digit everywhere, so that it compiles back to the same value.
+- A range stores its end as an element when the source repeats the class: `text 1 thru -5` can come back as `text 1 thru (text -5)`. The class isn't printed twice.
 - `front` and `back` are other spellings of `beginning` and `end`: `make new folder at front`. A flag on the node keeps the spelling.
 - New compilers rewrite `it's` to `its` and add a `-- Grammar Police` comment. Old scripts keep `it's`, and it prints as written.

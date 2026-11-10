@@ -324,7 +324,7 @@ func parseRecords(body []byte, b *builder) error {
 					b.dc.comments[o.ref] = b.dc.legacyText(o.data[2 : 2+tl])
 				}
 			}
-		case objDataBlockRaw:
+		case objDataBlockRaw, objLongDataBlockRaw: // text over 64 KB uses the 32-bit length
 			b.text(o.ref, decodeUTF16BE(o.data))
 		case objCodeID:
 			b.osType(o.ref, o.kind, o.data)

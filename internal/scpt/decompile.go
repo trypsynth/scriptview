@@ -54,6 +54,9 @@ type decompState struct {
 	shiftJIS bool
 	// legacy is set for AppleScript 1.0 files (FASD before 1.01).
 	legacy bool
+	// exactReals prints reals with every digit instead of Script Editor's
+	// 12 decimal places.
+	exactReals bool
 	// cmdLabels holds the parameter labels of the command whose arguments
 	// are being rendered; variables named like one need pipes.
 	cmdLabels map[string]bool

@@ -33,7 +33,10 @@ func (dc *decompState) litRef(ch int16) string {
 		return descLiteral(d)
 	}
 	if v, ok := dc.realByID[ch]; ok {
-		return formatReal(v)
+		if dc.exactReals {
+			return formatReal(v)
+		}
+		return formatRealRounded(v)
 	}
 	if app, ok := dc.appByID[ch]; ok {
 		return "application " + quoteAS(displayAppName(app))
@@ -272,8 +275,8 @@ func (dc *decompState) interleaved(n nodeRec) (string, bool) {
 		if an, ok := dc.nodes[args[i]]; ok {
 			switch an.typ {
 			case 'm':
-				if code, term := dc.osCode[child0(an)]; term && dc.boolLit(args[i]) == "" && code != "yes " && code != "no  " {
-					arg = "(" + arg + ")" // constants: (missing value), (null)
+				if code, term := dc.osCode[child0(an)]; term && dc.boolLit(args[i]) == "" && code != "yes " && code != "no  " && !strings.HasPrefix(arg, "«") {
+					arg = "(" + arg + ")" // constants: (missing value), (null), but not «constant …»
 				}
 			case '1':
 				if strings.Contains(arg, " ") && !strings.HasPrefix(arg, "«") {
@@ -281,6 +284,10 @@ func (dc *decompState) interleaved(n nodeRec) (string, bool) {
 				}
 			case 'n', '4', '5', '2', '6', '7', 'c', 'H': // references, coercions, not
 				arg = "(" + arg + ")"
+			case 'I':
+				if dc.isCommand(args[i]) {
+					arg = "(" + arg + ")" // x's addObject:(do shell script "…")
+				}
 			default:
 				if op, ok := binOps[an.typ]; ok && op.prec <= 7 { // + - and weaker
 					arg = "(" + arg + ")"
@@ -299,7 +306,7 @@ func (dc *decompState) quoteSeg(seg string) string {
 		seg = c
 	}
 	if dc.isTermWord(seg) && isValidIdent(seg) {
-		return "|" + seg + "|"
+		return pipe(seg)
 	}
 	return quoteIdent(seg)
 }
@@ -317,7 +324,7 @@ func (dc *decompState) interleavedEnd(raw string) string {
 // used as identifiers.
 var reservedWords = func() map[string]bool {
 	m := map[string]bool{}
-	for _, w := range strings.Fields(`about above after against and application around as at back
+	for _, w := range strings.Fields(`about above after against and app application around as at back
 		before beginning behind below beneath beside between but by considering contain contains
 		continue copy div does eighth else end equal equals error every exit false fifth first for
 		fourth from front get given global if ignoring in into is it its last local me middle mod my
@@ -332,9 +339,18 @@ var reservedWords = func() map[string]bool {
 // quoteIdent wraps name in |bars| when it is not a plain identifier.
 func quoteIdent(name string) string {
 	if reservedWords[strings.ToLower(name)] || !isValidIdent(name) || (name[0] >= '0' && name[0] <= '9') {
-		return "|" + name + "|"
+		return pipe(name)
 	}
 	return name
+}
+
+// pipeEscapes are the characters Script Editor escapes inside |bars|.
+var pipeEscapes = strings.NewReplacer(`\`, `\\`, `|`, `\|`, "\t", `\t`, "\n", `\n`, "\r", `\r`)
+
+// pipe wraps name in |bars|, escaping backslashes, bars and control
+// characters: |\\n|, |\||, |a\tb|.
+func pipe(name string) string {
+	return "|" + pipeEscapes.Replace(name) + "|"
 }
 
 // callArgs renders a user handler's argument list, from either a call or a
@@ -467,11 +483,7 @@ func (dc *decompState) isCommand(id int16) bool {
 // operand renders id as an expression, parenthesizing builtin commands.
 func (dc *decompState) operand(id int16) string {
 	if dc.isCommand(id) {
-		s := dc.expr(id)
-		if dc.isMyCall(id) && strings.HasSuffix(s, ")") {
-			return s // offset of my decPt() in x
-		}
-		return "(" + s + ")"
+		return "(" + dc.expr(id) + ")"
 	}
 	return dc.expr(id)
 }
@@ -623,7 +635,11 @@ func (dc *decompState) expr(id int16) string {
 			if dc.isMyCall(n.children[0]) {
 				container = dc.expr(n.children[0]) // x is in my list
 			}
-			return dc.sub(n.children[1], op.prec) + " is in " + container
+			item := dc.sub(n.children[1], op.prec)
+			if dc.isMyCall(n.children[1]) {
+				item = dc.expr(n.children[1]) // my f(x) is in L
+			}
+			return item + " is in " + container
 		}
 		if (n.typ == '=' || n.typ == '>') && n.flags == flagPossessive {
 			// `x is running` compiles to `running of x = true`.
@@ -734,11 +750,18 @@ func (dc *decompState) expr(id int16) string {
 				if dc.isMyCall(a) {
 					left = dc.expr(a)
 				}
-				return left + " " + verb + " " + dc.sub(b, p+1)
+				right := dc.sub(b, p+1)
+				if dc.isMyCall(b) {
+					right = dc.expr(b) // x is not in my list
+				}
+				return left + " " + verb + " " + right
 			}
 		}
-		if dc.isMyCall(child(n, 0)) || dc.isCommand(child(n, 0)) {
-			return "not " + dc.expr(child(n, 0)) // not exists x
+		if dc.isMyCall(child(n, 0)) {
+			return "not " + dc.expr(child(n, 0)) // not my f()
+		}
+		if dc.isCommand(child(n, 0)) {
+			return "not (" + dc.expr(child(n, 0)) + ")" // not (exists x)
 		}
 		return "not " + dc.sub(child(n, 0), precNot)
 
@@ -908,7 +931,7 @@ func (dc *decompState) expr(id int16) string {
 		if n.flags&flagAltSyntax != 0 {
 			thru = " through "
 		}
-		return cls + " " + dc.sub(n.children[1], precAtom) + thru + dc.sub(n.children[2], precAtom)
+		return cls + " " + dc.rangeBound(n.children[1], n.children[0]) + thru + dc.rangeBound(n.children[2], n.children[0])
 
 	case ';':
 		if n.flags&flagThe != 0 {
@@ -957,6 +980,9 @@ func (dc *decompState) expr(id int16) string {
 		return dc.className(n.children[0]) + form + dc.sub(n.children[1], precAtom)
 
 	case 'N':
+		if c, ok := dc.nodes[child(n, 0)]; ok && c.typ == '6' {
+			return "a reference to (" + dc.expr(child(n, 0)) + ")" // a reference to (first item whose …)
+		}
 		return "a reference to " + dc.expr(child(n, 0))
 
 	case '6': // filter: every X whose condition
@@ -1152,4 +1178,20 @@ func (dc *decompState) isMyCall(id int16) bool {
 	}
 	c, ok := dc.nodes[dc.unwrapBreak(child(n, 1))]
 	return ok && c.typ == 'f' && n.flags&flagAltSyntax != 0
+}
+
+// rangeBound renders one end of a range of class: text my i thru -1, but
+// text (my f(x)) thru -1.
+func (dc *decompState) rangeBound(id, class int16) string {
+	if b, ok := dc.nodes[id]; ok && b.typ == '4' && b.flags == 0 && len(b.children) == 2 {
+		if code, ok := dc.osCode[b.children[0]]; ok && code == dc.osCode[class] {
+			id = b.children[1] // text 1 thru -5, stored as text 1 thru (text -5)
+		}
+	}
+	if dc.isMyCall(id) {
+		if c, ok := dc.nodes[child0(dc.nodes[id])]; !ok || c.typ != 'I' {
+			return dc.expr(id)
+		}
+	}
+	return dc.sub(id, precAtom)
 }

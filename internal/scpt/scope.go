@@ -28,7 +28,7 @@ func (dc *decompState) nameAs(ref int16, kind termKind) string {
 	}
 	if name := dc.refName[ref]; name != "" {
 		if dc.piped[ref] || dc.isTermWord(name) {
-			return "|" + name + "|"
+			return pipe(name)
 		}
 		return quoteIdent(name)
 	}

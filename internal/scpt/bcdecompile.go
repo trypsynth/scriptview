@@ -46,6 +46,8 @@ func newBCBuilder(src *decompState) *bcBuilder {
 		osEnum:    map[int16]string{},
 		piped:     map[int16]bool{},
 		canonical: src.canonical,
+		// Run-only output must compile back to the same values.
+		exactReals: true,
 	}
 	return &bcBuilder{src: src, out: out, nextID: 1, nextRef: -1}
 }
