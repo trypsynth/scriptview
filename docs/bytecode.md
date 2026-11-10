@@ -13,7 +13,7 @@ Each handler is a typed vector of kind 16 or 17. 16 is a plain procedure. 17 is 
 ```
 
 - The name is an identifier, or an event code for handlers like `on run` and `on open`.
-- Positional parameters are `{count, {names}}`. An event handler's direct parameter is a bare name. `on run {a, b}` stores a list of names.
+- Positional parameters are `{count, {names}}`. A direct parameter is a bare name: an event handler's (`on open x`), or a labeled handler's (`on mk of x by y`). `on run {a, b}` stores a list of names.
 - Instructions refer to variables by their index in the variable names, and to constants by their index in the literals. The literals hold numbers, strings, terms, handler names, and nested code for script objects.
 - The code is a raw `11` record.
 
@@ -55,6 +55,8 @@ direct parameter (or PushIt), then for each labeled parameter: key, value, then 
 
 The count is the number of keys and values together, so it's twice the number of labeled parameters. The direct parameter isn't counted.
 
+`set {year:y, month:m} to current date` passes the command an extra `Krtn` parameter with the record of keys it wants back. The source doesn't write it, so we leave it out. `properties of x` is `every «class prop»`, kind 1 below, and prints as `properties`.
+
 A user handler call with positional arguments, like `f(1, 2)`, uses `PositionalMessageSend` with the handler name as a literal. The stack holds the target (`PushIt` for a plain call, `PushMe` for `my f()`), the arguments, then the count. A user handler with labeled parameters, like `f from 1 to 2` or `f given x:1`, uses `MessageSend` with the handler's name instead of an event. `Continue` and `PositionalContinue` do the same for `continue foo()`, which passes the call on to the parent script. Their stack is laid out differently: the target and the labeled parameters come first, then `PushNext`, then the direct parameter (or `PushIt` when there is none).
 
 ## References
@@ -71,7 +73,7 @@ A user handler call with positional arguments, like `f(1, 2)`, uses `PositionalM
 | 5 | filter: `every window whose ...` |
 | 6 | range: `items 1 thru 3` |
 | 7, 8 | `before x`, `after x` |
-| 9, 10, 11 | `beginning of x`, `end of x`, `middle x` |
+| 9, 10, 11 | `beginning of x`, `end of x`, `middle x`. Only `middle` takes a class. |
 
 Inside a `whose` filter, the thing being tested is a placeholder object (a kind 19 vector) that stands for `it`.
 

@@ -1,0 +1,26 @@
+-- Decompiled from run-only bytecode: comments and original formatting are not recoverable.
+
+on mk of x by y
+	return {x, y}
+end mk
+
+on lab at x
+	return x
+end lab
+
+set r to {a:1}
+set p to properties of r
+set {year:yy, month:mm} to current date
+set L to {1, 2, 3}
+set m to middle item of L
+set s to "abcdef"
+set t to text 1 thru 3 of s
+set t to text 2 thru -1 of s
+set t to text (length of s) thru -1 of s
+set t to characters 1 thru 3 of s
+set q to (s = "") = false
+set i to item 2 of (mk of s by "=")
+tell (lab at 5)
+end tell
+set n to -(length of s)
+set w to text (offset of "c" in s) thru -1 of s

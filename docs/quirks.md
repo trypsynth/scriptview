@@ -20,6 +20,13 @@ Script Editor adds parentheses in these places, even when the tree has no parent
 - A command after `not`: `not (exists file "x")`. A call to one of the script's own handlers doesn't get them: `not f()`.
 - A command passed to an Objective-C style call: `x's addObject:(do shell script "ls")`. A raw `«constant …»` doesn't get them.
 
+Run-only output has no source parentheses to keep, so scriptview adds the ones the code needs to compile to the same thing:
+
+- A comparison used as another comparison's left operand: `(x = "") = false`.
+- A handler call with labeled parameters, as a container or a `tell` target: `item 2 of (mk of s by "=")`, `tell (f at 5)`.
+- A reference or a call after a minus sign: `-(length of s)`, `-(f(x))`.
+- A reference as one end of a range: `text (length of s) thru -1 of s`.
+
 `my x` and `my f(x)` get parentheses only next to arithmetic operators: `1 + (my i)`, `2 * (my f(1))`. Comparisons, `&`, `is in` and command parameters leave them bare: `x is not in my list`, `my f(1) is in L`, `offset of my decPt() in x`. In a range, a property stays bare and a call doesn't: `text my i thru -1`, `text (my f(1)) thru -1`.
 
 ### The `repeat with` rule

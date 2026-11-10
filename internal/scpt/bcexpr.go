@@ -56,7 +56,7 @@ func (bh *bcHandler) objectAlias(in instr, stack *[]stackVal) (int16, error) {
 		}
 	}
 	var cls stackVal
-	if kind != 9 && kind != 10 && kind != 11 {
+	if kind != 9 && kind != 10 { // beginning and end have no class; middle item does
 		if cls, err = pop(); err != nil {
 			return 0, err
 		}
@@ -76,6 +76,11 @@ func (bh *bcHandler) objectAlias(in instr, stack *[]stackVal) (int16, error) {
 		part = cls.id
 	case 1: // every class
 		part = b.node('2', bh.keyOf(cls.id))
+		if b.out.osCode[bh.keyOf(cls.id)] == "prop" {
+			// properties of x is every «class prop» of x; "every property"
+			// doesn't parse.
+			b.out.nodes[part] = nodeRec{typ: '2', flags: flagAltSyntax, children: []int16{bh.keyOf(cls.id)}}
+		}
 	case 2: // some class
 		part = b.node('3', bh.keyOf(cls.id))
 	case 3: // class index
@@ -97,7 +102,7 @@ func (bh *bcHandler) objectAlias(in instr, stack *[]stackVal) (int16, error) {
 	case 10:
 		part = b.node(';')
 	case 11:
-		part = b.node('<')
+		part = b.node('<', bh.keyOf(cls.id))
 	}
 	if container.it {
 		if p := b.out.nodes[part]; kind == 0 && (p.typ == 'o' || p.typ == '1') {
@@ -193,7 +198,13 @@ func (bh *bcHandler) messageSend(in instr, stack *[]stackVal) (int16, error) {
 	*stack = s[:len(s)-1]
 	var keys, values []int16
 	for i := 0; i < len(args); i += 2 {
-		keys = append(keys, bh.keyOf(args[i].id))
+		key := bh.keyOf(args[i].id)
+		if b.out.osCode[key] == "Krtn" {
+			// set {year:y} to current date asks the command for just
+			// those keys; the source doesn't write it.
+			continue
+		}
+		keys = append(keys, key)
 		values = append(values, b.stmtValue(args[i+1])) // a GetData here is an explicit get
 	}
 	name := bh.lit(in.args[0])

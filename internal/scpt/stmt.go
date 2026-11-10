@@ -577,7 +577,7 @@ func (dc *decompState) tellTarget(id int16) string {
 	if !ok {
 		return s
 	}
-	if n.typ == '6' || dc.isCommand(id) || dc.isObjCCall(id) {
+	if n.typ == '6' || dc.isCommand(id) || dc.isObjCCall(id) || dc.isLabeledCall(id) {
 		return "(" + s + ")"
 	}
 	return s

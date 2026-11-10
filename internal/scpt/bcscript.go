@@ -294,7 +294,9 @@ func (b *bcBuilder) handlerDef(h handlerCode, blk *fasBlock) (int16, error) {
 		sig = b.node('I', nameRef, direct, b.labeledParams(blk))
 	} else {
 		plist := b.ref()
-		if len(params) > 0 {
+		if h.direct && len(params) == 1 {
+			plist = params[0] // on mk of x by y
+		} else if len(params) > 0 {
 			plist = b.cons(params)
 		}
 		sig = b.node('I', nameRef, plist, b.labeledParams(blk))

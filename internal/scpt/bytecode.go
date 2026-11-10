@@ -176,6 +176,7 @@ type handlerCode struct {
 	params     []fasValue // names, or terms for names that spell one (on f(key))
 	pattern    []string   // a list-pattern direct parameter: on run {a, b}
 	hasPattern bool       // the handler takes a pattern, maybe empty: on run {}
+	direct     bool       // params[0] is a direct parameter: on mk of x by y
 	vars       []string
 	varTerms   map[int]fasCode // variables whose names spell a term: key
 	literals   []fasValue
@@ -260,6 +261,7 @@ func (dc *decompState) handlerFrom(v fasValue) (handlerCode, bool) {
 		}
 	case string:
 		h.params = []fasValue{p}
+		h.direct = true
 	case []fasValue:
 		if _, event := h.name.(fasCode); dc.legacy && !event {
 			// AppleScript 1.0 lists a handler's positional parameters

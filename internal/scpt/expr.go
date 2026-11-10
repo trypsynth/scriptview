@@ -657,6 +657,9 @@ func (dc *decompState) expr(id int16) string {
 		// Script Editor parenthesizes `my f()` only as the right operand of
 		// arithmetic.
 		left, right := dc.sub(n.children[0], op.prec), dc.sub(n.children[1], op.prec+1)
+		if l, ok := binOps[dc.nodes[n.children[0]].typ]; ok && op.prec <= 4 && l.prec == op.prec {
+			left = "(" + left + ")" // comparisons don't chain: (x = "") = false
+		}
 		if op.prec >= 7 { // Script Editor parenthesizes references in arithmetic
 			if dc.isArithRef(n.children[0]) {
 				left = "(" + left + ")"
@@ -766,6 +769,9 @@ func (dc *decompState) expr(id int16) string {
 		return "not " + dc.sub(child(n, 0), precNot)
 
 	case 'd': // unary minus
+		if c, ok := dc.nodes[child(n, 0)]; ok && (dc.isOfRef(child(n, 0)) || c.typ == 'I') {
+			return "-(" + dc.expr(child(n, 0)) + ")" // -(length of s), -(f(x))
+		}
 		return "-" + dc.sub(child(n, 0), precAtom)
 
 	case 'c': // coercion: [value, class]
@@ -835,8 +841,8 @@ func (dc *decompState) expr(id int16) string {
 			return prefix + words[p.typ] + dc.expr(n.children[1])
 		}
 		container := dc.expr(n.children[1])
-		if c, ok := dc.nodes[n.children[1]]; dc.isCommand(n.children[1]) || ok && (c.typ == 'c' || c.typ == '6' || binOps[c.typ].tok != "") {
-			container = "(" + container + ")" // hours of (current date), x of (a & b)
+		if c, ok := dc.nodes[n.children[1]]; dc.isCommand(n.children[1]) || dc.isLabeledCall(n.children[1]) || ok && (c.typ == 'c' || c.typ == '6' || binOps[c.typ].tok != "") {
+			container = "(" + container + ")" // hours of (current date), x of (a & b), item 2 of (f of x by y)
 		}
 		part := dc.expr(n.children[0])
 		if p, ok := dc.nodes[n.children[0]]; ok && p.typ == 'm' && dc.osCode[child0(p)] != "" {
@@ -1193,5 +1199,15 @@ func (dc *decompState) rangeBound(id, class int16) string {
 			return dc.expr(id)
 		}
 	}
+	if dc.isOfRef(id) || dc.isLabeledCall(id) {
+		return "(" + dc.expr(id) + ")" // text (length of s) thru -1
+	}
 	return dc.sub(id, precAtom)
+}
+
+// isLabeledCall reports whether id calls one of the script's own handlers
+// with labeled parameters: mk of x by y.
+func (dc *decompState) isLabeledCall(id int16) bool {
+	n, ok := dc.nodes[id]
+	return ok && n.typ == 'I' && len(n.children) > 2 && !dc.isBuiltin(n.children[0]) && child(n, 2) != 0
 }
