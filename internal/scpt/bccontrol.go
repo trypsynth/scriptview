@@ -191,7 +191,14 @@ func (bh *bcHandler) repeatStmt(pc int) (int16, int, error) {
 				return 0, 0, errUnsupported{top, "missing collection"}
 			}
 			v := bh.varRef(top.args[0])
-			stmt = b.node('X', body, v, setup[0].id)
+			// The setup ends: collection [GetData] Dup kocl item Push2
+			// count Push1 PushUndefined. Dup clears the gotten mark, so
+			// look for the GetData itself: repeat with x in (get …).
+			coll := setup[0].id
+			if i := loopTop - 8; i >= 0 && bh.prog[i].name == "GetData" && bh.prog[i+1].name == "Dup" && isReference(b.out.nodes[coll]) {
+				coll = b.node('e', coll)
+			}
+			stmt = b.node('X', body, v, coll)
 		}
 	default:
 		// repeat while/until: the condition is evaluated at the loop top.

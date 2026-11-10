@@ -5516,45 +5516,6 @@ AppleScript	e	cent	center
 AppleScript	E	just/cent	center
 AppleScript	e	full	full
 AppleScript	E	just/full	full
-AppleScript	c	carc	arc	arcs
-AppleScript	p	parc	arc angle
-AppleScript	p	pdrt	definition rect
-AppleScript	p	flcl	fill color
-AppleScript	p	flpt	fill pattern
-AppleScript	p	ppcl	pen color
-AppleScript	p	pppa	pen pattern
-AppleScript	p	ppwd	pen width
-AppleScript	p	pang	start angle
-AppleScript	p	pptm	transfer mode
-AppleScript	c	cdrw	drawing area	drawing areas
-AppleScript	p	pbcl	background color
-AppleScript	p	pbpt	background pattern
-AppleScript	p	cltb	color table
-AppleScript	p	gobs	ordering
-AppleScript	p	pnel	default location
-AppleScript	p	pdpt	pixel depth
-AppleScript	p	ptxc	text color
-AppleScript	p	ptxf	default font
-AppleScript	p	ptps	default size
-AppleScript	p	pupd	update on change
-AppleScript	c	glin	graphic line	graphic lines
-AppleScript	p	pstp	start point
-AppleScript	p	pend	end point
-AppleScript	p	pdst	dash style
-AppleScript	p	arro	arrow style
-AppleScript	c	cgob	graphic object	graphic objects
-AppleScript	c	cgsh	graphic shape	graphic shapes
-AppleScript	c	cgtx	graphic text
-AppleScript	c	cpic	graphic group	graphic groups
-AppleScript	c	covl	oval	ovals
-AppleScript	c	cpxl	pixel	pixels
-AppleScript	c	cpix	pixel map	pixel maps
-AppleScript	c	cpgn	polygon	polygons
-AppleScript	p	ptlt	point list
-AppleScript	c	crec	rectangle	rectangles
-AppleScript	c	crrc	rounded rectangle	rounded rectangles
-AppleScript	p	pchd	corner curve height
-AppleScript	p	pcwd	corner curve width
 AppleScript	e	cpy 	copy pixels
 AppleScript	E	tran/cpy 	copy pixels
 AppleScript	e	ncpy	not copy pixels
@@ -5593,48 +5554,12 @@ AppleScript	e	aren	arrow at end
 AppleScript	E	arro/aren	arrow at end
 AppleScript	e	arbo	arrow at both ends
 AppleScript	E	arro/arbo	arrow at both ends
-AppleScript	p	prot	rotation
-AppleScript	p	pscl	scale
-AppleScript	p	ptrs	translation
-AppleScript	c	ccel	cell	cells
-AppleScript	p	pfor	formula
-AppleScript	p	ppro	protection
-AppleScript	c	ccol	column	columns
-AppleScript	c	crow	row	rows
-AppleScript	c	ctbl	table	tables
 AppleScript	e	nmod	read only
 AppleScript	E	prtn/nmod	read only
 AppleScript	e	fpro	formulas protected
 AppleScript	E	prtn/fpro	formulas protected
 AppleScript	e	modf	read/write
 AppleScript	E	prtn/modf	read/write
-AppleScript	c	cdev	device specification	device specifications
-AppleScript	p	pALL	properties
-AppleScript	p	pdvt	device type
-AppleScript	p	pdva	device address
-AppleScript	c	cadr	address specification	address specifications
-AppleScript	p	pcon	conduit
-AppleScript	p	pprt	protocol
-AppleScript	c	cadb	ADB address	ADB addresses
-AppleScript	c	cat 	AppleTalk address	AppleTalk addresses
-AppleScript	p	patm	AppleTalk machine
-AppleScript	p	patz	AppleTalk zone
-AppleScript	p	patt	AppleTalk type
-AppleScript	c	cbus	bus slot	bus slots
-AppleScript	c	cen 	Ethernet address	Ethernet addresses
-AppleScript	c	cfw 	FireWire address	FireWire addresses
-AppleScript	c	cip 	IP address	IP addresses
-AppleScript	p	pdns	DNS form
-AppleScript	p	ppor	port
-AppleScript	c	clt 	LocalTalk address	LocalTalk addresses
-AppleScript	p	pnet	network
-AppleScript	p	pnod	node
-AppleScript	p	psoc	socket
-AppleScript	c	cscs	SCSI address	SCSI addresses
-AppleScript	p	pscb	SCSI bus
-AppleScript	p	pslu	LUN
-AppleScript	c	ctok	Token Ring address	Token Ring addresses
-AppleScript	c	cusb	USB address	USB Addresses
 AppleScript	e	ehd 	hard disk drive
 AppleScript	E	edvt/ehd 	hard disk drive
 AppleScript	e	efd 	floppy disk drive

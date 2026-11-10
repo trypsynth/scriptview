@@ -1,0 +1,13 @@
+-- Decompiled from run-only bytecode: comments and original formatting are not recoverable.
+
+on f()
+	return p
+end f
+
+property p : 1
+set L to {1, 2}
+set M to {"a", "b"}
+repeat with x in (get every item of L)
+	log x
+end repeat
+get item (item 2 of L) of M

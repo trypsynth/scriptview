@@ -49,7 +49,7 @@ func (b *bcBuilder) scriptItems(v fasValue, top bool) ([]int16, error) {
 	}
 	b.scopes = append(b.scopes, scopeNames)
 	defer func() { b.scopes = b.scopes[:len(b.scopes)-1] }()
-	var items, uses, props []int16
+	var items, uses []int16
 	var runBody []int16
 	// The compiler puts the implicit run handler after every other handler,
 	// so a run handler anywhere else was written out: on run.
@@ -135,10 +135,9 @@ func (b *bcBuilder) scriptItems(v fasValue, top bool) ([]int16, error) {
 		// Anything else is a property with its initial value.
 		if name != nil {
 			prop := b.node('j', b.keyRef(name), b.literal(entry))
-			props = append(props, b.node('l', prop))
+			items = append(items, b.node('l', prop))
 		}
 	}
-	items = append(props, items...)
 	if n := len(items); !top && n > 0 && len(b.out.nodes[items[n-1]].children) == 0 {
 		items = items[:n-1] // no blank line before `end script`
 	}

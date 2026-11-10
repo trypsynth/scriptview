@@ -82,6 +82,12 @@ func looksJapanese(texts [][]byte) bool {
 		if isASCII(t) {
 			continue
 		}
+		if mr := macRoman(t); strings.Contains(mr, "«class ") || strings.Contains(mr, "«event ") ||
+			strings.Contains(mr, "«constant ") || strings.Contains(mr, "«data ") {
+			// AppleScript's raw-code chevrons in Mac Roman (-- folder = «class cfol»):
+			// read as Shift JIS, «'s byte pairs up into kanji.
+			return false
+		}
 		s, ok := decodeShiftJIS(t)
 		if !ok {
 			return false

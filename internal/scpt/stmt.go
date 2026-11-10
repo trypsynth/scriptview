@@ -532,7 +532,11 @@ func (dc *decompState) repeatStmt(n nodeRec, depth int) []string {
 		header += " until " + dc.expr(child(n, 1))
 	case 'X':
 		if len(n.children) >= 3 {
-			header += " with " + dc.name(n.children[1]) + " in " + dc.expr(n.children[2])
+			coll := dc.expr(n.children[2])
+			if c, ok := dc.nodes[n.children[2]]; ok && c.typ == 'e' {
+				coll = "(" + coll + ")" // repeat with x in (get …)
+			}
+			header += " with " + dc.name(n.children[1]) + " in " + coll
 		}
 	case 'Y':
 		if len(n.children) >= 4 {

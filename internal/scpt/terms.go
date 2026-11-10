@@ -400,6 +400,7 @@ var scopeAliases = map[string]string{
 	"System Preferences": "System Settings",
 	"Address Book":       "Contacts",
 	"iCal":               "Calendar",
+	"AppleScript Editor": "Script Editor",
 }
 
 func loadDicts(tsv string) (map[string]*dict, map[string]string) {

@@ -127,6 +127,11 @@ func (dc *decompState) usedApps() []string {
 	return apps
 }
 
+// sdefTypeWords are value types that scripting definitions name (the Cocoa
+// standard suite's type="type"). They are reserved inside an application's
+// tell block, though no term spells them.
+var sdefTypeWords = map[string]bool{"type": true, "specifier": true, "any": true}
+
 // isTermWord reports whether a user identifier spells a term in scope, so
 // that it must be written |piped| to stay an identifier.
 func (dc *decompState) isTermWord(name string) bool {
@@ -139,6 +144,9 @@ func (dc *decompState) isTermWord(name string) bool {
 	var app *dict
 	if len(dc.scopes) > 0 {
 		app = scopeDict(dc.scopes[len(dc.scopes)-1])
+	}
+	if app != nil && sdefTypeWords[lower] {
+		return true // tell application "Safari" to get r's |type|
 	}
 	for _, d := range dc.inScope() {
 		if d != coreDict && d != builtinDict && d != dicts[""] && d != dicts["AppleScript"] && d != app {
@@ -175,6 +183,9 @@ func scopeDict(scope string) *dict {
 		scope = scope[strings.LastIndexAny(strings.TrimRight(scope, "/:"), "/:")+1:]
 		scope = strings.TrimSuffix(strings.TrimRight(scope, "/:"), ".app")
 	}
+	// An application specifier saved as an alias names the bundle:
+	// application "AppleScript Editor.app".
+	scope = strings.TrimSuffix(scope, ".app")
 	if alias, ok := scopeAliases[scope]; ok {
 		scope = alias
 	}

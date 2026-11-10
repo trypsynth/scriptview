@@ -76,6 +76,33 @@ func parseAete(d []byte, scope string) (terms []term, err error) {
 		}
 		suitesOf[key][suite] = true
 	}
+	// Classes and properties defined only in the legacy suites print as raw
+	// codes («class ccel», not cell): AppleScript switches a suite on only
+	// when an application's dictionary names it.
+	legacyOnly := map[string]bool{}
+	defer func() {
+		kept := terms[:0]
+		for _, t := range terms {
+			if (t.kind == "c" || t.kind == "p") && legacyOnly[t.kind+t.code] {
+				continue
+			}
+			kept = append(kept, t)
+		}
+		terms = kept
+	}()
+	codeSuites := map[string]map[string]bool{}
+	noteCode := func(kind, code, suite string) {
+		key := kind + code
+		if codeSuites[key] == nil {
+			codeSuites[key] = map[string]bool{}
+		}
+		codeSuites[key][suite] = true
+		only := true
+		for s := range codeSuites[key] {
+			only = only && unpipedSuites[s] && s != "tpnm"
+		}
+		legacyOnly[key] = only
+	}
 	defer func() {
 		for _, word := range slices.Sorted(maps.Keys(suitesOf)) {
 			only := true
@@ -151,8 +178,10 @@ func parseAete(d []byte, scope string) (terms []term, err error) {
 				}
 			}
 			note(name, suite)
+			noteCode("c", code, suite)
 			for _, p := range props {
 				note(p.name, suite)
+				noteCode("p", p.code, suite)
 			}
 			if isPlural {
 				for i := len(terms) - 1; i >= 0; i-- {

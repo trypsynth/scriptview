@@ -241,7 +241,7 @@ func (dc *decompState) isBareOfRef(id int16) bool {
 	if ok && v.typ == 'c' {
 		v, ok = dc.nodes[child0(v)]
 	}
-	return ok && v.typ == 'n' && v.flags&flagPossessive == 0
+	return ok && v.typ == 'n' && v.flags&flagPossessive == 0 && !dc.isMyCall(id)
 }
 
 // interleaved renders an Objective-C style handler name such as
@@ -467,7 +467,11 @@ func (dc *decompState) isCommand(id int16) bool {
 // operand renders id as an expression, parenthesizing builtin commands.
 func (dc *decompState) operand(id int16) string {
 	if dc.isCommand(id) {
-		return "(" + dc.expr(id) + ")"
+		s := dc.expr(id)
+		if dc.isMyCall(id) && strings.HasSuffix(s, ")") {
+			return s // offset of my decPt() in x
+		}
+		return "(" + s + ")"
 	}
 	return dc.expr(id)
 }
@@ -881,6 +885,11 @@ func (dc *decompState) expr(id int16) string {
 		if dc.osCode[n.children[0]] == "****" {
 			class = "any" // any button: anything, indexed by a class
 		}
+		if dc.isOfRef(n.children[1]) {
+			// column (item i of L) of …: unparenthesized, the of would
+			// apply to the whole element reference.
+			return class + " (" + dc.expr(n.children[1]) + ")"
+		}
 		return class + " " + dc.sub(n.children[1], precAtom)
 
 	case '7': // <class> <from> thru <to>
@@ -902,6 +911,9 @@ func (dc *decompState) expr(id int16) string {
 		return cls + " " + dc.sub(n.children[1], precAtom) + thru + dc.sub(n.children[2], precAtom)
 
 	case ';':
+		if n.flags&flagThe != 0 {
+			return "back" // make new … at back
+		}
 		return "end"
 
 	case 'f':
@@ -924,6 +936,9 @@ func (dc *decompState) expr(id int16) string {
 		return "get " + dc.expr(child(n, 0))
 
 	case ':':
+		if n.flags&flagThe != 0 {
+			return "front" // make new … at front
+		}
 		return "beginning"
 
 	case '5': // <class> id <value>
