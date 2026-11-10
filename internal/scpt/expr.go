@@ -165,7 +165,7 @@ func (dc *decompState) commandParts(n nodeRec) (string, string) {
 			given = append(given, dc.name(cell[0])+":"+dc.operand(cell[1]))
 			continue
 		}
-		if strings.HasPrefix(label, "«") && dc.boolLit(cell[1]) == "" {
+		if strings.HasPrefix(label, "«") && (dc.boolLit(cell[1]) == "" || dc.fromBytecode && len(given) > 0) {
 			// No terminology for this parameter: `given label:value`, naming
 			// the label code as a term when possible (e.g. string:).
 			if code, ok := dc.osCode[cell[0]]; ok {
@@ -994,6 +994,9 @@ func (dc *decompState) expr(id int16) string {
 				form = " index "
 			}
 		}
+		if dc.isOfRef(n.children[1]) {
+			return dc.className(n.children[0]) + form + "(" + dc.expr(n.children[1]) + ")" // row id (item i of L)
+		}
 		return dc.className(n.children[0]) + form + dc.sub(n.children[1], precAtom)
 
 	case 'N':
@@ -1212,6 +1215,11 @@ func (dc *decompState) rangeBound(id, class int16) string {
 	}
 	if dc.isOfRef(id) || dc.isLabeledCall(id) {
 		return "(" + dc.expr(id) + ")" // text (length of s) thru -1
+	}
+	if b, ok := dc.nodes[id]; ok && dc.fromBytecode && b.typ == '4' {
+		// text (text item 2) thru (text item -1) of p compiles differently
+		// from the same without parentheses.
+		return "(" + dc.expr(id) + ")"
 	}
 	return dc.sub(id, precAtom)
 }

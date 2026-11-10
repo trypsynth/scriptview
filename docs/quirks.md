@@ -25,7 +25,10 @@ Run-only output has no source parentheses to keep, so scriptview adds the ones t
 - A comparison used as another comparison's left operand: `(x = "") = false`.
 - A handler call with labeled parameters, as a container or a `tell` target: `item 2 of (mk of s by "=")`, `tell (f at 5)`.
 - A reference or a call after a minus sign: `-(length of s)`, `-(f(x))`.
-- A reference as one end of a range: `text (length of s) thru -1 of s`.
+- A reference as one end of a range: `text (length of s) thru -1 of s`. An element as an end gets them too: `text (text item 2) thru (text item -1) of p` compiles to different code than the same without them.
+- A reference after `id` or `named`: `«class OOrw» id (item i of L)`.
+
+Run-only output also keeps the order of parameters whose labels are raw codes. After a `given` label it writes a boolean as `«class repl»:true`, not `with «class repl»`, because `with` would move it ahead of the others.
 
 `my x` and `my f(x)` get parentheses only next to arithmetic operators: `1 + (my i)`, `2 * (my f(1))`. Comparisons, `&`, `is in` and command parameters leave them bare: `x is not in my list`, `my f(1) is in L`, `offset of my decPt() in x`. In a range, a property stays bare and a call doesn't: `text my i thru -1`, `text (my f(1)) thru -1`.
 
