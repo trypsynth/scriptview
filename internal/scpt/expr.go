@@ -657,7 +657,7 @@ func (dc *decompState) expr(id int16) string {
 		// Script Editor parenthesizes `my f()` only as the right operand of
 		// arithmetic.
 		left, right := dc.sub(n.children[0], op.prec), dc.sub(n.children[1], op.prec+1)
-		if l, ok := binOps[dc.nodes[n.children[0]].typ]; ok && op.prec <= 4 && l.prec == op.prec {
+		if l, ok := binOps[dc.nodes[n.children[0]].typ]; ok && (op.prec == 3 || op.prec == 4) && l.prec == op.prec {
 			left = "(" + left + ")" // comparisons don't chain: (x = "") = false
 		}
 		if op.prec >= 7 { // Script Editor parenthesizes references in arithmetic
