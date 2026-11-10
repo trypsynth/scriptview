@@ -1,0 +1,5 @@
+-- Decompiled from run-only bytecode: comments and original formatting are not recoverable.
+
+set v to {{1, 2}, {3, 4}}
+set {{x, y}, {w, h}} to v
+set {a, {b, c}} to v

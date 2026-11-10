@@ -95,6 +95,10 @@ The compiler evaluates a container once and keeps it on the stack with `Dup` and
 
 A top-level variable that held a script object when the file was saved, such as `set lib to load script …`, keeps that script in the script's table. It isn't a `script` definition, so the output leaves it out.
 
+## Destructuring
+
+`set {a, b} to x` compiles to one assignment per item, `set a to item 1 of x`, `set b to item 2 of x`, sharing `x` through `Dup`, then discards `x`. We fold those back into one statement. A nested pattern, `set {{a, b}, c} to x`, nests the same expansion, except that the inner value `item 1 of x` is discarded with `Pop`, not left as a statement. So we fold from the inside out, until nothing changes.
+
 ## Values that become statements
 
 A statement's value goes to `StoreResult`, which saves it as `result`. The last statement of a handler has no `StoreResult`. Its value stays on the stack for the implicit `Return` at the end. When we rebuild a block, any value left on the stack at the end is the block's last statement.

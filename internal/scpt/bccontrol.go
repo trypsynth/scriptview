@@ -380,6 +380,16 @@ func (bh *bcHandler) matching(pc int, open, close string) (int, error) {
 // `set {a, b} to x` — `set a to item 1 of x`, `set b to item 2 of x`, …,
 // then x as a discarded expression — back into one statement.
 func (bh *bcHandler) foldDestructuring(stmts []int16) []int16 {
+	// A nested pattern, set {{a, b}, {c, d}} to x, folds from the inside
+	// out: each pass turns the inner sets into one item of the outer.
+	for n := len(stmts) + 1; len(stmts) < n; {
+		n = len(stmts)
+		stmts = bh.foldDestructuringOnce(stmts)
+	}
+	return stmts
+}
+
+func (bh *bcHandler) foldDestructuringOnce(stmts []int16) []int16 {
 	b := bh.b
 	// itemOf returns (k, x) when stmt is `set target to item k of x`.
 	itemOf := func(stmt int16) (int, int16, int16, bool) {
@@ -447,8 +457,13 @@ func (bh *bcHandler) foldDestructuring(stmts []int16) []int16 {
 			}
 			targets = append(targets, t)
 		}
-		// The duplicated value itself is left over as an expression statement.
-		if len(targets) < 2 || j >= len(stmts) || !bh.isValue(stmts[j], x) {
+		// The duplicated value itself is left over as an expression
+		// statement. An inner pattern's value is an item of the outer one
+		// and is discarded instead: set {{a, b}, c} to x.
+		leftover := j < len(stmts) && bh.isValue(stmts[j], x)
+		xn := b.out.nodes[x]
+		inner := xn.typ == 'n' && len(xn.children) == 2 && b.out.nodes[xn.children[0]].typ == '4'
+		if len(targets) < 2 || !leftover && !inner {
 			out = append(out, stmts[i])
 			continue
 		}
@@ -456,6 +471,9 @@ func (bh *bcHandler) foldDestructuring(stmts []int16) []int16 {
 		verb := b.out.nodes[child0(b.out.nodes[stmts[i]])].typ
 		out = append(out, b.node('l', b.node(verb, x, b.node('J', b.cons(targets)))))
 		i = j
+		if !leftover {
+			i = j - 1
+		}
 	}
 	return out
 }
