@@ -102,12 +102,18 @@ A script object inside the script looks the same as the root: a kind 15 vector w
 
 ## AppleScript 1.0 files
 
-Scripts from 1993 and 1994 (FASD versions 0.98 and 1.00) use the same records, with three differences:
+Scripts from 1993 and 1994 (FASD versions 0.98 and 1.00) use the same records, with these differences:
 
-- Many built-in terms are symbols (`01` records) with a 4-byte value instead of term records. The value is an index into a table inside the AppleScript runtime, stored as `index * 8 + 1`. Index 109 is `return`, 14 is `string`, 121 and 122 are `false` and `true`.
+- Many built-in terms are symbols (`01` records) with a 4-byte value instead of term records. The value is an index into a table inside the AppleScript runtime, stored as `index * 8 + 1`. Index 109 is `return`, 14 is `string`, 121 and 122 are `true` and `false`, and 58 and 127 are the `run` and `open` events.
 - Some term records use kind `2f` instead of `0a` for a class code.
 - An empty list is a list cell (`02`) with no references.
+- A handler lists its positional parameters as plain names, where later versions wrap them in a kind 4 vector with a count.
+- The bytecode builds every list literal with `MakeList`. Later versions use `MakeVector` for `{…}` and keep `MakeList` for the rare `[…]` list.
+- A script object saved in a property has no name of its own. The property names it.
+- A run-only script that is only a run handler is saved as the handler itself, with no script object around it. PlainTalk's speech rules are stored this way.
 
-Current macOS refuses these files with "data format obsolete" (-1758), and its runtime no longer has the symbol table. We rebuilt the part of the table that the scripts we found use, from how each symbol is used. It's in `internal/scpt/legacy.go`. A script that uses a symbol we haven't seen prints it as a `<ref>` placeholder.
+Current macOS refuses these files with "data format obsolete" (-1758), and its runtime no longer has the symbol table. We read the table out of the AppleScript 1.0 extension (`vers` 1.0, on Apple's October 1993 Developer CD). Its startup code (`PROC` 128) builds the table one entry at a time: it pushes a four-character code, or an event's class and ID, calls a constructor, and pops the result into the table. Counting those calls gives each entry's index. The table has 139 entries; we left out about 30 that the runtime only uses internally, such as anonymous `obj ` placeholders. The table is in `internal/scpt/legacy.go`. A symbol that isn't in it prints as a `<ref>` placeholder.
+
+The AppleScript 1.0b1 beta wrote `FasdUAS 0.95`. Its table is built the same way but in a different order, and scriptview doesn't read those files yet.
 
 Classic Mac OS kept text in the encoding of the script system it ran: Mac Roman for Western languages, and a Shift JIS variant for Japanese. A compiled script doesn't say which one it used. scriptview reads a file as Japanese when every one of its old byte strings with non-ASCII bytes decodes as Shift JIS, and together they hold several kana or kanji. Western text almost never passes: a Mac Roman accented letter like `é` is a Shift JIS lead byte, and the byte after it rarely makes a valid pair. The Shift JIS table comes from macOS's CP932 converter, through `tools/gensjis`.

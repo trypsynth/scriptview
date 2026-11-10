@@ -29,7 +29,11 @@ A better test is a round trip: decompile the bytecode, compile the result again 
 
 ## Classic scripts
 
-For scripts from before Mac OS X, we used the 48 compiled scripts on Apple's AppleScript Developer's Toolkit disc from 1993, from an archive.org mirror. Current macOS won't open a single one of them, so there's nothing to compare against. We read the output by hand, and checked that every script decompiles with no placeholders left. Apple owns these scripts, so they aren't in the repository. The tests use synthetic files instead.
+For scripts from before Mac OS X, we used compiled scripts from Apple's discs of 1993 and 1994, from archive.org mirrors: the 48 on the AppleScript Developer's Toolkit, and those on the Developer CD Series from October 1993 to May 1994, and the floppies that came with *The Tao of AppleScript*. The Developer CDs and the floppies hold 106 different AppleScript 1.0 scripts. 64 of them are run-only: the speech rules that ship with PlainTalk. The rest are the sample scripts that came with AppleScript, and scripts that came with other programs, such as JPEGView.
+
+Current macOS won't open a single one of them, so there's nothing to compare against. We read the output by hand, and checked that every script decompiles with no placeholders left. The scripts that still have a syntax tree gave us one more test: decompile them again from the bytecode alone, as if they were run-only, and compare the two results. That found the 1.0 differences in handler parameters, list literals and script objects listed in [the file format](file-format.md#applescript-10-files).
+
+Apple owns these scripts, so they aren't in the repository. The tests use synthetic files instead.
 
 ## Fuzzing
 

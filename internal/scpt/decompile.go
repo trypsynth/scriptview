@@ -52,6 +52,8 @@ type decompState struct {
 	repeatWith int
 	// shiftJIS is set when the file's old byte strings are Japanese.
 	shiftJIS bool
+	// legacy is set for AppleScript 1.0 files (FASD before 1.01).
+	legacy bool
 	// cmdLabels holds the parameter labels of the command whose arguments
 	// are being rendered; variables named like one need pipes.
 	cmdLabels map[string]bool

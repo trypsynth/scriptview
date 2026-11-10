@@ -261,6 +261,12 @@ func (dc *decompState) handlerFrom(v fasValue) (handlerCode, bool) {
 	case string:
 		h.params = []fasValue{p}
 	case []fasValue:
+		if _, event := h.name.(fasCode); dc.legacy && !event {
+			// AppleScript 1.0 lists a handler's positional parameters
+			// as plain names.
+			h.params = p
+			break
+		}
 		// A pattern parameter: on run {input, parameters}.
 		h.pattern = stringsOf(p)
 		h.hasPattern = true

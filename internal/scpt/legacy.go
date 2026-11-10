@@ -4,30 +4,120 @@ import "encoding/binary"
 
 // AppleScript 1.0 (FASD versions 0.98 and 1.00) stored many built-in terms
 // as symbols: an index into a table inside the AppleScript runtime, tagged as
-// index*8+1. Apple's table is gone from current macOS, which refuses these
-// files, so these entries were worked out from how old scripts use them.
+// index*8+1. Current macOS no longer has the table and refuses these files.
+// This copy was read out of the AppleScript 1.0 extension's startup code
+// (PROC 128), which builds the table one entry at a time. Entries the runtime
+// uses only internally, with no term of their own, are left out.
 var legacySymbols = map[uint32]fasCode{
 	2:   {kind: osKindCode, code: "list"},
-	10:  {kind: osKindCode, code: "pcls"}, // class
-	14:  {kind: osKindCode, code: "TEXT"}, // string
-	15:  {kind: osKindCode, code: "scpt"}, // script
-	20:  {kind: osKindCode, code: "obj "}, // reference
-	49:  {kind: osKindCode, code: "cobj"}, // item
-	50:  {kind: osKindCode, code: "citm"}, // text item
-	51:  {kind: osKindCode, code: "fss "}, // file specification
+	3:   {kind: osKindCode, code: "long"},
+	4:   {kind: osKindCode, code: "vect"},
+	5:   {kind: osKindCode, code: "sing"},
+	6:   {kind: osKindCode, code: "reco"},
+	8:   {kind: osKindCode, code: "capp"},
+	9:   {kind: osKindCode, code: "bool"},
+	10:  {kind: osKindCode, code: "pcls"},
+	11:  {kind: osKindCode, code: "enum"},
+	12:  {kind: osKindCode, code: "doub"},
+	13:  {kind: osKindCode, code: "data"},
+	14:  {kind: osKindCode, code: "TEXT"},
+	15:  {kind: osKindCode, code: "scpt"},
+	16:  {kind: osKindCode, code: "hand"},
+	19:  {kind: osKindCode, code: "exmn"},
+	20:  {kind: osKindCode, code: "obj "},
+	46:  {kind: osKindCode, code: "evnt"},
+	47:  {kind: osKindCode, code: "kyid"},
+	48:  {kind: osKindCode, code: "uid "},
+	49:  {kind: osKindCode, code: "cobj"},
+	50:  {kind: osKindCode, code: "citm"},
+	51:  {kind: osKindCode, code: "file"},
 	52:  {kind: osKindCode, code: "alis"},
+	53:  {kind: osKindCode, code: "insl"},
+	54:  {kind: osKindCode, code: "nmbr"},
+	55:  {kind: osKindCode, code: "ls  "},
+	56:  {kind: osKindCode, code: "lrs "},
+	57:  {kind: osKindCode, code: "nds "},
+	58:  {kind: osKindEvent, code: "aevtoapp"},
+	59:  {kind: osKindEvent, code: "coregetd"},
+	60:  {kind: osKindEvent, code: "coresetd"},
+	61:  {kind: osKindEvent, code: "coreclon"},
+	62:  {kind: osKindEvent, code: "corecnte"},
+	63:  {kind: osKindEvent, code: "corecrel"},
+	64:  {kind: osKindEvent, code: "ascrerr "},
+	65:  {kind: osKindEvent, code: "ascrpsbr"},
+	66:  {kind: osKindCode, code: "arg "},
+	67:  {kind: osKindEvent, code: "ascr+   "},
+	68:  {kind: osKindEvent, code: "ascr-   "},
+	69:  {kind: osKindEvent, code: "ascr*   "},
+	70:  {kind: osKindEvent, code: "ascr/   "},
+	71:  {kind: osKindEvent, code: "ascrdiv "},
+	72:  {kind: osKindEvent, code: "ascrmod "},
+	73:  {kind: osKindEvent, code: "ascr^   "},
+	74:  {kind: osKindEvent, code: "ascr=   "},
+	75:  {kind: osKindEvent, code: "ascr≠   "},
+	76:  {kind: osKindEvent, code: "ascr>   "},
+	77:  {kind: osKindEvent, code: "ascr>=  "},
+	78:  {kind: osKindEvent, code: "ascr<   "},
+	79:  {kind: osKindEvent, code: "ascr<=  "},
+	80:  {kind: osKindEvent, code: "ascrccat"},
+	81:  {kind: osKindEvent, code: "ascrbgwt"},
+	82:  {kind: osKindEvent, code: "ascrends"},
+	83:  {kind: osKindEvent, code: "ascrcont"},
+	84:  {kind: osKindEvent, code: "ascrAND "},
+	85:  {kind: osKindEvent, code: "ascrOR  "},
+	86:  {kind: osKindEvent, code: "ascrNOT "},
+	87:  {kind: osKindEvent, code: "ascrneg "},
+	88:  {kind: osKindCode, code: "data"},
+	89:  {kind: osKindCode, code: "rtyp"},
+	90:  {kind: osKindCode, code: "----"},
+	91:  {kind: osKindCode, code: "insh"},
+	92:  {kind: osKindCode, code: "kocl"},
+	93:  {kind: osKindEvent, code: "ascrnoop"},
+	94:  {kind: osKindCode, code: "pnam"},
 	95:  {kind: osKindCode, code: "leng"},
-	96:  {kind: osKindCode, code: "pcnt"}, // contents
-	98:  {kind: osKindCode, code: "to  "}, // handler label
-	99:  {kind: osKindCode, code: "of  "}, // handler label
-	103: {kind: osKindCode, code: "errn"}, // error … number
-	109: {kind: osKindCode, code: "ret "}, // return
+	96:  {kind: osKindCode, code: "pcnt"},
+	97:  {kind: osKindCode, code: "thru"},
+	98:  {kind: osKindCode, code: "to  "},
+	99:  {kind: osKindCode, code: "from"},
+	100: {kind: osKindCode, code: "snam"},
+	101: {kind: osKindCode, code: "errs"},
+	102: {kind: osKindCode, code: "erra"},
+	103: {kind: osKindCode, code: "errn"},
+	104: {kind: osKindCode, code: "errt"},
+	105: {kind: osKindCode, code: "erob"},
+	106: {kind: osKindCode, code: "ptlr"},
+	107: {kind: osKindCode, code: "rslt"},
+	108: {kind: osKindCode, code: "spac"},
+	109: {kind: osKindCode, code: "ret "},
+	110: {kind: osKindCode, code: "tab "},
+	111: {kind: osKindCode, code: "pi  "},
+	112: {kind: osKindCode, code: "pare"},
+	113: {kind: osKindEvent, code: "ascrinit"},
+	114: {kind: osKindCode, code: "prln"},
+	115: {kind: osKindCode, code: "prdp"},
+	116: {kind: osKindCode, code: "rvse"},
 	117: {kind: osKindCode, code: "rest"},
-	121: {kind: osKindConstant, enum: "boov", code: "fals"},
-	122: {kind: osKindConstant, enum: "boov", code: "true"},
-	132: {kind: osKindCode, code: "cha "}, // character
-	133: {kind: osKindCode, code: "txdl"}, // text item delimiters
-	135: {kind: osKindCode, code: "ascr"}, // AppleScript
+	118: {kind: osKindConstant, enum: "kfrm", code: "name"},
+	119: {kind: osKindConstant, enum: "kfrm", code: "indx"},
+	120: {kind: osKindConstant, enum: "kfrm", code: "ID  "},
+	121: {kind: osKindConstant, enum: "boov", code: "true"},
+	122: {kind: osKindConstant, enum: "boov", code: "fals"},
+	123: {kind: osKindConstant, enum: "misc", code: "cura"},
+	124: {kind: osKindConstant, enum: "cons", code: "rmte"},
+	125: {kind: osKindEvent, code: "miscbegi"},
+	126: {kind: osKindEvent, code: "miscendt"},
+	127: {kind: osKindEvent, code: "aevtodoc"},
+	128: {kind: osKindCode, code: "prep"},
+	129: {kind: osKindCode, code: "prop"},
+	130: {kind: osKindCode, code: "keyf"},
+	131: {kind: osKindCode, code: "ldt "},
+	132: {kind: osKindCode, code: "ctxt"},
+	133: {kind: osKindCode, code: "txdl"},
+	134: {kind: osKindEvent, code: "ascrcmnt"},
+	135: {kind: osKindCode, code: "ascr"},
+	136: {kind: osKindConstant, enum: "savo", code: "yes "},
+	137: {kind: osKindConstant, enum: "savo", code: "no  "},
+	138: {kind: osKindConstant, enum: "savo", code: "ask "},
 }
 
 // legacySymbol decodes an AppleScript 1.0 symbol payload.

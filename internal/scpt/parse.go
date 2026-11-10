@@ -93,6 +93,7 @@ func Parse(data []byte) (*File, error) {
 		b = newBuilder()
 		scanRecords(data[hdr:], b)
 	}
+	b.dc.legacy = string(data[8:12]) < "1.01"
 	return b.finish(), nil
 }
 
@@ -295,9 +296,15 @@ func parseRecords(body []byte, b *builder) error {
 			}
 		case objSymbol:
 			if c, ok := legacySymbol(o.data); ok {
-				if c.kind == osKindConstant {
+				switch c.kind {
+				case osKindConstant:
 					b.osType(o.ref, osKindConstant, []byte(c.enum+c.code))
-				} else {
+				case osKindEvent:
+					// The table holds the code already decoded from Mac Roman.
+					if _, seen := b.dc.evCode[o.ref]; !seen {
+						b.dc.evCode[o.ref] = c.code
+					}
+				default:
 					b.osType(o.ref, osKindCode, []byte(c.code))
 				}
 			}

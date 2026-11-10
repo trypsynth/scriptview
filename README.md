@@ -68,7 +68,7 @@ To test this, we compile the decompiled source again and compare the bytecode wi
 - Terms from apps that don't ship with macOS print as raw codes, such as `«class pURL»`, unless the app is installed and you're on a Mac.
 - Run-only scripts lose their comments and formatting (see above).
 - A value that was worked out when the script was compiled can't be turned back into the code that made it. For example, `property lib : load script …` comes out as the loaded script itself.
-- AppleScript 1.0 scripts (1993 and 1994) use a table of built-in terms that we rebuilt by hand. A term we haven't seen yet shows up as a `<ref>` placeholder. If you find one, please open an issue.
+- AppleScript 1.0 beta scripts (`FasdUAS 0.95`, from Apple's AppleScript beta CD) aren't supported yet.
 
 ## How it works
 

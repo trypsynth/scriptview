@@ -377,7 +377,10 @@ func TestOldHeader(t *testing.T) {
 
 // TestLegacySymbols decodes AppleScript 1.0 symbols: table index*8+1.
 func TestLegacySymbols(t *testing.T) {
-	for idx, want := range map[uint32]string{109: "ret ", 122: "true", 121: "fals", 2: "list"} {
+	for idx, want := range map[uint32]string{
+		109: "ret ", 121: "true", 122: "fals", 2: "list", 51: "file", 99: "from",
+		132: "ctxt", 127: "aevtodoc", 75: "ascr≠   ", 123: "cura",
+	} {
 		v := idx*8 + 1
 		c, ok := legacySymbol([]byte{byte(v >> 24), byte(v >> 16), byte(v >> 8), byte(v)})
 		if !ok || c.code != want {
@@ -386,5 +389,33 @@ func TestLegacySymbols(t *testing.T) {
 	}
 	if _, ok := legacySymbol([]byte{0, 0, 3, 0xd2}); ok {
 		t.Error("untagged value accepted")
+	}
+}
+
+// TestLegacyRunOnlyHandler decodes an AppleScript 1.0 run-only script whose
+// root object is its run handler, not a script object. 1.0 also builds every
+// list literal with MakeList.
+func TestLegacyRunOnlyHandler(t *testing.T) {
+	var d []byte
+	d = append(d, "FasdUAS 1.00"...)
+	// The run handler: a kind 16 vector of seven references.
+	d = append(d, 0x0e, 0x00, 0x00, 0x00, 0x07, 16,
+		0xff, 0xff, 0xff, 0xfe, 0xff, 0xfd, 0xff, 0xfc, 0x00, 0x01, 0x00, 0x02, 0xff, 0xfb)
+	d = append(d, 0x01, 0xff, 0xff, 0x00, 0x04, 0x00, 0x00, 0x01, 0xd1) // symbol 58: run
+	d = append(d, 0x01, 0xff, 0xfe, 0x00, 0x00)                         // no parameters
+	d = append(d, 0x01, 0xff, 0xfd, 0x00, 0x00)
+	d = append(d, 0x02, 0xff, 0xfc, 0x00, 0x00) // empty list
+	d = append(d, 0x10, 0x00, 0x01, 0x00, 0x00) // no variables
+	d = append(d, 0x10, 0x00, 0x02, 0x00, 0x00) // no literals
+	// Push1 Push1 MakeList Return: {1}
+	d = append(d, 0x11, 0xff, 0xfb, 0x00, 0x04, 0x6b, 0x6b, 0x0d, 0x0f)
+	d = append(d, "ascr\x00\x01\x00\x0c\xfa\xde\xde\xad"...)
+	f, err := Parse(d)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := Decompile(f)
+	if !strings.HasSuffix(got, "\n{1}\n") {
+		t.Errorf("got %q", got)
 	}
 }

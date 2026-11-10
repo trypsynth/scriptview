@@ -17,7 +17,13 @@ func DecompileBytecode(f *File) (string, error) {
 		return "", fmt.Errorf("no script object")
 	}
 	b := newBCBuilder(dc)
-	items, err := b.scriptItems(root.items[len(root.items)-1], true)
+	table := root.items[len(root.items)-1]
+	if root.kind == 16 || root.kind == 17 {
+		// AppleScript 1.0 saves a run-only script that is only a run
+		// handler as the handler itself, with no script object around it.
+		table = []fasValue{nil, []fasValue{}, root}
+	}
+	items, err := b.scriptItems(table, true)
 	if err != nil {
 		return "", err
 	}
@@ -93,7 +99,13 @@ func (b *bcBuilder) scriptItems(v fasValue, top bool) ([]int16, error) {
 					if err != nil {
 						return nil, err
 					}
-					obj := b.node('h', b.keyRef(e.items[0]), b.node('k', b.cons(inner)))
+					objName := e.items[0]
+					if objName == nil {
+						// AppleScript 1.0 leaves a script object stored in
+						// a property unnamed; the property names it.
+						objName = name
+					}
+					obj := b.node('h', b.keyRef(objName), b.node('k', b.cons(inner)))
 					items = append(items, b.node('l', obj), b.node('l'))
 					continue
 				}

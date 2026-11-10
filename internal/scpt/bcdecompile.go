@@ -388,7 +388,11 @@ func (bh *bcHandler) run(lo, hi int, stack []stackVal) ([]int16, []stackVal, err
 			if err != nil {
 				return out, stack, err
 			}
-			emit(b.node('r', v.id, target))
+			if n, ok := b.out.nodes[v.id]; ok && n.typ == 's' { // copy x to …
+				emit(b.node('s', child0(n), target))
+			} else {
+				emit(b.node('r', v.id, target))
+			}
 			stack = append(stack, stackVal{id: v.id, assigned: true, count: -1})
 		case "ObjectAliasQuote":
 			v, err := pop(in)
@@ -646,7 +650,7 @@ func (bh *bcHandler) run(lo, hi int, stack []stackVal) ([]int16, []stackVal, err
 				push(b.node('n', b.node('J', b.cons(parts)), container))
 				break
 			}
-			if name == "MakeList" {
+			if name == "MakeList" && !b.src.legacy { // AppleScript 1.0 made every list this way
 				push(b.node('v', b.cons(items))) // written with brackets: ["a"]
 				break
 			}
