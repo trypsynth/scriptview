@@ -187,7 +187,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          NOTES=""
-          [ -f "release-notes/$GITHUB_REF_NAME.md" ] && NOTES="--notes-file release-notes/$GITHUB_REF_NAME.md"
-          if [ -z "$NOTES" ]; then NOTES="--generate-notes"; fi
+          # The notes are this version's section of CHANGELOG.md.
+          awk -v v="## ${GITHUB_REF_NAME#v}" '$0 == v {on=1; next} /^## / {on=0} on' CHANGELOG.md > notes.md
+          if [ -s notes.md ]; then NOTES="--notes-file notes.md"; else NOTES="--generate-notes"; fi
           gh release create "$GITHUB_REF_NAME" dist/* --title "$GITHUB_REF_NAME" $NOTES
