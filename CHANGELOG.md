@@ -8,6 +8,7 @@
 - Added scripts from the AppleScript 1.0 beta (`FasdUAS 0.95`), which use other node letters, layouts, and symbols. The 16 beta scripts that came with plain-text copies decompile to the same code, apart from wording such as `actor` for `script`
 - Run-only AppleScript 1.0 scripts decompile, including handler parameters, list literals, and script objects
 - Run-only output compiles back to the same bytecode for 11,632 of 12,150 scripts from GitHub. Fixed `get` on `repeat with` loops, handler arguments, and `whose` containers, `copy`, properties in their original order, labeled handler parameters, nested destructuring such as `set {{a, b}, c} to x`, `its «class x»`, `«property x» of application "A"`, `id` values, and the ends of element ranges
+- Fixed `-- copy (incomplete)` lines in run-only scripts from early compilers, which keep a `copy` statement's value as the script's result
 - Output matches `osadecompile` on 12,105 of 12,143 scripts from GitHub and on all 163 scripts that ship with macOS 26
 - Fixed parentheses around `not (exists …)`, `a reference to (… whose …)`, comparisons inside comparisons, `my x` in arithmetic, a minus sign before a reference or a call, and a reference after `id`
 - Fixed escaping inside `|pipes|`, and `app` used as a name

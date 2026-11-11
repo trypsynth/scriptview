@@ -696,6 +696,13 @@ func (bh *bcHandler) run(lo, hi int, stack []stackVal) ([]int16, []stackVal, err
 				emit(v.id) // script name … end script
 			} else if n, ok := b.out.nodes[v.id]; ok && n.typ == 's' { // copy x to …
 				emit(b.node('s', child0(n), target))
+				// Old compilers write Clone Dup Pop: the copy's value stays
+				// as the result, and is the same statement.
+				for i := range stack {
+					if stack[i].id == v.id {
+						stack[i].assigned = true
+					}
+				}
 			} else {
 				emit(b.node('r', v.id, target))
 			}
