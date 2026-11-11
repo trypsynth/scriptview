@@ -593,7 +593,7 @@ var ordinals = map[int]string{
 // "text items".
 func plural(name string) string {
 	switch {
-	case strings.HasSuffix(name, "text"), strings.HasPrefix(name, "«"):
+	case strings.HasSuffix(strings.ToLower(name), "text"), strings.HasPrefix(name, "«"):
 		return name
 	case strings.HasSuffix(name, "s"), strings.HasSuffix(name, "x"),
 		strings.HasSuffix(name, "ch"), strings.HasSuffix(name, "sh"):
@@ -779,6 +779,14 @@ func (dc *decompState) expr(id int16) string {
 			return "<as>"
 		}
 		left := dc.sub(n.children[0], precAs)
+		if dc.beta {
+			// Beta files store no parentheses, and as binds tighter than
+			// the arithmetic operators other than ^.
+			left = dc.sub(n.children[0], binOps['a'].prec)
+			if c, ok := dc.nodes[n.children[0]]; ok && c.typ == 'n' {
+				left = "(" + left + ")" // (word after selection) as styled text
+			}
+		}
 		if dc.isMyCall(n.children[0]) {
 			left = dc.expr(n.children[0])
 		}

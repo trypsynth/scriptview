@@ -414,6 +414,18 @@ var classicDicts = func() map[string]*dict {
 				pair[0][code] = name
 			}
 		}
+		if scope == "" {
+			// Some scripting additions capitalized standard terms, such as
+			// Window. Where a current dictionary spells the term in lowercase,
+			// use that spelling instead.
+			for _, pair := range [][2]map[string]string{{merged.classes, nil}, {merged.props, nil}} {
+				for code, name := range pair[0] {
+					if lower := strings.ToLower(name); lower != name && modernSpells(code, lower) {
+						pair[0][code] = lower
+					}
+				}
+			}
+		}
 		if base != nil {
 			for _, pair := range [][2]map[string]string{
 				{merged.classes, base.classes}, {merged.props, base.props}, {merged.enums, base.enums},
@@ -590,4 +602,15 @@ func isFourCC(b []byte) bool {
 		}
 	}
 	return true
+}
+
+// modernSpells reports whether a current dictionary names class or property
+// code with name.
+func modernSpells(code, name string) bool {
+	for _, d := range dicts {
+		if d.classes[code] == name || d.props[code] == name {
+			return true
+		}
+	}
+	return false
 }

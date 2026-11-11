@@ -17,6 +17,7 @@ func FuzzDecompile(f *testing.F) {
 			}
 		}
 	}
+	f.Add(encodeBeta(17, betaSample()))
 	f.Fuzz(func(t *testing.T, data []byte) {
 		file, err := Parse(data)
 		if err != nil {

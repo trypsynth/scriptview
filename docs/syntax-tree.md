@@ -102,7 +102,7 @@ Binary operators, each with two children, left and right:
 
 The operators bind in this order, from tightest to loosest: `^`; `*`, `/`, `div` and `mod`; `+` and `-`; `&`; the comparisons and `starts with`, `ends with` and `contains`; `=` and `≠`; `and`; `or`.
 
-The beta of AppleScript 1.0 uses different letters. See [File format](file-format.md#the-applescript-10b1-beta).
+The beta of AppleScript 1.0 uses different letters for the same nodes. See [Node letters](file-format.md#node-letters).
 
 ## The `l` node
 

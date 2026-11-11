@@ -67,8 +67,8 @@ To test this, the decompiled source is compiled again, and the new bytecode is c
 
 - Terms from apps that don't ship with macOS print as raw codes, such as `«class pURL»`, unless the app is installed and you're on a Mac. Scripts from classic Mac OS also get the terms of about 80 classic scripting additions and apps (see [Terminology](docs/terminology.md)).
 - Run-only scripts lose their comments and formatting (see above).
+- Run-only scripts from the AppleScript 1.0 beta (`FasdUAS 0.95`) print nothing, because the beta's bytecode isn't decoded.
 - A value that was worked out when the script was compiled can't be turned back into the code that made it. For example, `property lib : load script …` comes out as the loaded script itself.
-- AppleScript 1.0 beta scripts (`FasdUAS 0.95`, from Apple's AppleScript beta CD) aren't supported yet.
 
 ## How it works
 

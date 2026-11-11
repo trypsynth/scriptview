@@ -151,7 +151,7 @@ The typed vector (`0e`) is the general container of the format. Its kind byte sa
 
 Kinds 20 to 32 are references that the compiler evaluated ahead of time, because every part of them is a constant: `item 2 of {1, 2}`, or a reference to an app object written out in full. Each kind is the matching `MakeObjectAlias` form plus 21 (see [References](bytecode.md#references)), and kind 20 stands for `a reference to`. Kinds 33 to 41 are the `MakeComp` comparisons plus 33: equal, not equal, greater than, greater than or equal, less than, less than or equal, starts with, ends with, and contains.
 
-The AppleScript 1.0b1 beta uses kinds 17, 18 and 28 to 31 in ways that later versions don't. See [The AppleScript 1.0b1 beta](#the-applescript-10b1-beta).
+In the AppleScript 1.0b1 beta, the root is a kind 17 or 18 vector instead. See [The AppleScript 1.0b1 beta](#the-applescript-10b1-beta).
 
 ## Terms
 
@@ -251,9 +251,54 @@ The table has 139 entries. About 30 of them are objects that the runtime uses on
 
 ## The AppleScript 1.0b1 beta
 
-The beta wrote `FasdUAS 0.95`. Its symbol table holds mostly the same terms in a different order. scriptview has a copy (`betaSymbols`), read from the beta's extension the same way. The rest of the beta's format differs more, so scriptview doesn't decompile these files yet. The 26 scripts on the beta CD show these differences:
+The beta wrote `FasdUAS 0.95`. Its records are the same as later versions', and its syntax tree holds the same statements in nearly the same layouts, under different names. scriptview translates a beta file into the AppleScript 1.0 form when it reads it (`internal/scpt/beta.go`), and then prints it like any other script. The beta CD has plain-text copies of 16 of its 26 compiled scripts, which give the expected output.
 
-- The records are the same, and every file parses.
-- The root is a kind 17 vector of 5 items, or a kind 18 vector of 8 items, not a kind 15 script object.
-- Terms use kinds `31` for events and `32` for classes, and identifiers use kind `33`.
-- The syntax tree uses different node letters. The script body is a `U` node, and `y` and `z` nodes appear that no later version uses.
+### Node letters
+
+Later versions added node types in the middle of the alphabet, which moved every letter after them. The beta's letters map to the 1.0 letters by four offsets:
+
+| Beta letters | 1.0 letters | Offset | Nodes |
+| --- | --- | --- | --- |
+| `4` to `E` | `1` to `B` | 3 | References, insertion points, `=` to `≤` |
+| `H` to `N` | `C` to `I` | 5 | `starts with` to `not`, commands |
+| `P` to `i` | `J` to `c` | 6 | Lists, records, control statements, arithmetic, `as` |
+| `m` to `z` | `f` to `s` | 7 | `me`, `it`, script objects, handlers, blocks, variables, `set`, `copy` |
+
+For example, `tell` is `U` in the beta and `O` later, and `set` is `y` and `r`. The beta files never use `E`, `F`, `G`, `O`, `S`, `T`, `V`, `X`, or `j` to `l`, so the mapping of those letters is an inference from their neighbors. In particular, `F` and `G` have no 1.0 counterpart, and scriptview maps `j` to unary minus and `k` to `get`.
+
+### Layouts
+
+These nodes store their children differently:
+
+| Node | Beta children | 1.0 form |
+| --- | --- | --- |
+| Handler (`p`) | Name, body, direct parameter, positional parameters | A signature node, then the body |
+| `try` (`W`) | Body, error variable, error parameters, handler | Body, an `error` clause node, handler |
+| Script object (`o`) | A `0c` string with the name, then the body | An identifier, then the body |
+| Call (`N`) | Name, direct parameter, labeled or positional parameters | Positional parameters move to the second slot |
+| Line (`s`) | Statement or expression, comment | The same, with other flag values |
+
+An empty body, such as the body of an empty `repeat` loop, is a literal of the empty symbol rather than no node.
+
+The beta's error handler is `on error … end error`, inside the statement it protects. The beta compiler stores it as a `try` node around the whole enclosing block, so a handler written at the end of a `tell` block wraps the `tell`. scriptview prints it as `try … on error … end try`. In the same way, it prints `actor` as `script` and `exit` as `exit repeat`.
+
+### Flags and parentheses
+
+The `s` node's flags say what kind of line or wrapper it is: 0 for a statement with a `--` comment, 3 for a `--` comment on its own line, 4 for a `(* … *)` comment, 5 for a blank line, 6 for an expression after a `¬` break, 7 for one before a `¬` break, and 8 for the article `the`. Other nodes use their own flag values for alternative wordings, such as `is` and `is equal to`, `in front of`, and `begins with`. scriptview maps them to the 1.0 flags where a 1.0 spelling exists.
+
+The beta doesn't store parentheses. scriptview adds them where the meaning needs them: around the left side of `as` when it's a reference or an arithmetic expression, as in `((size of word i) * percentage) as integer`, and around references at the ends of a range.
+
+### Terms and symbols
+
+Events use term kind `31`, with parameter information after the 8-byte code. Property codes use kind `32`, and class codes use `0a`, as later. An enumerator (`0b`) has only its 4-byte code, without the type. Identifiers use kind `33`.
+
+The beta's symbol table holds mostly the same terms as 1.0's, in a different order. scriptview has a copy (`betaSymbols`), read from the beta's extension the same way as the 1.0 table.
+
+### Run-only beta scripts
+
+scriptview reads only the beta's syntax tree. The beta's bytecode uses other opcodes, which haven't been mapped, so a run-only beta script prints nothing. One is known, a FileMaker Pro demo applet from 1993.
+
+### Two builds
+
+The beta files come from two builds. Most have a kind 17 root vector of 5 items. The 10 scripts in SimpleDialog, a sample app on the same CD, have a kind 18 root of 8 items. Their symbol table is missing two entries before `true` and `false`: they store `true` as entry 123 and `false` as 124, which are the `index` and `ID` key forms in the other files. Each SimpleDialog script sets a check box or radio button to one of these two values, which shows which one is which.
+

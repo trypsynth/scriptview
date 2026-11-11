@@ -295,6 +295,9 @@ func parseRecords(body []byte, b *builder) error {
 		return err
 	}
 	b.dc.shiftJIS = looksJapanese(legacyTexts(objs))
+	if b.dc.beta {
+		objs = translateBeta(objs)
+	}
 	for _, o := range objs {
 		b.dc.objects[o.ref] = o
 		switch o.typ {

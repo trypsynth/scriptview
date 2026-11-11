@@ -73,6 +73,15 @@ Current macOS doesn't open any AppleScript 1.0 script, so there's no reference o
 - Every script decompiles with no placeholders left, and the output reads correctly by hand.
 - The scripts that still have a syntax tree also decompile from their bytecode alone, as if they were run-only, and the two results agree. This check found the AppleScript 1.0 differences in handler parameters, list literals and script objects that [File format](file-format.md#applescript-10-files) lists.
 
+The beta scripts have a better reference: the beta CD has plain-text copies of 16 of its 26 compiled scripts. scriptview's output matches them, apart from these differences:
+
+- Beta spellings that scriptview prints in their 1.0 form: `on error … end error` as `try … on error … end try`, `actor` as `script`, `exit` as `exit repeat`, and `÷` as `/`.
+- Names from the app's dictionary, which can differ from what the author typed: Quill's dictionary spells `Selection` and `Size` with capitals.
+- Parentheses that the author wrote but the meaning doesn't need. The beta doesn't store parentheses at all.
+- Terms from Excel 4, whose dictionary isn't on the discs, and print as raw codes.
+
+The other 10 beta scripts belong to SimpleDialog, a sample app, and have no text copies. Their output reads correctly by hand.
+
 Apple owns these scripts, so they aren't in the repository. The tests use synthetic files instead.
 
 ## Fuzzing

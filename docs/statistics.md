@@ -89,7 +89,7 @@ AppleScript 1.0 has no kind 177 strings and no kind 4 parameter lists: it stores
 | `0b` | Typed constant | 7,609 | 109 | 32 | 15 | — |
 | `2f` | Class, AppleScript 1.0 | — | — | 67 | — | — |
 | `31` | Event, beta | — | — | — | — | 25 |
-| `32` | Class, beta | — | — | — | — | 19 |
+| `32` | Property, beta | — | — | — | — | 19 |
 
 ## Descriptors
 
@@ -122,6 +122,6 @@ The 20 most common node types in the GitHub set, out of the 12,036 scripts that 
 
 The rarest types are `<` (`middle`, 7 scripts), `u` (`with transaction`, 8), `8` (`before`, 51) and `9` (`after`, 59).
 
-The beta files use two node types that no later version has, `y` and `z`.
+The beta files use other letters for the same node types. See [File format](file-format.md#node-letters).
 
 For the opcodes, see the Scripts column in [Opcodes](bytecode.md#opcodes).
