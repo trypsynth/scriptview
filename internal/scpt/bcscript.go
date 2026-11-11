@@ -179,7 +179,7 @@ func (b *bcBuilder) usesAdditions(uses []int16) bool {
 func (b *bcBuilder) callsAdditions() bool {
 	for _, h := range b.src.allHandlers() {
 		for _, lit := range h.literals {
-			if c, ok := lit.(fasCode); ok && c.kind == osKindEvent && dicts[""].events[c.code] != "" {
+			if c, ok := lit.(fasCode); ok && c.kind == osKindEvent && b.src.dictSet()[""].events[c.code] != "" {
 				return true
 			}
 		}

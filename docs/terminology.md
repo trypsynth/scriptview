@@ -11,6 +11,14 @@ A compiled script doesn't store words like `window` or `display dialog`. It stor
 - The apps that ship with macOS, from their `.sdef` files. Many of these include the Cocoa standard suite with `xi:include`, so we follow those includes.
 - The SOAP and XML-RPC commands (`call soap`, `call xmlrpc`). These are built into AppleScript's code, so there's no file. We got the codes by compiling a test script and wrote them down by hand.
 
+## Classic Mac OS terms
+
+Scripts from classic Mac OS often use scripting additions and apps that macOS dropped long ago: Jon's Commands, PlainTalk's speech commands (`acknowledge`, `click`), Scriptable Text Editor, the Finder Scripting Extension of System 7. `tools/genclassic` reads their dictionaries, `aete` resources from Apple's 1993 and 1994 discs, and writes them to `internal/scpt/classic.tsv`. We can't include the discs, so the tool reads `aete` files you extract yourself; its comment says how.
+
+These terms are only used for scripts from classic Mac OS: AppleScript 1.0 files, and scripts read from a resource fork. For any other script, `osadecompile` on a current Mac doesn't know them either and prints raw codes, so we do too. Even for a classic script, a classic term only names a code that the current dictionaries leave raw, so a word that prints one way today doesn't change.
+
+Scripting additions, and PlainTalk's SR Monitor, which runs speech rules without a `tell`, are in scope everywhere. The Finder Scripting Extension's terms belong to the Finder, and an app's terms to the app. Scripts name an app by its file name, which often has a version in it (`Progress Bar 1.0.1`), so the terms are under both names.
+
 ## When two dictionaries disagree
 
 Codes clash all the time. Some rules we found by testing:

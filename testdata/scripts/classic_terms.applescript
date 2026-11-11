@@ -1,0 +1,1 @@
+«event earsack » given «class ksay»:"Hello"

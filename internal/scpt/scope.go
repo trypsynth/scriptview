@@ -70,7 +70,7 @@ func (dc *decompState) anyTerm4(code string) string {
 	if name := dc.className4(code); name != "" {
 		return name
 	}
-	return dicts["AppleScript"].props[code] // time:, but not application properties
+	return dc.dictSet()["AppleScript"].props[code] // time:, but not application properties
 }
 
 // kindOrder lists the namespaces searched for a term of the given kind.
@@ -143,22 +143,22 @@ func (dc *decompState) isTermWord(name string) bool {
 	// dictionary is unknown.
 	var app *dict
 	if len(dc.scopes) > 0 {
-		app = scopeDict(dc.scopes[len(dc.scopes)-1])
+		app = dc.scopeDict(dc.scopes[len(dc.scopes)-1])
 	}
 	if app != nil && sdefTypeWords[lower] {
 		return true // tell application "Safari" to get r's |type|
 	}
 	for _, d := range dc.inScope() {
-		if d != coreDict && d != builtinDict && d != dicts[""] && d != dicts["AppleScript"] && d != app {
+		if d != coreDict && d != builtinDict && d != dc.dictSet()[""] && d != dc.dictSet()["AppleScript"] && d != app {
 			continue
 		}
-		if d == dicts["AppleScript"] && typeNameWords[lower] && !dc.noAdditions {
+		if d == dc.dictSet()["AppleScript"] && typeNameWords[lower] && !dc.noAdditions {
 			return true
 		}
-		if d == builtinDict || d == coreDict || (d == dicts["AppleScript"] && unpipedWords[lower]) {
+		if d == builtinDict || d == coreDict || (d == dc.dictSet()["AppleScript"] && unpipedWords[lower]) {
 			continue
 		}
-		if d == dicts[""] && dc.noAdditions {
+		if d == dc.dictSet()[""] && dc.noAdditions {
 			continue // Standard Additions words only clash when they are loaded
 		}
 		if d.hasWord(lower) {
@@ -177,7 +177,7 @@ func (dc *decompState) isBuiltin(ref int16) bool {
 }
 
 // scopeDict returns the terminology of the application named scope.
-func scopeDict(scope string) *dict {
+func (dc *decompState) scopeDict(scope string) *dict {
 	if strings.HasPrefix(scope, "/") || strings.Contains(scope, ":") && !strings.Contains(scope, "://") {
 		// An application named by its path: "/System/Applications/Music.app".
 		scope = scope[strings.LastIndexAny(strings.TrimRight(scope, "/:"), "/:")+1:]
@@ -192,7 +192,7 @@ func scopeDict(scope string) *dict {
 	if strings.HasPrefix(scope, "http://") || strings.HasPrefix(scope, "https://") {
 		scope = webServiceScope
 	}
-	return dicts[scope]
+	return dc.dictSet()[scope]
 }
 
 // inScope returns the dictionaries to search, innermost tell target first,
@@ -201,11 +201,11 @@ func (dc *decompState) inScope() []*dict {
 	// Only the innermost application's terminology is in scope.
 	var out []*dict
 	if len(dc.scopes) > 0 {
-		if d := scopeDict(dc.scopes[len(dc.scopes)-1]); d != nil {
+		if d := dc.scopeDict(dc.scopes[len(dc.scopes)-1]); d != nil {
 			out = append(out, d)
 		}
 	}
-	return append([]*dict{coreDict}, append(out, dicts[""], dicts["AppleScript"], builtinDict)...)
+	return append([]*dict{coreDict}, append(out, dc.dictSet()[""], dc.dictSet()["AppleScript"], builtinDict)...)
 }
 
 // term names a four-char code, falling back to raw «class xxxx» syntax.
@@ -218,7 +218,7 @@ func (dc *decompState) term(code string, kind termKind) string {
 		if d == nil {
 			continue
 		}
-		if d == dicts[""] || d == dicts["AppleScript"] || d == builtinDict {
+		if d == dc.dictSet()[""] || d == dc.dictSet()["AppleScript"] || d == builtinDict {
 			global = append(global, d)
 			continue
 		}

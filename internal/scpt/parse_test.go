@@ -353,6 +353,12 @@ func TestClassicContainers(t *testing.T) {
 		if got := Decompile(f); strings.TrimSpace(got) != strings.TrimSpace(string(want)) {
 			t.Errorf("%s: got\n%s", name, got)
 		}
+		if !f.dc.classic {
+			t.Errorf("%s: not read as a classic script", name)
+		}
+	}
+	if f, err := Parse(readFixture(t, "hello.scpt")); err != nil || f.dc.classic {
+		t.Errorf("hello.scpt read as a classic script (err %v)", err)
 	}
 }
 
@@ -425,5 +431,25 @@ func TestLegacyRunOnlyHandler(t *testing.T) {
 	got := Decompile(f)
 	if !strings.HasSuffix(got, "\n{1}\n") {
 		t.Errorf("got %q", got)
+	}
+}
+
+// TestClassicTerms checks that classic Mac OS terminology (classic.tsv)
+// names codes only in scripts from classic Mac OS.
+func TestClassicTerms(t *testing.T) {
+	data := readFixture(t, "classic_terms.scpt")
+	f, err := Parse(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := Decompile(f); !strings.Contains(got, "«event earsack »") {
+		t.Errorf("current script: got %q, want the raw code", got)
+	}
+	old := append([]byte("FasdUAS 1.00"), data[len(Magic):]...)
+	if f, err = Parse(old); err != nil {
+		t.Fatal(err)
+	}
+	if got := Decompile(f); got != "acknowledge saying \"Hello\"\n" {
+		t.Errorf("AppleScript 1.0 script: got %q", got)
 	}
 }

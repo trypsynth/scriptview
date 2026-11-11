@@ -390,6 +390,55 @@ var systemApps = map[string]bool{}
 
 var dicts, bundleScopes = loadDicts(termsTSV)
 
+//go:embed classic.tsv
+var classicTSV string
+
+// classicDicts is dicts with the terms of classic Mac OS dictionaries added
+// (tools/genclassic), for scripts from classic Mac OS. A classic term only
+// names a code that the current dictionaries leave raw.
+var classicDicts = func() map[string]*dict {
+	classic, _ := loadDicts(classicTSV)
+	out := make(map[string]*dict, len(dicts))
+	for scope, d := range dicts {
+		out[scope] = d
+	}
+	for scope, c := range classic {
+		base := out[scope]
+		merged := newDict()
+		for _, pair := range [][2]map[string]string{
+			{merged.classes, c.classes}, {merged.props, c.props}, {merged.enums, c.enums},
+			{merged.events, c.events}, {merged.params, c.params}, {merged.plurals, c.plurals},
+			{merged.qenums, c.qenums},
+		} {
+			for code, name := range pair[1] {
+				pair[0][code] = name
+			}
+		}
+		if base != nil {
+			for _, pair := range [][2]map[string]string{
+				{merged.classes, base.classes}, {merged.props, base.props}, {merged.enums, base.enums},
+				{merged.events, base.events}, {merged.params, base.params}, {merged.plurals, base.plurals},
+				{merged.qenums, base.qenums},
+			} {
+				for code, name := range pair[1] {
+					pair[0][code] = name // the current name wins
+				}
+			}
+		}
+		out[scope] = merged
+	}
+	return out
+}()
+
+// dictSet returns the dictionaries for this script: the classic set for
+// scripts from classic Mac OS.
+func (dc *decompState) dictSet() map[string]*dict {
+	if dc.classic {
+		return classicDicts
+	}
+	return dicts
+}
+
 // webServiceScope holds the terminology of SOAP and XML-RPC servers, which
 // applications named by an http:// URL use.
 const webServiceScope = "http://"

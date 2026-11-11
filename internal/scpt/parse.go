@@ -61,9 +61,11 @@ func Parse(data []byte) (*File, error) {
 			data = data[i+1:]
 		}
 	}
+	classic := false
 	if fasdHeaderLen(data) == 0 {
 		if s, ok := unwrapScript(data); ok {
 			data = s // a classic resource fork, AppleDouble, MacBinary or BinHex file
+			classic = true
 		}
 	}
 	if fasdHeaderLen(data) > 0 {
@@ -91,6 +93,7 @@ func Parse(data []byte) (*File, error) {
 	newVersioned := func() *builder {
 		b := newBuilder()
 		b.dc.legacy, b.dc.beta = version < "1.01", version < "0.98"
+		b.dc.classic = classic || b.dc.legacy
 		return b
 	}
 	b := newVersioned()
