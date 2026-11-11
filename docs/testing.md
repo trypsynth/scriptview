@@ -16,8 +16,8 @@ A heads-up if you run the probes yourself: compiling a script that talks to an a
 
 Probes only find what you think to test. To find the rest, we compared scriptview with `osadecompile` on two big sets of real scripts:
 
-- The compiled scripts that ship with macOS, in `/Library/Scripts` and `/System/Library`. There are 194.
-- Scripts from about 1,370 AppleScript repositories on GitHub. We compiled the `.applescript` files ourselves, and added any `.scpt` files the repositories had. There are 6,142.
+- The compiled scripts that ship with macOS, in `/Library/Scripts` and `/System/Library`. macOS 26 has 163.
+- Scripts from the 4,535 repositories GitHub lists as AppleScript, found with `gh search repos --language=AppleScript`, one search per year created. We compiled the `.applescript` files ourselves, and added any `.scpt` files the repositories had. With duplicates removed, there are 14,878, of which 2,621 are plain text saved as `.scpt`. We left out two repositories that collect AppleScript malware: macOS's malware scanner flags their files, and the scripts are nothing we need.
 
 `tools/corpus/compare.py` runs both tools on a list of files and saves a diff for each file that doesn't match. We fixed the most common diff, ran it again, and repeated. The GitHub set was the most useful. It has old scripts from old compilers, scripts that use Objective-C, and all sorts of odd formatting.
 
@@ -26,6 +26,19 @@ We can't include these scripts in the repository, because other people wrote the
 For the bytecode decompiler, we first compared its output with the syntax tree output of the same file, with all flags set to zero. That turned out to be a weak test, because zeroing the flags also removes parentheses that the source needs.
 
 A better test is a round trip: decompile the bytecode, compile the result again with `osacompile`, and compare the new bytecode with the original. If they're the same, the decompiled source means exactly what the original meant. `tools/corpus/roundtrip.py` does this. It found several bugs that the first test missed, such as `use` statements in the wrong place and constant lists that printed as garbage.
+
+The latest results, on macOS 26.5:
+
+| Set | Matches `osadecompile` | Round trip gives the same bytecode |
+| --- | --- | --- |
+| macOS scripts | 163 of 163 | 163 of 163 |
+| GitHub | 12,105 of 12,143 | 11,632 of 12,150 |
+
+Most of the GitHub differences left aren't ours to fix:
+
+- Scripts for apps that aren't installed. `osadecompile` prints their names from the app's dictionary, and we print raw codes, or the other way around for an app we know. In the round trip, some of these don't compile at all without the app, or compile a raw code to something else.
+- Scripts compiled by old versions of AppleScript, whose code the current compiler writes differently: an extra `GetResult` at the end of a script, or `time string of (current date)` as two references.
+- `do shell script ("x" as string)`, where `osadecompile` drops parentheses that the script needs (see [Quirks](quirks.md)).
 
 ## Classic scripts
 
