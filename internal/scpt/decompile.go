@@ -52,8 +52,9 @@ type decompState struct {
 	repeatWith int
 	// shiftJIS is set when the file's old byte strings are Japanese.
 	shiftJIS bool
-	// legacy is set for AppleScript 1.0 files (FASD before 1.01).
-	legacy bool
+	// legacy is set for AppleScript 1.0 files (FASD before 1.01), and beta
+	// for the 1.0b1 beta's (FASD 0.95).
+	legacy, beta bool
 	// fromBytecode is set for output rebuilt from bytecode (run-only
 	// scripts), which must compile back to the same code: reals keep every
 	// digit, and a raw property code of the tell target is written

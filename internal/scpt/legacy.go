@@ -120,8 +120,112 @@ var legacySymbols = map[uint32]fasCode{
 	138: {kind: osKindConstant, enum: "savo", code: "ask "},
 }
 
-// legacySymbol decodes an AppleScript 1.0 symbol payload.
-func legacySymbol(data []byte) (fasCode, bool) {
+// betaSymbols is the same table in the AppleScript 1.0b1 beta (FASD 0.95),
+// read the same way from that extension's PROC 128. It holds mostly the
+// same terms in a different order.
+var betaSymbols = map[uint32]fasCode{
+	1:   {kind: osKindCode, code: "pcls"},
+	2:   {kind: osKindCode, code: "list"},
+	3:   {kind: osKindCode, code: "long"},
+	4:   {kind: osKindCode, code: "vect"},
+	5:   {kind: osKindCode, code: "sing"},
+	6:   {kind: osKindCode, code: "reco"},
+	8:   {kind: osKindCode, code: "apps"},
+	9:   {kind: osKindCode, code: "bool"},
+	10:  {kind: osKindCode, code: "pcls"},
+	11:  {kind: osKindCode, code: "enum"},
+	12:  {kind: osKindCode, code: "doub"},
+	13:  {kind: osKindCode, code: "rawd"},
+	14:  {kind: osKindCode, code: "TEXT"},
+	15:  {kind: osKindCode, code: "exmn"},
+	16:  {kind: osKindCode, code: "ldt "},
+	17:  {kind: osKindCode, code: "actr"},
+	18:  {kind: osKindCode, code: "hand"},
+	49:  {kind: osKindCode, code: "evid"},
+	50:  {kind: osKindCode, code: "kyid"},
+	51:  {kind: osKindCode, code: "uid "},
+	52:  {kind: osKindCode, code: "cobj"},
+	53:  {kind: osKindCode, code: "citm"},
+	54:  {kind: osKindCode, code: "file"},
+	55:  {kind: osKindCode, code: "alis"},
+	56:  {kind: osKindCode, code: "insl"},
+	57:  {kind: osKindCode, code: "nmbr"},
+	58:  {kind: osKindCode, code: "ls  "},
+	59:  {kind: osKindCode, code: "lrs "},
+	60:  {kind: osKindCode, code: "nds "},
+	61:  {kind: osKindEvent, code: "aevtoapp"},
+	62:  {kind: osKindEvent, code: "coregetd"},
+	63:  {kind: osKindEvent, code: "coresetd"},
+	64:  {kind: osKindEvent, code: "coreclon"},
+	65:  {kind: osKindEvent, code: "corecnte"},
+	66:  {kind: osKindEvent, code: "ascrerr "},
+	67:  {kind: osKindEvent, code: "ascrpsbr"},
+	68:  {kind: osKindEvent, code: "ascrksbr"},
+	69:  {kind: osKindEvent, code: "ascr+   "},
+	70:  {kind: osKindEvent, code: "ascr-   "},
+	71:  {kind: osKindEvent, code: "ascr*   "},
+	72:  {kind: osKindEvent, code: "ascr/   "},
+	73:  {kind: osKindEvent, code: "ascrdiv "},
+	74:  {kind: osKindEvent, code: "ascrmod "},
+	75:  {kind: osKindEvent, code: "ascr^   "},
+	76:  {kind: osKindEvent, code: "ascr=   "},
+	77:  {kind: osKindEvent, code: "ascr≠   "},
+	78:  {kind: osKindEvent, code: "ascr>   "},
+	79:  {kind: osKindEvent, code: "ascr>=  "},
+	80:  {kind: osKindEvent, code: "ascr<   "},
+	81:  {kind: osKindEvent, code: "ascr<=  "},
+	82:  {kind: osKindEvent, code: "ascrcbfr"},
+	83:  {kind: osKindEvent, code: "ascrcafr"},
+	84:  {kind: osKindEvent, code: "ascrccat"},
+	85:  {kind: osKindEvent, code: "ascrbgwt"},
+	86:  {kind: osKindEvent, code: "ascrends"},
+	87:  {kind: osKindEvent, code: "ascrcont"},
+	88:  {kind: osKindEvent, code: "ascrAND "},
+	89:  {kind: osKindEvent, code: "ascrOR  "},
+	90:  {kind: osKindEvent, code: "ascrNOT "},
+	91:  {kind: osKindEvent, code: "ascrneg "},
+	92:  {kind: osKindCode, code: "data"},
+	93:  {kind: osKindCode, code: "rtyp"},
+	94:  {kind: osKindCode, code: "----"},
+	95:  {kind: osKindCode, code: "insh"},
+	96:  {kind: osKindCode, code: "kocl"},
+	97:  {kind: osKindCode, code: "pcls"},
+	98:  {kind: osKindCode, code: "pnam"},
+	99:  {kind: osKindCode, code: "leng"},
+	100: {kind: osKindCode, code: "pcnt"},
+	101: {kind: osKindCode, code: "thru"},
+	102: {kind: osKindCode, code: "to  "},
+	103: {kind: osKindCode, code: "from"},
+	104: {kind: osKindCode, code: "snam"},
+	105: {kind: osKindCode, code: "parg"},
+	106: {kind: osKindCode, code: "arg "},
+	107: {kind: osKindCode, code: "errn"},
+	108: {kind: osKindCode, code: "erap"},
+	109: {kind: osKindCode, code: "erob"},
+	110: {kind: osKindCode, code: "ptlr"},
+	111: {kind: osKindCode, code: "rslt"},
+	112: {kind: osKindCode, code: "spac"},
+	113: {kind: osKindCode, code: "ret "},
+	114: {kind: osKindCode, code: "tab "},
+	115: {kind: osKindCode, code: "pi  "},
+	116: {kind: osKindCode, code: "pare"},
+	117: {kind: osKindCode, code: "init"},
+	118: {kind: osKindCode, code: "prln"},
+	119: {kind: osKindCode, code: "prdp"},
+	120: {kind: osKindCode, code: "rvse"},
+	121: {kind: osKindCode, code: "rest"},
+	122: {kind: osKindConstant, enum: "kfrm", code: "name"},
+	123: {kind: osKindConstant, enum: "kfrm", code: "indx"},
+	124: {kind: osKindConstant, enum: "kfrm", code: "ID  "},
+	125: {kind: osKindConstant, enum: "boov", code: "true"},
+	126: {kind: osKindConstant, enum: "boov", code: "fals"},
+	127: {kind: osKindConstant, enum: "misc", code: "cura"},
+	128: {kind: osKindConstant, enum: "cons", code: "rmte"},
+}
+
+// legacySymbol decodes an AppleScript 1.0 symbol payload, from the beta's
+// table when beta is set.
+func legacySymbol(data []byte, beta bool) (fasCode, bool) {
 	if len(data) != 4 {
 		return fasCode{}, false
 	}
@@ -129,6 +233,10 @@ func legacySymbol(data []byte) (fasCode, bool) {
 	if v&7 != 1 {
 		return fasCode{}, false
 	}
-	c, ok := legacySymbols[v>>3]
+	table := legacySymbols
+	if beta {
+		table = betaSymbols
+	}
+	c, ok := table[v>>3]
 	return c, ok
 }

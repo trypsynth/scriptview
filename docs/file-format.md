@@ -114,6 +114,10 @@ Scripts from 1993 and 1994 (FASD versions 0.98 and 1.00) use the same records, w
 
 Current macOS refuses these files with "data format obsolete" (-1758), and its runtime no longer has the symbol table. We read the table out of the AppleScript 1.0 extension (`vers` 1.0, on Apple's October 1993 Developer CD). Its startup code (`PROC` 128) builds the table one entry at a time: it pushes a four-character code, or an event's class and ID, calls a constructor, and pops the result into the table. Counting those calls gives each entry's index. The table has 139 entries; we left out about 30 that the runtime only uses internally, such as anonymous `obj ` placeholders. The table is in `internal/scpt/legacy.go`. A symbol that isn't in it prints as a `<ref>` placeholder.
 
-The AppleScript 1.0b1 beta wrote `FasdUAS 0.95`. Its table is built the same way but in a different order, and scriptview doesn't read those files yet.
+The AppleScript 1.0b1 beta wrote `FasdUAS 0.95`. Its table is built the same way, from the same terms in a different order, and we read it out of the beta's extension too (`betaSymbols`). The rest of the format is further from 1.0 than that, so scriptview doesn't decompile these files yet. What we know, from the 26 scripts on the beta CD:
+
+- The records are the same, and the strict parser reads every file.
+- The root is a kind 17 vector of 5 items, not a kind 15 script object, and the graph has vectors of kinds 18 and 24, which later versions don't use.
+- Syntax tree nodes use other type letters: the script body is a `U` node.
 
 Classic Mac OS kept text in the encoding of the script system it ran: Mac Roman for Western languages, and a Shift JIS variant for Japanese. A compiled script doesn't say which one it used. scriptview reads a file as Japanese when every one of its old byte strings with non-ASCII bytes decodes as Shift JIS, and together they hold several kana or kanji. Western text almost never passes: a Mac Roman accented letter like `é` is a Shift JIS lead byte, and the byte after it rarely makes a valid pair. The Shift JIS table comes from macOS's CP932 converter, through `tools/gensjis`.

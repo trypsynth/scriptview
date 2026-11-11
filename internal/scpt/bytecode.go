@@ -79,7 +79,7 @@ func (dc *decompState) decodeValue(ref int16, depth int) fasValue {
 	}
 	switch o.typ {
 	case objSymbol:
-		if c, ok := legacySymbol(o.data); ok {
+		if c, ok := legacySymbol(o.data, dc.beta); ok {
 			switch {
 			case c.code == "true":
 				return true

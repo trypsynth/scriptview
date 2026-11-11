@@ -87,13 +87,18 @@ func Parse(data []byte) (*File, error) {
 		body = body[:len(body)-n]
 	}
 
-	b := newBuilder()
+	version := string(data[8:12])
+	newVersioned := func() *builder {
+		b := newBuilder()
+		b.dc.legacy, b.dc.beta = version < "1.01", version < "0.98"
+		return b
+	}
+	b := newVersioned()
 	if err := parseRecords(body, b); err != nil {
 		// Unknown record layout: fall back to the tolerant byte-wise scanner.
-		b = newBuilder()
+		b = newVersioned()
 		scanRecords(data[hdr:], b)
 	}
-	b.dc.legacy = string(data[8:12]) < "1.01"
 	return b.finish(), nil
 }
 
@@ -295,7 +300,7 @@ func parseRecords(body []byte, b *builder) error {
 				b.dc.paramMap[o.ref] = o.refs
 			}
 		case objSymbol:
-			if c, ok := legacySymbol(o.data); ok {
+			if c, ok := legacySymbol(o.data, b.dc.beta); ok {
 				switch c.kind {
 				case osKindConstant:
 					b.osType(o.ref, osKindConstant, []byte(c.enum+c.code))

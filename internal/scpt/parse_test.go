@@ -382,12 +382,20 @@ func TestLegacySymbols(t *testing.T) {
 		132: "ctxt", 127: "aevtodoc", 75: "ascr≠   ", 123: "cura",
 	} {
 		v := idx*8 + 1
-		c, ok := legacySymbol([]byte{byte(v >> 24), byte(v >> 16), byte(v >> 8), byte(v)})
+		c, ok := legacySymbol([]byte{byte(v >> 24), byte(v >> 16), byte(v >> 8), byte(v)}, false)
 		if !ok || c.code != want {
 			t.Errorf("symbol %d: got %v %v, want %s", idx, c, ok, want)
 		}
 	}
-	if _, ok := legacySymbol([]byte{0, 0, 3, 0xd2}); ok {
+	// The 1.0b1 beta (FASD 0.95) orders the table differently.
+	for idx, want := range map[uint32]string{2: "list", 95: "insh", 96: "kocl", 125: "true", 127: "cura"} {
+		v := idx*8 + 1
+		c, ok := legacySymbol([]byte{byte(v >> 24), byte(v >> 16), byte(v >> 8), byte(v)}, true)
+		if !ok || c.code != want {
+			t.Errorf("beta symbol %d: got %v %v, want %s", idx, c, ok, want)
+		}
+	}
+	if _, ok := legacySymbol([]byte{0, 0, 3, 0xd2}, false); ok {
 		t.Error("untagged value accepted")
 	}
 }
