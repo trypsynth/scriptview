@@ -1,14 +1,21 @@
-# Notes
+# scriptview notes
 
-These are the things we learned about compiled AppleScript while we built scriptview. Apple doesn't document the format, so most of this comes from compiling small test scripts with `osacompile`, reading the bytes, and comparing our output with `osadecompile` on a few thousand real scripts.
+These pages describe compiled AppleScript as scriptview understands it. Apple doesn't document the format. The descriptions come from compiling test scripts with `osacompile`, reading the bytes, disassembling the AppleScript runtime of 1993, and comparing scriptview's output with `osadecompile` on more than 12,000 real scripts. Where a statement is an inference rather than an observation, the page says so.
 
-Some of it is a guess that happens to match every script we tried. We say so when that's the case.
+## Format reference
 
-- [The file format](file-format.md): the container, the object graph and the records in it.
-- [The syntax tree](syntax-tree.md): how a script's source is stored, and how flags record the way you wrote it.
-- [The bytecode](bytecode.md): the virtual machine, its instructions, and how we decompile run-only scripts.
-- [Terminology](terminology.md): where words like `window` and `display dialog` come from, and when names need `|pipes|`.
+- [File format](file-format.md): containers, the header and trailer, the records, typed vectors, terms, strings, and the differences in AppleScript 1.0 and its beta.
+- [Syntax tree](syntax-tree.md): how a script's source is stored, every node type, and the flags that record how you wrote it.
+- [Bytecode](bytecode.md): handlers, every opcode, references, and how scriptview decompiles run-only scripts.
+- [Corpus statistics](statistics.md): how often each structure occurs in real scripts.
+
+## Printing
+
+- [Terminology](terminology.md): where words such as `window` and `display dialog` come from, and when names need pipes.
 - [Applications](applications.md): how a script remembers an app, and how `osadecompile` names it.
-- [Output quirks](quirks.md): the odd things `osadecompile` does that we copy.
-- [How we tested](testing.md): probes, corpora and fuzzing.
-- [Sources](sources.md): papers, books and tools that helped.
+- [Output quirks](quirks.md): the rules of Script Editor's printer that scriptview copies.
+
+## About these notes
+
+- [Testing](testing.md): probes, corpora, round trips, classic scripts, and fuzzing.
+- [Sources](sources.md): documentation, papers, mailing list posts, and tools.

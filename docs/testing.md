@@ -1,31 +1,48 @@
-# How we tested
+# Testing
 
-With no documentation, the only way to learn the format was to ask the real tools. We used three kinds of tests.
+The format has no documentation, so the reference for every rule is the behavior of Apple's own tools: `osacompile`, which compiles, and `osadecompile`, which prints. scriptview is tested in four ways: probes, corpora, classic scripts, and fuzzing.
 
 ## Probes
 
-A probe is a small script that tests one thing. We write it, compile it with `osacompile`, and decompile it with `osadecompile`. Then we look at the tree with `scriptview tree` and compare our output with Apple's.
+A probe is a small script that tests one thing. To learn how a construct is stored:
 
-For example, to learn how `is not greater than or equal to` is stored, we compiled five lines with the negated comparisons and looked at the flags. Most of the rules in these notes came from a probe like that.
+1. Write the probe, for example five lines that use the negated comparisons.
+2. Compile it with `osacompile`.
+3. Print it with `osadecompile`, and look at its tree with `scriptview tree`.
+4. Compare scriptview's output with `osadecompile`'s.
 
-The probes live in `testdata/scripts`. `go run ./tools/genscripts` compiles them into `testdata/scpt` and saves Apple's output in `testdata/expected`, and `go test` compares ours with it. `testdata/runonly` has run-only copies of some probes, with our own output as the expected result.
+Most of the rules in these notes started as a probe.
 
-A heads-up if you run the probes yourself: compiling a script that talks to an app makes macOS fetch that app's dictionary. For System Events, macOS asks for permission first. That's normal.
+The probes are in `testdata/scripts`. On a Mac, `go run ./tools/genscripts` compiles them into `testdata/scpt` and saves `osadecompile`'s output in `testdata/expected`. `go test` compares scriptview's output with those files. `testdata/runonly` holds run-only copies of some probes, with scriptview's own output as the expected result. On a Mac, `go test` also compiles that output again and checks that the bytecode matches.
+
+Note: Compiling a script that talks to an app makes macOS load that app's dictionary, which can launch the app. For System Events, macOS asks for permission first.
 
 ## Corpora
 
-Probes only find what you think to test. To find the rest, we compared scriptview with `osadecompile` on two big sets of real scripts:
+Probes only find what you think to test. To find the rest, scriptview is compared with `osadecompile` on two large sets of real scripts:
 
 - The compiled scripts that ship with macOS, in `/Library/Scripts` and `/System/Library`. macOS 26 has 163.
-- Scripts from the 4,535 repositories GitHub lists as AppleScript, found with `gh search repos --language=AppleScript`, one search per year created. We compiled the `.applescript` files ourselves, and added any `.scpt` files the repositories had. With duplicates removed, there are 14,878, of which 2,621 are plain text saved as `.scpt`. We left out two repositories that collect AppleScript malware: macOS's malware scanner flags their files, and the scripts are nothing we need.
+- Scripts from the 4,535 repositories that GitHub lists as AppleScript, found with `gh search repos --language=AppleScript`, with one search for each year of creation. The `.applescript` files are compiled on a Mac, and the `.scpt` files that the repositories contain are added. With duplicates removed, the set has 14,878 files, of which 2,621 are plain text saved as `.scpt`. Two repositories that collect AppleScript malware are left out: the macOS malware scanner flags their files, and they add nothing that the other scripts don't cover.
 
-`tools/corpus/compare.py` runs both tools on a list of files and saves a diff for each file that doesn't match. We fixed the most common diff, ran it again, and repeated. The GitHub set was the most useful. It has old scripts from old compilers, scripts that use Objective-C, and all sorts of odd formatting.
+These scripts belong to their authors, so they aren't in the repository. You can build your own set with the tools described here.
 
-We can't include these scripts in the repository, because other people wrote them. The script and the instructions are there so you can build your own set.
+### Comparing with osadecompile
 
-For the bytecode decompiler, we first compared its output with the syntax tree output of the same file, with all flags set to zero. That turned out to be a weak test, because zeroing the flags also removes parentheses that the source needs.
+`tools/corpus/compare.py` runs both tools on a list of files and saves a diff for each file that doesn't match. The approach is to fix the most common difference, run the comparison again, and repeat. The GitHub set is the most useful, because it has scripts from old compilers, scripts that use Objective-C, and every kind of odd formatting.
 
-A better test is a round trip: decompile the bytecode, compile the result again with `osacompile`, and compare the new bytecode with the original. If they're the same, the decompiled source means exactly what the original meant. `tools/corpus/roundtrip.py` does this. It found several bugs that the first test missed, such as `use` statements in the wrong place and constant lists that printed as garbage.
+### Round trips
+
+A run-only script has no syntax tree, so `osadecompile` can't print it, and there's nothing to compare with. The test for the bytecode decompiler is a round trip:
+
+1. Decompile the bytecode.
+2. Compile the result again with `osacompile`.
+3. Compare the new bytecode with the original.
+
+If the two are the same, the decompiled source means exactly what the original meant. `tools/corpus/roundtrip.py` runs this test on every script in a list, run-only or not.
+
+An earlier test compared the bytecode decompiler's output with the syntax tree output of the same file, printed with all flags set to zero. That test is weak, because zeroing the flags also removes parentheses that the source needs.
+
+### Results
 
 The latest results, on macOS 26.5:
 
@@ -34,28 +51,38 @@ The latest results, on macOS 26.5:
 | macOS scripts | 163 of 163 | 163 of 163 |
 | GitHub | 12,105 of 12,143 | 11,632 of 12,150 |
 
-Most of the GitHub differences left aren't ours to fix:
+Most of the remaining GitHub differences have causes outside scriptview:
 
-- Scripts for apps that aren't installed. `osadecompile` prints their names from the app's dictionary, and we print raw codes, or the other way around for an app we know. In the round trip, some of these don't compile at all without the app, or compile a raw code to something else.
+- Scripts for apps that aren't installed. `osadecompile` names their terms from the app's dictionary, and scriptview prints raw codes, or the other way around for an app that scriptview knows. In the round trip, some of these scripts don't compile without the app, or compile a raw code to something else.
 - Scripts compiled by old versions of AppleScript, whose code the current compiler writes differently: an extra `GetResult` at the end of a script, or `time string of (current date)` as two references.
-- `do shell script ("x" as string)`, where `osadecompile` drops parentheses that the script needs (see [Quirks](quirks.md)).
+- `do shell script ("x" as string)`, where `osadecompile` drops parentheses that the script needs. See [Output quirks](quirks.md).
 
 ## Classic scripts
 
-For scripts from before Mac OS X, we used compiled scripts from Apple's discs of 1993 and 1994, from archive.org mirrors: the 48 on the AppleScript Developer's Toolkit, and those on the Developer CD Series from October 1993 to May 1994, and the floppies that came with *The Tao of AppleScript*. The Developer CDs and the floppies hold 106 different AppleScript 1.0 scripts. 64 of them are run-only: the speech rules that ship with PlainTalk. The rest are the sample scripts that came with AppleScript, and scripts that came with other programs, such as JPEGView.
+Scripts from before Mac OS X come from Apple's discs of 1993 and 1994, through archive.org mirrors:
 
-Current macOS won't open a single one of them, so there's nothing to compare against. We read the output by hand, and checked that every script decompiles with no placeholders left. The scripts that still have a syntax tree gave us one more test: decompile them again from the bytecode alone, as if they were run-only, and compare the two results. That found the 1.0 differences in handler parameters, list literals and script objects listed in [the file format](file-format.md#applescript-10-files).
+- The AppleScript Developer's Toolkit, with 48 scripts.
+- The Developer CD Series, from October 1993 to May 1994.
+- *AppleScript: The Beta Release*, with AppleScript 1.0b1.
+- The floppies of *The Tao of AppleScript*, second edition, with AppleScript 1.1.
+
+Apart from the Toolkit, these discs hold 117 different AppleScript 1.0 scripts, 33 classic scripts from AppleScript 1.1, and 26 from the beta. 64 of the AppleScript 1.0 scripts are run-only: the speech rules that ship with PlainTalk. The rest are sample scripts that came with AppleScript, and scripts that came with other programs, such as JPEGView.
+
+Current macOS doesn't open any AppleScript 1.0 script, so there's no reference output. These checks replace it:
+
+- Every script decompiles with no placeholders left, and the output reads correctly by hand.
+- The scripts that still have a syntax tree also decompile from their bytecode alone, as if they were run-only, and the two results agree. This check found the AppleScript 1.0 differences in handler parameters, list literals and script objects that [File format](file-format.md#applescript-10-files) lists.
 
 Apple owns these scripts, so they aren't in the repository. The tests use synthetic files instead.
 
 ## Fuzzing
 
-`go test -fuzz FuzzDecompile ./internal/scpt` feeds scriptview damaged files. It found five bugs:
+`go test -fuzz FuzzDecompile ./internal/scpt` feeds scriptview damaged files. Fuzzing found these bugs:
 
-- Nodes that point back at themselves, which made the printer recurse until it crashed.
+- Nodes that refer to themselves, which made the printer recurse until it crashed.
 - A list of call arguments that loops back on itself, which made one function run forever.
 - A binary property list with offsets past the end of the file.
-- A marker character we used inside the printer that could also appear in a string.
+- A marker character that the printer used internally, which could also appear in a string.
 - Deep recursion in two helper functions.
 
-Every walk over the object graph has a limit now. The inputs that found bugs are saved in `internal/scpt/testdata/fuzz` and run with the normal tests.
+Every walk over the object graph now has a limit. The inputs that found bugs are in `internal/scpt/testdata/fuzz`, and run with the normal tests.

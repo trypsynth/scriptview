@@ -41,12 +41,12 @@ It reads classic Mac OS scripts too, back to AppleScript 1.0 in 1993, including 
 
 ## How well it works
 
-We compare scriptview with `osadecompile` on two sets of scripts:
+scriptview is tested against `osadecompile` on two sets of scripts:
 
-- The 194 compiled scripts that ship with macOS: all 194 match.
-- 6,142 compiled scripts from about 1,370 public AppleScript repositories on GitHub: 6,133 match.
+- The 163 compiled scripts that ship with macOS 26: all 163 match.
+- 12,143 compiled scripts from 4,535 public AppleScript repositories on GitHub: 12,105 match.
 
-Most of the 9 that don't match depend on the Mac we tested on, such as which apps are installed there. scriptview includes the terminology of the apps that ship with macOS. For other apps it prints raw codes such as `«class pURL»`, which is what `osadecompile` does when it can't find the app.
+Most of the 38 that don't match depend on the Mac that ran the test, such as which apps are installed there. scriptview includes the terminology of the apps that ship with macOS. For other apps it prints raw codes, such as `«class pURL»`, which is what `osadecompile` does when it can't find the app. For details, see [Testing](docs/testing.md).
 
 When scriptview runs on a Mac, it checks whether a script's apps are installed, like `osadecompile` does. On other systems it shows those apps by their file name, for example `application "Firefox.app"`.
 
@@ -61,7 +61,7 @@ A run-only script has no source code in it, only bytecode. scriptview decompiles
 
 scriptview adds a comment at the top of the output to tell you that it decompiled a run-only script.
 
-To test this, we compile the decompiled source again and compare the bytecode with the original. On the GitHub scripts, about 80% of the older set and 90% of the newer set come back identical.
+To test this, the decompiled source is compiled again, and the new bytecode is compared with the original. All 163 macOS scripts and 11,632 of the 12,150 GitHub scripts come back identical.
 
 ## Limitations
 
@@ -83,7 +83,7 @@ The code is in `internal/scpt`:
 
 ## Notes
 
-The [docs](docs/README.md) folder has what we learned about the format along the way: the object graph, the syntax tree, the bytecode, terminology, and the odd things `osadecompile` does.
+The [docs](docs/README.md) folder is a reference for the format: the file layout, the syntax tree, every opcode of the bytecode, terminology, how often each structure occurs in real scripts, and the rules of `osadecompile`'s printer.
 
 ## Tests
 
@@ -91,7 +91,7 @@ The [docs](docs/README.md) folder has what we learned about the format along the
 go test ./...
 ```
 
-The tests compare scriptview's output with `osadecompile` output that we saved from a Mac. The test scripts are in `testdata/scripts`. To add a test, put a new `.applescript` file there and run this on a Mac:
+The tests compare scriptview's output with `osadecompile` output saved on a Mac. The test scripts are in `testdata/scripts`. To add a test, put a new `.applescript` file there and run this on a Mac:
 
 ```sh
 go run ./tools/genscripts
