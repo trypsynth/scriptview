@@ -83,8 +83,13 @@ func (b *bcBuilder) scriptItems(v fasValue, top bool) ([]int16, error) {
 					if err != nil {
 						return nil, err
 					}
-					runBody = body
-					continue
+					// A blank line or comment at the end of the body leaves a
+					// StoreResult, GetResult tail, which only an explicit
+					// on run … end run compiles to.
+					if k := len(body); k == 0 || !b.isBlankLine(body[k-1]) {
+						runBody = body
+						continue
+					}
 				}
 				def, err := b.handlerDef(h, e)
 				if err != nil {
@@ -503,4 +508,10 @@ func (b *bcBuilder) scriptInit(blk *fasBlock) ([]int16, error) {
 		rest = append(rest, st)
 	}
 	return append(props, rest...), nil
+}
+
+// isBlankLine reports whether stmt is an empty line node.
+func (b *bcBuilder) isBlankLine(stmt int16) bool {
+	n, ok := b.out.nodes[stmt]
+	return ok && n.typ == 'l' && len(n.children) == 0
 }
