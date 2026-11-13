@@ -499,7 +499,7 @@ func (bh *bcHandler) run(lo, hi int, stack []stackVal) ([]int16, []stackVal, err
 			b.scopes = append(b.scopes, bh.h.vars)
 			switch {
 			case blk != nil && blk.kind == 15 && len(blk.items) >= 4:
-				inner, err = b.scriptItems(blk.items[3], false)
+				inner, err = b.scriptItems(blk.items[3], false, blk.items[2])
 			case blk != nil && (blk.kind == 16 || blk.kind == 17):
 				// An init handler builds the object: property assignments and
 				// DefineProcedure for its handlers.

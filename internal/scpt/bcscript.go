@@ -23,7 +23,11 @@ func DecompileBytecode(f *File) (string, error) {
 		// handler as the handler itself, with no script object around it.
 		table = []fasValue{nil, []fasValue{}, root}
 	}
-	items, err := b.scriptItems(table, true)
+	var parent fasValue
+	if root.kind == 15 && len(root.items) >= 3 {
+		parent = root.items[2]
+	}
+	items, err := b.scriptItems(table, true, parent)
 	if err != nil {
 		return "", err
 	}
@@ -34,7 +38,8 @@ func DecompileBytecode(f *File) (string, error) {
 
 // scriptItems decompiles a script object's table
 // [_, [names…], entries…] into top-level items.
-func (b *bcBuilder) scriptItems(v fasValue, top bool) ([]int16, error) {
+// parent is the object's parent, which an explicit property parent names.
+func (b *bcBuilder) scriptItems(v fasValue, top bool, parent fasValue) ([]int16, error) {
 	table, ok := v.([]fasValue)
 	if ok && len(table) == 0 {
 		return nil, nil // an empty script object
@@ -105,7 +110,7 @@ func (b *bcBuilder) scriptItems(v fasValue, top bool) ([]int16, error) {
 				}
 				// A script object: {name, _, _, table}.
 				if len(e.items) >= 4 {
-					inner, err := b.scriptItems(e.items[3], false)
+					inner, err := b.scriptItems(e.items[3], false, e.items[2])
 					if err != nil {
 						return nil, err
 					}
@@ -126,7 +131,20 @@ func (b *bcBuilder) scriptItems(v fasValue, top bool) ([]int16, error) {
 			continue
 		}
 		if c, ok := name.(fasCode); ok && c.code == "pare" && entry == nil {
-			continue // no explicit parent
+			// property parent : …, whose value is the object's parent.
+			var value int16
+			switch p := parent.(type) {
+			case fasApp:
+				value = b.literal(p)
+			case *fasBlock:
+				if p.kind == 15 && len(p.items) == 0 {
+					value = b.node('1', b.termRef(fasCode{kind: osKindCode, code: "ascr"})) // AppleScript
+				}
+			}
+			if value != 0 {
+				items = append(items, b.node('l', b.node('j', b.keyRef(name), value)))
+			}
+			continue
 		}
 		// `use O : script "x"` stores O as a property referring to the
 		// used script.
