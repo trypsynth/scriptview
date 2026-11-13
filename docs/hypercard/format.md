@@ -95,7 +95,9 @@ A field's text lives with the card it's on, not with the field. Each entry in a 
 - The length of what follows, 2 bytes.
 - The text. It starts with a 0 byte for plain text. For styled text, it starts with a style table whose 2-byte length has the high bit set: the length without that bit includes the 2 bytes themselves, and each 4-byte run gives an offset in the text and a style ID from the `STBL` block.
 
-Entries are padded to an even length. A background's own field text list holds the text of background fields that show the same text on every card. Buttons can have text too.
+Entries are padded to an even length. A background's own field text list holds the text of background fields that show the same text on every card.
+
+Buttons have entries too. A card part's entry is the button's text. A background button's entry on a card isn't text: it's `1` when the button is highlighted on that card, for buttons that don't share their highlight across cards.
 
 ## HyperCard 1.x
 

@@ -56,6 +56,9 @@ type Card struct {
 	// Text holds the text of the card's own fields, and of its background's
 	// fields on this card.
 	Text []Text
+	// Highlighted holds the background buttons that are highlighted on this
+	// card, for buttons whose highlight isn't shared across cards.
+	Highlighted []*Part
 }
 
 // PartKind says whether a part is a button or a field.
@@ -338,6 +341,14 @@ func parseCard(b []byte, bkgds map[int32]*Background, shift int) *Card {
 			part = findPart(c.Parts, -t.partID)
 		} else if c.Background != nil {
 			part = findPart(c.Background.Parts, t.partID)
+			if part != nil && part.Kind == Button {
+				// A background button's entry on a card is its
+				// highlight there, "1" for on, not text.
+				if t.text == "1" {
+					c.Highlighted = append(c.Highlighted, part)
+				}
+				continue
+			}
 		}
 		c.Text = append(c.Text, Text{Part: part, Text: t.text})
 	}

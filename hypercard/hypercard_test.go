@@ -103,7 +103,7 @@ func sampleStack() []byte {
 		texts  map[int16]string
 		script string
 	}{
-		{301, "First", nil, map[int16]string{1: "Hello"}, ""},
+		{301, "First", nil, map[int16]string{1: "Hello", 2: "1"}, ""},
 		{302, "", [][]byte{part(5, Button, "", "on mouseUp\nif x then\nbeep\nend if\nend mouseUp")}, map[int16]string{-5: "x"}, "on openCard\nend openCard"},
 	} {
 		card := make([]byte, 24)
@@ -127,8 +127,12 @@ func TestParse(t *testing.T) {
 	if s.Cards[0].ID != 302 || s.Cards[1].Name != "First" {
 		t.Errorf("cards out of stack order: %d, %q", s.Cards[0].ID, s.Cards[1].Name)
 	}
-	if t0 := s.Cards[1].Text[0]; t0.Part == nil || t0.Part.Name != "Title" || t0.Text != "Hello" {
-		t.Errorf("background field text: %+v", t0)
+	first := s.Cards[1]
+	if len(first.Text) != 1 || first.Text[0].Part == nil || first.Text[0].Part.Name != "Title" || first.Text[0].Text != "Hello" {
+		t.Errorf("background field text: %+v", first.Text)
+	}
+	if len(first.Highlighted) != 1 || first.Highlighted[0].Name != "Next" {
+		t.Errorf("background button highlight: %+v", first.Highlighted)
 	}
 	if _, err := Parse([]byte("FasdUAS 1.101.10")); err != ErrNotStack {
 		t.Errorf("not a stack: got %v", err)
