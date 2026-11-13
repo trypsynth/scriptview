@@ -164,9 +164,20 @@ func Parse(data []byte) (*Stack, error) {
 	if s.Version < 10 {
 		shift = -4
 	}
+	chain := backgroundChain(blocks["BKGD"], int32(be.Uint32(stak[40:])), shift)
+	if len(chain) < len(blocks["BKGD"]) {
+		// A broken chain, as in a private-access stack, whose header is
+		// scrambled: take the backgrounds in file order.
+		chain = chain[:0]
+		for _, b := range order {
+			if b.typ == "BKGD" {
+				chain = append(chain, b)
+			}
+		}
+	}
 	bkgds := map[int32]*Background{}
-	for _, b := range backgroundChain(blocks["BKGD"], int32(be.Uint32(stak[40:])), shift) {
-		bg := parseBackground(b.data, shift)
+	for _, b := range chain {
+		bg := ps.parseBackground(b.data, shift)
 		bkgds[bg.ID] = bg
 		s.Backgrounds = append(s.Backgrounds, bg)
 	}
