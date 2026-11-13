@@ -31,3 +31,20 @@ func TestMacRoman(t *testing.T) {
 		t.Error("EncodeMacRoman accepted text Mac Roman lacks")
 	}
 }
+
+// TestLooksJapanese tells Japanese text from Western text that happens to
+// decode as Shift JIS.
+func TestLooksJapanese(t *testing.T) {
+	if !LooksJapanese([][]byte{[]byte("\x83t\x83@\x83C\x83\x8b"), []byte("plain")}) {
+		t.Error("Japanese text not detected")
+	}
+	for _, texts := range [][][]byte{
+		{[]byte("Fr\x8ed\x8eric Rinaldi")},          // Frédéric: decodes, but as kanji
+		{[]byte("caf\xe9"), []byte("r\x8esum\x8e")}, // é
+		{[]byte("Fran\x8dais \x88 la carte")},       // ç, à
+	} {
+		if LooksJapanese(texts) {
+			t.Errorf("%q detected as Japanese", texts)
+		}
+	}
+}

@@ -17,28 +17,15 @@ import (
 // with non-ASCII bytes decodes, and together they hold several kana or
 // kanji.
 func looksJapanese(texts [][]byte) bool {
-	japanese := 0
 	for _, t := range texts {
-		if mactext.IsASCII(t) {
-			continue
-		}
 		if mr := mactext.MacRoman(t); strings.Contains(mr, "«class ") || strings.Contains(mr, "«event ") ||
 			strings.Contains(mr, "«constant ") || strings.Contains(mr, "«data ") {
 			// AppleScript's raw-code chevrons in Mac Roman (-- folder = «class cfol»):
 			// read as Shift JIS, «'s byte pairs up into kanji.
 			return false
 		}
-		s, ok := mactext.ShiftJIS(t)
-		if !ok {
-			return false
-		}
-		for _, r := range s {
-			if r >= 0x3040 && r <= 0x30FF || r >= 0x4E00 && r <= 0x9FFF {
-				japanese++
-			}
-		}
 	}
-	return japanese >= 4
+	return mactext.LooksJapanese(texts)
 }
 
 // legacyText decodes text that classic Mac OS stored in the script system's
