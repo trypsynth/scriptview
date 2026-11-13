@@ -31,11 +31,11 @@ Codes often have more than one name. scriptview follows these rules, which match
 - Outside a `tell` block, the kind of term decides. Where a property can go, a property beats a class, and a class beats a constant. Where a class goes, the class comes first.
 - Where only a property can go, such as `x of y`, a constant is never used. `«class extn» of x` stays raw, although Standard Additions has a constant `extensions folder` with the same code.
 - Inside one dictionary, a later definition replaces an earlier one. Parameters and AppleScript's own properties are exceptions: the first definition wins.
-- Classes and properties that only the old QuickDraw Graphics, Table and Macintosh Connectivity suites define stay raw: `«class ccel»`, not `cell`, and `«class prot»`, not `rotation`. AppleScript's `aeut` still lists these suites, but nothing switches them on (see [Pipes](#pipes)), so AppleScript never prints those names, not even at the top level. `tools/genterms` leaves them out.
+- Classes and properties that only the old QuickDraw Graphics, Table, and Macintosh Connectivity suites define stay raw: `«class ccel»`, not `cell`, and `«class prot»`, not `rotation`. AppleScript's `aeut` still lists these suites, but nothing switches them on (see [Pipes](#pipes)), so AppleScript never prints those names, not even at the top level. `tools/genterms` leaves them out.
 - Hidden terms and synonyms come last. They're used only when nothing else names the code.
 - `use application "Finder"` makes the Finder's terms available in the whole script, as if everything were inside a `tell` block.
 
-If no dictionary has a code, the output uses the raw form: `«class abcd»`, `«event abcdefgh»` or `«constant enumcode»`. AppleScript accepts these forms when it compiles, so the output still works.
+If no dictionary has a code, the output uses the raw form: `«class abcd»`, `«event abcdefgh»`, or `«constant enumcode»`. AppleScript accepts these forms when it compiles, so the output still works.
 
 ## Pipes
 
@@ -45,7 +45,7 @@ These rules decide whether a name needs pipes:
 
 - Only the innermost app counts. Inside `tell application "Finder"` inside `tell application "System Events"`, a variable named like a System Events property doesn't need pipes. This is true even when the inner app isn't installed and has no dictionary.
 - Inside a command's arguments, that command's parameter labels count too. In `display alert "a" message (|message| of r)`, the variable needs pipes, because `message` is a label of `display alert`. In `display dialog (message of r)`, it doesn't.
-- Inside an app's `tell` block, `type`, `specifier` and `any` need pipes, as in `r's |type|`, although no dictionary has a term with those names. They're value types in the app's scripting definition: the Cocoa standard suite declares parameters with `type="type"` and `type="specifier"`. Outside a `tell` block, `r's type` is fine. An app with no dictionary doesn't count.
+- Inside an app's `tell` block, `type`, `specifier`, and `any` need pipes, as in `r's |type|`, although no dictionary has a term with those names. They're value types in the app's scripting definition: the Cocoa standard suite declares parameters with `type="type"` and `type="specifier"`. Outside a `tell` block, `r's type` is fine. An app with no dictionary doesn't count.
 - Standard Additions terms count only when Standard Additions is loaded. A script with `use` statements but no `use scripting additions` doesn't load it.
 - Words from a few old suites don't need pipes: QuickDraw Graphics (`pixel`, `oval`, `polygon`), Table, and Macintosh Connectivity. AppleScript's dictionary still lists these suites, but nothing switches them on, so the compiler doesn't treat their words as terms.
 - The old Type Names suite (`point`, `fixed`, `menu`, `null`, `rotation`, `fixed point`, and more) is switched on by Standard Additions. Standard Additions has an old `aete` resource next to its `.sdef` file, and that `aete` names the suite `tpnm`. Inside Macintosh says that naming a standard suite in an `aete` turns on the whole suite from AppleScript's `aeut`. So these words need pipes when Standard Additions is loaded, and don't when it isn't. Without Standard Additions, `fixed point` is a syntax error.

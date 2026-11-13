@@ -2,7 +2,7 @@
 
 ## 0.3.1
 
-- Removed the `strings`, `idents`, `ints`, `handlers` and `dump` commands, which date from before scriptview could decompile. `decompile`, `bytecode`, `disasm` and `tree` remain.
+- Removed the `strings`, `idents`, `ints`, `handlers`, and `dump` commands, which date from before scriptview could decompile. `decompile`, `bytecode`, `disasm`, and `tree` remain.
 - Run-only output compiles back to the same bytecode for 11,887 of 12,150 scripts from GitHub, up from 11,632.
 - Rebuilt `local` declarations, which run-only scripts don't store, from the order of each handler's variables.
 - Run-only output keeps `use` statements and `property parent` inside script objects, and refers by name to a script object or handler that another property holds, instead of writing it twice.

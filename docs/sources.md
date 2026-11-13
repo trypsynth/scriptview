@@ -7,8 +7,8 @@ Apple never documented the compiled script format, but some published material h
 - *Inside Macintosh: Interapplication Communication*, 1993. [PDF index](https://developer.apple.com/library/archive/documentation/mac/pdf/Interapplication_Communication/pdf.html). Chapter 8 describes the `aete` and `aeut` resources, and says that naming a standard suite in an `aete` switches on the whole suite, which explains the words that need pipes only with Standard Additions. Chapter 10 describes how scripts are stored:
   - [Saving Script Data](https://developer.apple.com/library/archive/documentation/mac/IAC/IAC-335.html): generic storage, the trailer that names the scripting component, the `scpt` resource with ID 128, the file type `osas`, and the `TEXT` and `styl` resources for the description.
   - [OSAStore](https://developer.apple.com/library/archive/documentation/mac/IAC/IAC-348.html) and [OSALoad](https://developer.apple.com/library/archive/documentation/mac/IAC/IAC-349.html): run-only storage (`kOSAModePreventGetSource`), and the errors -1758 (`errOSADataFormatObsolete`) and -1759 (`errOSADataFormatTooNew`).
-  - [OSAGetStorageType](https://developer.apple.com/library/archive/documentation/mac/IAC/IAC-414.html) and the related pages: the functions that read, add and remove the trailer.
-- The Open Scripting Architecture headers in the macOS SDK: `OSA.h`, `AppleScript.h`, `ASRegistry.h` and `MacErrors.h`. They define run-only mode and the error codes, and name the runtime's classes, such as `cClosure`, which helps explain handler kind 17.
+  - [OSAGetStorageType](https://developer.apple.com/library/archive/documentation/mac/IAC/IAC-414.html) and the related pages: the functions that read, add, and remove the trailer.
+- The Open Scripting Architecture headers in the macOS SDK: `OSA.h`, `AppleScript.h`, `ASRegistry.h`, and `MacErrors.h`. They define run-only mode and the error codes, and name the runtime's classes, such as `cClosure`, which helps explain handler kind 17.
 - [AppleScript release notes for Mac OS X 10.3](https://developer.apple.com/library/archive/releasenotes/AppleScript/RN-AppleScript/RN-10_3/RN-10_3.html): script bundles (`.scptd`), and the end of resource-fork scripts from `store script`. The notes for later versions cover Unicode text and `#` comments.
 
 ## History and design
@@ -24,7 +24,7 @@ Apple never documented the compiled script format, but some published material h
 - Phil Stokes, SentinelLabs, ["FADE DEAD: Adventures in Reversing Malicious Run-Only AppleScripts"](https://www.sentinelone.com/labs/fade-dead-adventures-in-reversing-malicious-run-only-applescripts/), and the [aevt_decompile](https://github.com/SentineLabs/aevt_decompile) tool. Run-only scripts in malware, and how to read their disassembly.
 - Peter Berba, ["Decompiling run-only AppleScripts"](https://pberba.github.io/security/2025/12/14/decompiling-run-only-applescripts/), 2025, and [applescript-decompiler](https://github.com/pberba/applescript-decompiler). Another run-only decompiler, with notes on the stack effects of several instructions.
 - [n0kovo/applescript-decompiler](https://github.com/n0kovo/applescript-decompiler). A Python decompiler that describes its parser as a port of the runtime's FasLoad routine.
-- [ViRb3/applescript-tools](https://github.com/ViRb3/applescript-tools). A disassembler, decompiler and deobfuscator in Go.
+- [ViRb3/applescript-tools](https://github.com/ViRb3/applescript-tools). A disassembler, decompiler, and deobfuscator in Go.
 - The `file` command's magic database, `Magdir/apple`, which identifies compiled scripts by the string `FasdUAS`.
 - quuxfu, ["chop-chop: repair corrupt AppleScript .scpt files"](http://quuxfu.blogspot.com/2014/09/repair-corrupt-applescript-scpt-files.html), 2014. Junk bytes after `FADEDEAD`.
 
