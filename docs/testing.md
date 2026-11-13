@@ -40,20 +40,28 @@ A run-only script has no syntax tree, so `osadecompile` can't print it, and ther
 
 If the two are the same, the decompiled source means exactly what the original meant. `tools/corpus/roundtrip.py` runs this test on every script in a list, run-only or not.
 
-An earlier test compared the bytecode decompiler's output with the syntax tree output of the same file, printed with all flags set to zero. That test is weak, because zeroing the flags also removes parentheses that the source needs.
+A round trip only proves anything when the compiler is the same one that made the original. The GitHub set has two kinds of scripts:
+
+- `.scpt` files from the repositories, compiled years ago by whatever AppleScript the author had. Today's compiler writes some of the same source differently, so some of these can never round-trip.
+- `.applescript` sources, compiled on the test Mac. Every difference in these is a scriptview bug, or an app that isn't installed.
+
+So the useful work list is the failures among the second kind. Grouping their diffs by the first instruction that differs shows which bug affects the most scripts.
+
+A round trip also needs a full run after each change, not only a run of the failing scripts. A rule that fixes one script can break another: a new pair of parentheses can change the code of an expression that compiled correctly without them.
 
 ### Results
 
 The latest results, on macOS 26.5:
 
-| Set | Matches `osadecompile` | Round trip gives the same bytecode |
-| --- | --- | --- |
-| macOS scripts | 163 of 163 | 163 of 163 |
-| GitHub | 12,106 of 12,143 | 11,887 of 12,150 |
+- macOS scripts: all 163 match `osadecompile`, and all 163 give the same bytecode in a round trip.
+- GitHub: 12,106 of 12,143 match `osadecompile`, and 11,887 of 12,150 give the same bytecode in a round trip.
 
-Most of the remaining GitHub differences have causes outside scriptview:
+Of the 263 GitHub scripts that don't round-trip, about 130 were compiled by old versions of AppleScript and about 90 don't compile on the test Mac. The rest are single-script bugs.
 
-- Scripts for apps that aren't installed. `osadecompile` names their terms from the app's dictionary, and scriptview prints raw codes, or the other way around for an app that scriptview knows. In the round trip, some of these scripts don't compile without the app, or compile a raw code to something else.
+Most of the remaining differences have causes outside scriptview:
+
+- Scripts for apps that aren't installed. `osadecompile` names their terms from the app's dictionary, and scriptview prints raw codes, or the other way around for an app that scriptview knows. In the round trip, some of these scripts don't compile without the app, or compile a raw code to something else. Some need access that macOS denies the compiler, or name a remote machine that it tries to reach.
+- Dictionaries that give one code two names in different classes. Calendar's `ID  ` is `calendarIdentifier` for a calendar and `uid` for an event, and scriptview's term table keeps one name per code.
 - Scripts compiled by old versions of AppleScript, whose code the current compiler writes differently: an extra `GetResult` at the end of a script, or `time string of (current date)` as two references.
 - `do shell script ("x" as string)`, where `osadecompile` drops parentheses that the script needs. See [Output quirks](quirks.md).
 
@@ -71,7 +79,7 @@ Apart from the Toolkit, these discs hold 117 different AppleScript 1.0 scripts, 
 Current macOS doesn't open any AppleScript 1.0 script, so there's no reference output. These checks replace it:
 
 - Every script decompiles with no placeholders left, and the output reads correctly by hand.
-- The scripts that still have a syntax tree also decompile from their bytecode alone, as if they were run-only, and the two results agree. This check found the AppleScript 1.0 differences in handler parameters, list literals and script objects that [File format](file-format.md#applescript-10-files) lists.
+- The scripts that still have a syntax tree also decompile from their bytecode alone, as if they were run-only, and the two results agree. This check found the AppleScript 1.0 differences in handler parameters, list literals, and script objects that [File format](file-format.md#applescript-10-files) lists.
 
 The beta scripts have a better reference: the beta CD has plain-text copies of 16 of its 26 compiled scripts. scriptview's output matches them, apart from these differences:
 

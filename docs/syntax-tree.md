@@ -6,101 +6,104 @@ The tree is language neutral. It stores structure and four-character codes, and 
 
 ## Node records
 
-Each node is a `0d` record:
+Each node is a `0d` record. After the usual record header, it holds:
 
-| Bytes | Field |
-| --- | --- |
-| 1 | Node type: one ASCII character |
-| 2 | Flags |
-| 2 | Code start: the offset of the node's first instruction in its handler's bytecode |
-| 2 | Code end |
-| 2 each | The children, as references |
+- The node type: one ASCII character.
+- The flags: 2 bytes.
+- The code start: 2 bytes, the offset of the node's first instruction in its handler's bytecode.
+- The code end: 2 bytes.
+- The children: 2 bytes each, as references.
 
 The size field of the record is the number of children. The code offsets aren't needed to print the source, but they line the tree up with the bytecode.
 
 ## Node types
 
-Statements:
+### Statements
 
-| Type | Statement | Children |
-| --- | --- | --- |
-| `k` | A block of statements | A list of lines |
-| `l` | A source line, or a wrapper around an expression | See [The `l` node](#the-l-node) |
-| `r` | `set` | Value, target |
-| `s` | `copy` | Value, target |
-| `L` | `return` | Value |
-| `Z` | `if` | Condition, then block, `else if` chain, else block |
-| `O` | `tell` | Body, target |
-| `Q` | `try` | Body, `on error` clause, error handler body |
-| `R` | `error` | A first child that printing doesn't use, the message, labeled parameters |
-| `S` | `exit repeat` | None |
-| `T` | `repeat` | Body |
-| `U` | `repeat n times` | Body, count |
-| `V` | `repeat while` | Body, condition |
-| `W` | `repeat until` | Body, condition |
-| `X` | `repeat with x in list` | Body, variable, list |
-| `Y` | `repeat with x from a to b` | Body, variable, start, end, step |
-| `P` | `considering` or `ignoring` | Body, considered attributes, ignored attributes |
-| `t` | `with timeout` | Body, seconds |
-| `u` | `with transaction` | Body, session |
-| `w` | `using terms from` | Body, application |
-| `x` | `use` | Name, target, options |
-| `i` | A handler definition | Signature, body |
-| `h` | A script object | Name, body |
-| `j` | `property` | Name, initial value |
-| `p` | `global` | A list of names |
-| `q` | `local` | A list of names |
+- `k`: a block of statements. Its child is a list of lines.
+- `l`: a source line, or a wrapper around an expression. See [The `l` node](#the-l-node).
+- `r`: `set`, with the value, then the target.
+- `s`: `copy`, with the value, then the target.
+- `L`: `return`, with the value.
+- `Z`: `if`, with the condition, the then block, the `else if` chain, and the else block. The chain is a list that alternates conditions and blocks.
+- `O`: `tell`, with the body, then the target.
+- `Q`: `try`, with the body, the `on error` clause (an `R` node), and the error handler's body.
+- `R`: `error`, with a first child that printing doesn't use, the message, and the labeled parameters.
+- `S`: `exit repeat`. No children.
+- `T`: `repeat`, with the body.
+- `U`: `repeat n times`, with the body and the count.
+- `V`: `repeat while`, with the body and the condition.
+- `W`: `repeat until`, with the body and the condition.
+- `X`: `repeat with x in list`, with the body, the variable, and the list.
+- `Y`: `repeat with x from a to b`, with the body, the variable, the start, the end, and the step.
+- `P`: `considering` or `ignoring`, with the body, the considered attributes, and the ignored attributes.
+- `t`: `with timeout`, with the body and the seconds.
+- `u`: `with transaction`, with the body and the session.
+- `w`: `using terms from`, with the body and the application.
+- `x`: `use`, with the name, the target, and the options.
+- `i`: a handler definition, with the signature (an `I` node) and the body.
+- `h`: a script object, with the name and the body.
+- `j`: `property`, with the name and the initial value.
+- `p`: `global`, with a list of names.
+- `q`: `local`, with a list of names.
 
-Expressions:
+### Expressions
 
-| Type | Expression | Children |
-| --- | --- | --- |
-| `I` | A command or handler call | Name, direct or positional arguments, labeled arguments |
-| `M` | `continue` | The call |
-| `e` | An explicit `get` | Value |
-| `m` | A literal | The value |
-| `o` | A variable | Identifier |
-| `f` | `me` | None |
-| `g` | `it` | None |
-| `J` | A list `{…}` | A chain of list cells |
-| `v` | A linked list `[…]` | A chain of list cells |
-| `K` | A record | A chain of key, value and next cells |
-| `c` | `as` | Value, class |
-| `d` | Unary minus | Value |
-| `H` | `not` | Value |
-| `N` | `a reference to` | Value |
+- `I`: a command or handler call, with the name, the direct or positional arguments, and the labeled arguments.
+- `M`: `continue`, with the call.
+- `e`: an explicit `get`, with the value.
+- `m`: a literal, with the value.
+- `o`: a variable, with its identifier.
+- `f`: `me`. No children.
+- `g`: `it`. No children.
+- `J`: a list, `{…}`, with a chain of list cells.
+- `v`: a linked list, `[…]`, with a chain of list cells.
+- `K`: a record, with a chain of cells that each hold a key, a value, and the next cell.
+- `c`: `as`, with the value and the class.
+- `d`: unary minus, with the value.
+- `H`: `not`, with the value.
+- `N`: `a reference to`, with the value.
 
-References:
+### References
 
-| Type | Reference | Children |
-| --- | --- | --- |
-| `n` | `x of y` | Part, container |
-| `1` | A property, or a class used as a value | Term |
-| `2` | `every x` | Class |
-| `3` | `some x` | Class |
-| `4` | `x 3`, by index | Class, index |
-| `5` | `x id 3`, `x named "a"`, `x index 3` | Class, value, key form |
-| `6` | `x whose …` | Reference, condition |
-| `7` | `x 1 thru 3` | Class, start, end |
-| `8`, `9` | `before x`, `after x` | Class |
-| `:`, `;`, `<` | `beginning`, `end`, `middle` | None, except `middle`: class |
+- `n`: `x of y`, with the part, then the container.
+- `1`: a property, or a class used as a value, with the term.
+- `2`: `every x`, with the class.
+- `3`: `some x`, with the class.
+- `4`: an element by index, `x 3`, with the class and the index.
+- `5`: an element by key, `x id 3`, `x named "a"`, or `x index 3`, with the class, the value, and the key form.
+- `6`: a filter, `x whose …`, with the reference and the condition.
+- `7`: a range, `x 1 thru 3`, with the class, the start, and the end.
+- `8` and `9`: `before x` and `after x`, with the class.
+- `:`, `;`, and `<`: `beginning`, `end`, and `middle`. Only `middle` has a child, the class.
 
-Binary operators, each with two children, left and right:
+### Operators
 
-| Type | Operator | Type | Operator |
-| --- | --- | --- | --- |
-| `a` | `^` | `A` | `<` |
-| `]` | `*` | `B` | `≤` |
-| `^` | `/` | `?` | `>` |
-| `_` | `div` | `@` | `≥` |
-| `` ` `` | `mod` | `=` | `=` |
-| `[` | `+` | `>` | `≠` |
-| `\` | `-` | `C` | `starts with` |
-| `b` | `&` | `D` | `ends with` |
-| `F` | `and` | `E` | `contains` |
-| `G` | `or` | | |
+Each operator node has two children, the left and right operands:
 
-The operators bind in this order, from tightest to loosest: `^`; `*`, `/`, `div` and `mod`; `+` and `-`; `&`; the comparisons and `starts with`, `ends with` and `contains`; `=` and `≠`; `and`; `or`.
+- `a`: `^`
+- `]`: `*`
+- `^`: `/`
+- `_`: `div`
+- `` ` ``: `mod`
+- `[`: `+`
+- `\`: `-`
+- `b`: `&`
+- `A`: `<`
+- `B`: `≤`
+- `?`: `>`
+- `@`: `≥`
+- `=`: `=`
+- `>`: `≠`
+- `C`: `starts with`
+- `D`: `ends with`
+- `E`: `contains`
+- `F`: `and`
+- `G`: `or`
+
+The operators bind in this order, from tightest to loosest: `^`; `*`, `/`, `div`, and `mod`; `+` and `-`; `&`; the comparisons and `starts with`, `ends with`, and `contains`; `=` and `≠`; `and`; `or`. `as` binds tighter than `*` but looser than `^`.
+
+`^` groups to the right: `2 ^ 3 ^ 2` means `2 ^ (3 ^ 2)`. The other operators group to the left. A printer that adds parentheses has to know both, because the tree stores the grouping, not the parentheses.
 
 The beta of AppleScript 1.0 uses different letters for the same nodes. See [Node letters](file-format.md#node-letters).
 
@@ -110,23 +113,19 @@ The `l` node has two jobs, and its position tells you which one.
 
 In a list of statements, an `l` node is a source line, with the children `[statement, comment, comment text]`. An `l` node with no statement and no comment is a blank line. The low three bits of its flags give the kind of comment on the line:
 
-| Value | Comment |
-| --- | --- |
-| 0 | `(* … *)` |
-| 1 | `-- …` |
-| 2 | No comment |
-| 3 | `-- …` on the header line of the block that follows |
-| 4 | `(* … *)` on the header line |
-| 6 | `# …` |
-| 7 | `# …` on the header line |
+- 0: a `(* … *)` comment.
+- 1: a `-- …` comment.
+- 2: no comment.
+- 3: a `-- …` comment on the header line of the block that follows.
+- 4: a `(* … *)` comment on the header line.
+- 6: a `# …` comment.
+- 7: a `# …` comment on the header line.
 
 Inside an expression, an `l` node is a wrapper that records how you wrote the expression:
 
-| Bit | Meaning |
-| --- | --- |
-| `0x4` | The expression is in parentheses. |
-| `0x8` | A `¬` line break comes before the expression. |
-| `0x100` | You wrote the article `the`. |
+- `0x4`: the expression is in parentheses.
+- `0x8`: a `¬` line break comes before the expression.
+- `0x100`: you wrote the article `the`.
 
 Bit `0x1` means a line comment on a statement line, but something else on an expression wrapper. To know what an `l` node is, check both its flags and its children.
 
@@ -134,21 +133,15 @@ Bit `0x1` means a line comment on a statement line, but something else on an exp
 
 Most of the surface syntax is in the flags. The same node type prints differently depending on them:
 
-| Node | Flags | Prints as |
-| --- | --- | --- |
-| `=` | none, `0x1`, `0x3` | `=`, `is equal to`, `is` |
-| `>` | `0x100`, `0x1` | `is not`, `is not equal to` |
-| `A` | `0x1`, `0x101`, `0x100` | `is less than`, `comes before`, `is not greater than or equal to` |
-| `C` | `0x100` | `begins with` |
-| `n` | `0x2` | `x's y` |
-| `n` | `0x1`, with a `me` container | `my y` |
-| `n` | `0x100` | `y in x` |
-| `4` | `0x2` | `1st item` instead of `item 1` |
-| `4` | `0x1` | `first item`, `last item` |
-| `4` | `0x100` | `front item`, `back item` |
-| `:`, `;` | `0x100` | `front`, `back` instead of `beginning`, `end` |
-| `O`, `Z` | `0x1` | The one-line forms, `tell x to …` and `if c then …` |
-| `I` | `0x3` | A call written after its argument, as in `x exists` |
+- `=`: with no flags, `=`. With `0x1`, `is equal to`. With `0x3`, `is`.
+- `>`: with `0x100`, `is not`. With `0x1`, `is not equal to`.
+- `A`: with `0x1`, `is less than`. With `0x101`, `comes before`. With `0x100`, `is not greater than or equal to`.
+- `C`: with `0x100`, `begins with`.
+- `n`: with `0x2`, `x's y`. With `0x1` and a `me` container, `my y`. With `0x100`, `y in x`.
+- `4`: with `0x2`, `1st item` instead of `item 1`. With `0x1`, `first item` or `last item`. With `0x100`, `front item` or `back item`.
+- `:` and `;`: with `0x100`, `front` and `back` instead of `beginning` and `end`.
+- `O` and `Z`: with `0x1`, the one-line forms, `tell x to …` and `if c then …`.
+- `I`: with `0x3`, a call written after its argument, as in `x exists`.
 
 The compiler turns a negated comparison into the opposite operator and keeps a flag, so that it can print your words again: `is not greater than or equal to` is a `<` node with the flag `0x100`.
 

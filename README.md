@@ -1,12 +1,12 @@
 # scriptview
 
-scriptview shows you the source code of compiled AppleScript files (`.scpt`). It runs on macOS, Linux and Windows, so you can read a script without a Mac.
+scriptview shows you the source code of compiled AppleScript files (`.scpt`). It runs on macOS, Linux, and Windows, so you can read a script without a Mac.
 
 On a Mac you can do this with `osadecompile`. scriptview tries to print exactly what `osadecompile` prints, line for line.
 
 ## Install
 
-Download a binary for macOS, Linux or Windows from the [releases page](https://github.com/trypsynth/scriptview/releases).
+Download a binary for macOS, Linux, or Windows from the [releases page](https://github.com/trypsynth/scriptview/releases).
 
 Or build it yourself with Go 1.26 or later:
 
@@ -26,12 +26,10 @@ You can also give it a script bundle (`.scptd`) or an applet (`.app`). scriptvie
 
 Other commands:
 
-| Command | What it prints |
-| --- | --- |
-| `decompile` | The source code |
-| `bytecode` | The source code, rebuilt from the bytecode only |
-| `disasm` | The bytecode as annotated assembly |
-| `tree` | The raw syntax tree, for debugging |
+- `decompile`: the source code.
+- `bytecode`: the source code, rebuilt from the bytecode only.
+- `disasm`: the bytecode as annotated assembly.
+- `tree`: the raw syntax tree, for debugging.
 
 scriptview also reads JavaScript for Automation (JXA) scripts and `.scpt` files that hold plain text.
 
@@ -75,9 +73,9 @@ A compiled script is a serialized graph of objects. It holds a syntax tree, with
 The code is in `internal/scpt`:
 
 - `objects.go` and `parse.go` read the object graph.
-- `stmt.go`, `expr.go` and `scope.go` print the syntax tree.
+- `stmt.go`, `expr.go`, and `scope.go` print the syntax tree.
 - `bytecode.go` and the `bc*.go` files disassemble and decompile bytecode.
-- `terms.tsv` holds the terminology of AppleScript, Standard Additions and the apps that ship with macOS. `tools/genterms` makes it from the dictionaries on a Mac.
+- `terms.tsv` holds the terminology of AppleScript, Standard Additions, and the apps that ship with macOS. `tools/genterms` makes it from the dictionaries on a Mac.
 
 ## Notes
 

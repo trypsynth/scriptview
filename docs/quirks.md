@@ -10,9 +10,9 @@ Script Editor adds parentheses in these places, even when the tree has no parent
 
 - A command inside an expression: `hours of (current date)`.
 - `x of y` inside arithmetic: `(x of self) + (x of other)`.
-- A handler call on the right side of `*`, `/`, `^`, `div` or `mod`: `2 * (f(x))`. On the left side, or next to `+` and `-`, there are none.
+- A handler call on the right side of `*`, `/`, `^`, `div`, or `mod`: `2 * (f(x))`. On the left side, or next to `+` and `-`, there are none.
 - `my x` and `my f(x)` next to an arithmetic operator: `1 + (my i)`, `2 * (my f(1))`. Comparisons, `&`, `is in`, and command parameters leave them bare: `x is not in my list`, `my f(1) is in L`, `offset of my decPt() in x`.
-- A value passed to an Objective-C style call (`x's foo:y`) that uses `+`, `-`, `&`, a comparison, `and` or `or`: `x's foo:(a - b)`. With `*`, `/`, `^` or a minus sign, there are none: `x's foo:a * 2`. References, coercions and `not` always get them.
+- A value passed to an Objective-C style call (`x's foo:y`) that uses `+`, `-`, `&`, a comparison, `and`, or `or`: `x's foo:(a - b)`. With `*`, `/`, `^`, or a minus sign, there are none: `x's foo:a * 2`. References, coercions, and `not` always get them.
 - A constant or a command passed to an Objective-C style call: `x's foo:(missing value)`, `x's addObject:(do shell script "ls")`. A raw `«constant …»` doesn't get them.
 - `my (x's foo:1)` gets parentheses around the call, and none inside.
 - A `tell` target that is a `whose` filter, a command, or an Objective-C style call: `tell (first process whose frontmost is true)`, `tell (make new document)`, `tell (NSString's stringWithString:x)`.
@@ -35,7 +35,7 @@ set y to anItem's objectForKey:"b"
 
 The same applies to `set h to (items of L whose it > 1)`. Other expressions, such as `item 1 of L` or `x's y`, don't get them.
 
-The rule applies at any depth inside the loop, even inside a nested `repeat 3 times`. It doesn't apply in `repeat n times`, `repeat while` or `repeat until` loops on their own. The printer probably sets a flag when it prints the `repeat with` line and clears it only when the loop ends. scriptview copies the behavior.
+The rule applies at any depth inside the loop, even inside a nested `repeat 3 times`. It doesn't apply in `repeat n times`, `repeat while`, or `repeat until` loops on their own. The printer probably sets a flag when it prints the `repeat with` line and clears it only when the loop ends. scriptview copies the behavior.
 
 ### Parentheses in run-only output
 
@@ -46,6 +46,13 @@ Run-only output has no source parentheses to keep, so scriptview adds the ones t
 - A reference or a call after a minus sign: `-(length of s)`, `-(f(x))`.
 - A reference as one end of a range: `text (length of s) thru -1 of s`. An element as an end gets them too: `text (text item 2) thru (text item -1) of p` compiles to different code than the same text without them.
 - A reference after `id` or `named`: `«class OOrw» id (item i of L)`.
+- An Objective-C style call or a command as a container: `item 2 of (x's foo:y)`, `(make x)'s f()`.
+- A handler call with labeled parameters as a command's parameter, an operand, an index, or a key: `on (f for x)`, `(f of x from a) & (f of x from b)`, `property list file (f of me at b)`, `application named (f for x)`. A labeled call takes the rest of the line as its own parameters.
+- An explicit `get` as a command's parameter: `default items (get item 1 of x)`.
+- A coercion as a parameter of a command that has its own `as` parameter: `display alert t message (m as text) as critical`. Other commands leave a coercion bare, and adding parentheses there changes the code: `default location (path to x) as alias` compiles differently from `default location ((path to x) as alias)`.
+- The direct parameter of a command when it uses a variable named like one of the command's parameter labels: `do shell script ("x" & password)`. Without them, `password` starts the command's own parameter.
+- `a reference to` as a container: `set end of (a reference to L) to x`.
+- The left side of `^` when it's another `^`: `(x ^ 2) ^ 0.5`. `^` groups to the right, so `x ^ 2 ^ 0.5` means `x ^ (2 ^ 0.5)`.
 
 In a range, `my` follows the same rule as in Script Editor's output: a property stays bare and a call doesn't, as in `text my i thru -1` and `text (my f(1)) thru -1`.
 
@@ -54,6 +61,8 @@ Run-only output also keeps the order of parameters whose labels are raw codes. A
 ## Objective-C style calls
 
 A handler named `foo_bar_` can print as `foo:x bar:y` or as `foo_bar_(x, y)`. Script Editor uses the first form only when the call has a target, such as `x's foo:1` or `my foo:1`, and in the handler's own `on foo:bar:` line. A plain call prints as `foo_bar_(x, y)`.
+
+The `foo:x bar:y` form compiles only in a script with a `use` statement, such as `use framework "Foundation"` or `use AppleScript version "2.4"`. Without one, the compiler stops at the first colon. So in run-only output of a script with no `use` statement, scriptview writes every Objective-C style call as `foo_bar_(x, y)`.
 
 ## Raw codes
 
@@ -74,7 +83,7 @@ tell application "System Events" to if (count of processes) > 0 then ¬
 
 - A `given` label with no dictionary term prints with a class name, or with an AppleScript property name such as `time`.
 - An explicit `index` stays: `window index 2`. Without it, `window 2`.
-- Inside `|pipes|`, a backslash, a bar and a tab are escaped: `|\\n|`, `|\||`, `|a\tb|`. `app` is reserved, as short for `application`.
+- Inside `|pipes|`, a backslash, a bar, and a tab are escaped: `|\\n|`, `|\||`, `|a\tb|`. `app` is reserved, as short for `application`.
 - Reals print with at most 12 decimal places and no trailing zeros: `3.141592653589793` prints as `3.14159265359`, and `9.99999999999999` as `10.0`. Exponent notation keeps every digit: `1.23456789012345E+15`. Run-only output keeps every digit everywhere, so that it compiles back to the same value.
 - A range can store its end as an element when the source repeats the class: `text 1 thru -5` can come back as `text 1 thru (text -5)`. The class isn't printed twice.
 - `front` and `back` are other spellings of `beginning` and `end`, as in `make new folder at front`. A flag on the node keeps the spelling.

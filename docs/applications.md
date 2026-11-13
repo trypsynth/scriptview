@@ -9,13 +9,11 @@ An alias record is a classic Mac OS format. scriptview uses these parts of it:
 - The file name, such as `Safari.app`, as a Pascal string at offset 50.
 - A list of tagged items, starting at offset 150. Each item has a 16-bit tag, a 16-bit length, and the data. Tag -1 ends the list.
 
-| Tag | Data |
-| --- | --- |
-| 2 | The HFS path, with colons, such as `Macintosh HD:Applications:Safari.app` |
-| 14 | The file name in UTF-16 |
-| 15 | The volume name in UTF-16 |
-| 18 | The POSIX path, relative to the volume |
-| 19 | The volume's mount point, such as `/` |
+- Tag 2: the HFS path, with colons, such as `Macintosh HD:Applications:Safari.app`.
+- Tag 14: the file name in UTF-16.
+- Tag 15: the volume name in UTF-16.
+- Tag 18: the POSIX path, relative to the volume.
+- Tag 19: the volume's mount point, such as `/`.
 
 The alias also keeps the file's ID number on the disk, which matters in [Renamed apps](#renamed-apps).
 
