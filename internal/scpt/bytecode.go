@@ -177,6 +177,7 @@ func (dc *decompState) decodeValue(ref int16, depth int) fasValue {
 type handlerCode struct {
 	name       fasValue   // identifier string or fasCode event
 	params     []fasValue // names, or terms for names that spell one (on f(key))
+	labeled    int        // labeled parameters: onto x, given value:v
 	pattern    []string   // a list-pattern direct parameter: on run {a, b}
 	hasPattern bool       // the handler takes a pattern, maybe empty: on run {}
 	direct     bool       // params[0] is a direct parameter: on mk of x by y
@@ -247,6 +248,9 @@ func (dc *decompState) handlerFrom(v fasValue) (handlerCode, bool) {
 	}
 	if code, ok := b.items[6].([]byte); ok {
 		h.code = code
+	}
+	if bind, ok := b.items[3].(fasBinding); ok {
+		h.labeled = len(bind.keys)
 	}
 	// Positional parameters: block4{count, block0{name…}}; an event
 	// handler's direct parameter is a bare name.

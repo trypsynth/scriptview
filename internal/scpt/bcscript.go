@@ -308,8 +308,8 @@ func (b *bcBuilder) handlerBody(h handlerCode, kind int) ([]int16, error) {
 // only when declared, or as a loop or error variable.
 func (bh *bcHandler) localDecl(run bool) int16 {
 	vars := bh.h.vars
-	np := paramVarCount(bh.h.params)
-	if len(vars) <= np || bh.h.hasPattern { // on open {a, b}: the pattern's names follow
+	np := paramVarCount(bh.h.params) + len(bh.h.pattern) + bh.h.labeled // on open {a, b}: the pattern's names
+	if len(vars) <= np {
 		return 0
 	}
 	index := map[string]int{}
