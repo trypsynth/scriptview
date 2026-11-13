@@ -42,7 +42,7 @@ scriptview is tested against `osadecompile` on two sets of scripts:
 - The 163 compiled scripts that ship with macOS 26: all 163 match.
 - 12,143 compiled scripts from 4,535 public AppleScript repositories on GitHub: 12,106 match.
 
-Most of the 37 that don't match depend on the Mac that ran the test, such as which apps are installed there. scriptview includes the terminology of the apps that ship with macOS. For other apps it prints raw codes, such as `«class pURL»`, which is what `osadecompile` does when it can't find the app. For details, see [Testing](docs/testing.md).
+Most of the 37 that don't match depend on the Mac that ran the test, such as which apps are installed there. scriptview includes the terminology of the apps that ship with macOS. For other apps it prints raw codes, such as `«class pURL»`, which is what `osadecompile` does when it can't find the app. For details, see [Testing](docs/applescript/testing.md).
 
 When scriptview runs on a Mac, it checks whether a script's apps are installed, like `osadecompile` does. On other systems it shows those apps by their file name, for example `application "Firefox.app"`.
 
@@ -61,7 +61,7 @@ To test this, the decompiled source is compiled again, and the new bytecode is c
 
 ## Limitations
 
-- Terms from apps that don't ship with macOS print as raw codes, such as `«class pURL»`, unless the app is installed and you're on a Mac. Scripts from classic Mac OS also get the terms of about 80 classic scripting additions and apps (see [Terminology](docs/terminology.md)).
+- Terms from apps that don't ship with macOS print as raw codes, such as `«class pURL»`, unless the app is installed and you're on a Mac. Scripts from classic Mac OS also get the terms of about 80 classic scripting additions and apps (see [Terminology](docs/applescript/terminology.md)).
 - Run-only scripts lose their comments and formatting (see above).
 - Run-only scripts from the AppleScript 1.0 beta (`FasdUAS 0.95`) print nothing, because the beta's bytecode isn't decoded.
 - A value that was worked out when the script was compiled can't be turned back into the code that made it. For example, `property lib : load script …` comes out as the loaded script itself.
