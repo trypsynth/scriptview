@@ -4,9 +4,12 @@
 
 - Added HyperCard stacks, from HyperCard 1.x, 2.x, and IIGS. scriptview prints every script in a stack, indented the way HyperCard's script editor shows it and labeled with its object, and `scriptview text` prints the text of the stack's fields.
 - HyperCard indentation matches 12 listings of scripts written out by HyperCard: continued lines stay at their statement's level, and `else` cascades, `then` on its own line, and `else repeat` indent as HyperCard does.
-- Japanese stacks decode as Mac Japanese, and password-protected stacks, whose header is scrambled, print their scripts.
+- Stacks in Japanese, Chinese, Korean, and Cyrillic decode in their own encodings, told apart by their fonts and text, and password-protected stacks, whose header is scrambled, print their scripts.
 - The command, check mark, diamond, and Apple symbols of the Chicago font, which stacks store as control characters, print as ⌘, ✓, ◆, and the Apple logo.
 - Scripts in AppleScript inside stacks, from HyperCard 2.2 on, are decompiled with HyperCard's terms, which classic scripts now also get.
+- Japanese text decodes with Apple's own Mac Japanese table, which adds circled numbers, Roman numerals, and vertical forms, and no longer decodes byte pairs that Mac Japanese lacks.
+- English text with curly quotes, such as "haven’t", and French and German text are no longer mistaken for Japanese. Of about 50,000 classic scripts, 2,091 print their quotes, dashes, and bullets correctly where they printed half-width katakana.
+- Japanese text with a few strings in a Roman font is still read as Japanese, and the Roman strings read as Mac Roman.
 - An application specifier that holds an empty alias before the one with the name now prints the name, not a placeholder.
 - For a stack with its resource fork, scriptview lists the stack's external commands and functions before its scripts.
 

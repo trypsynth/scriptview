@@ -9,34 +9,29 @@ import (
 )
 
 // Classic Mac OS kept text in the script system's encoding: Mac Roman for
-// Western languages, and a Shift JIS variant for Japanese. A compiled script
-// doesn't record which one, so a file whose old byte strings all read as
-// Japanese is treated as Japanese.
+// Western languages, and others such as Mac Japanese. A compiled script
+// doesn't record which one, so mactext.Detect picks it from the text.
 
-// looksJapanese reports whether old byte strings are Shift JIS: every one
-// with non-ASCII bytes decodes, and together they hold several kana or
-// kanji.
-func looksJapanese(texts [][]byte) bool {
+// legacyEncoding returns the encoding of a file's old byte strings.
+func legacyEncoding(texts [][]byte) *mactext.Encoding {
 	for _, t := range texts {
 		if mr := mactext.MacRoman(t); strings.Contains(mr, "«class ") || strings.Contains(mr, "«event ") ||
 			strings.Contains(mr, "«constant ") || strings.Contains(mr, "«data ") {
 			// AppleScript's raw-code chevrons in Mac Roman (-- folder = «class cfol»):
 			// read as Shift JIS, «'s byte pairs up into kanji.
-			return false
+			return mactext.Roman
 		}
 	}
-	return mactext.LooksJapanese(texts)
+	return mactext.Detect(texts)
 }
 
 // legacyText decodes text that classic Mac OS stored in the script system's
 // encoding.
 func (dc *decompState) legacyText(b []byte) string {
-	if dc.shiftJIS {
-		if s, ok := mactext.ShiftJIS(b); ok {
-			return s
-		}
+	if dc.enc == nil {
+		return mactext.MacRoman(b)
 	}
-	return mactext.MacRoman(b)
+	return dc.enc.DecodeOrRoman(b)
 }
 
 // identNames decodes an identifier record's names: UTF-8 in current files,

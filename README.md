@@ -44,7 +44,7 @@ From HyperCard 2.2 on, a script can be in AppleScript. scriptview decompiles tho
 
 `scriptview text` prints the text in the stack's fields instead.
 
-A stack can be a plain file, or inside a MacBinary, BinHex, or AppleSingle file. scriptview reads Japanese stacks, stacks from HyperCard IIGS, the Apple IIGS version, and the scripts of password-protected ones.
+A stack can be a plain file, or inside a MacBinary, BinHex, or AppleSingle file. scriptview reads Japanese, Chinese, Korean, and Cyrillic stacks, stacks from HyperCard IIGS, the Apple IIGS version, and the scripts of password-protected ones.
 
 scriptview was tested on 4,651 stacks without a failure. Its indentation matches 99.9% of the lines in 12 listings of scripts that HyperCard wrote out.
 
@@ -88,7 +88,7 @@ The code is in `internal`:
 - `scpt` reads compiled AppleScript and JavaScript for Automation scripts.
 - `classic` reads the files of classic Mac OS: resource forks, and the AppleSingle, AppleDouble, MacBinary, and BinHex wrappers that carry them on other systems.
 - `hypercard` reads HyperCard stacks: their scripts, buttons, fields, and field text.
-- `mactext` decodes the classic Mac text encodings, Mac Roman and Mac Japanese.
+- `mactext` decodes the classic Mac text encodings, such as Mac Roman and Mac Japanese, and tells which one a file uses.
 
 Inside `scpt`:
 

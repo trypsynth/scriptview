@@ -3,6 +3,8 @@ package scpt
 import (
 	"fmt"
 	"strings"
+
+	"github.com/trypsynth/scriptview/internal/mactext"
 )
 
 // decompState holds the full FASD parse tree needed for source reconstruction.
@@ -53,8 +55,8 @@ type decompState struct {
 	// repeatWith counts enclosing `repeat with` loops, inside which Script
 	// Editor parenthesizes a statement's targeted call: (x's foo:y).
 	repeatWith int
-	// shiftJIS is set when the file's old byte strings are Japanese.
-	shiftJIS bool
+	// enc is the encoding of the file's old byte strings.
+	enc *mactext.Encoding
 	// legacy is set for AppleScript 1.0 files (FASD before 1.01), and beta
 	// for the 1.0b1 beta's (FASD 0.95).
 	legacy, beta bool

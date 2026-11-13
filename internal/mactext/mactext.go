@@ -1,9 +1,9 @@
-// Package mactext decodes the text encodings of classic Mac OS: Mac Roman,
-// and Mac Japanese, a variant of Shift JIS.
+// Package mactext decodes the text encodings of classic Mac OS, such as
+// Mac Roman and Mac Japanese.
 //
-// Classic Mac OS stored text in the encoding of the script system that was
-// running, and files don't record which one. Callers decide, for example
-// with [ShiftJIS] failing on text that isn't Japanese.
+// Classic Mac OS stored text in the encoding of its font's script system,
+// and files don't record which one. [Detect] picks it from the text, and
+// from a file's fonts when it lists them.
 package mactext
 
 import "slices"

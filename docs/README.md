@@ -27,3 +27,7 @@ About these notes:
 ## HyperCard
 
 - [Stack format](hypercard/format.md): the blocks of a stack file, where the scripts and field text are, card order, the differences in HyperCard 1.x, and how scriptview indents HyperTalk.
+
+## Both
+
+- [Text encodings](text-encodings.md): the encodings of classic Mac OS, and how scriptview tells which one a file uses.

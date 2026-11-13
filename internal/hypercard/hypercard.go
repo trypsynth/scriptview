@@ -135,28 +135,29 @@ type block struct {
 
 var be = binary.BigEndian
 
-// Parse reads a stack. Its text is Mac Roman, or Mac Japanese when all of
-// it reads as Japanese.
+// Parse reads a stack. Its text is Mac Roman, unless its fonts and text
+// show another encoding, such as Mac Japanese: see [mactext.Detect].
 func Parse(data []byte) (*Stack, error) {
-	ps := &parser{dec: mactext.MacRoman}
+	ps := &parser{enc: mactext.Roman}
 	s, err := ps.parse(data)
-	if err != nil || !mactext.LooksJapanese(ps.raw) {
+	if err != nil {
 		return s, err
 	}
-	ps = &parser{dec: func(b []byte) string {
-		if t, ok := mactext.ShiftJIS(b); ok {
-			return t
-		}
-		return mactext.MacRoman(b)
-	}}
+	enc := mactext.Detect(ps.raw, ps.fonts...)
+	if enc == mactext.Roman {
+		return s, nil
+	}
+	ps = &parser{enc: enc}
 	return ps.parse(data)
 }
 
-// parser decodes a stack's text with dec, and keeps the raw bytes of every
-// string it decodes in raw.
+// parser decodes a stack's text with enc, and keeps the raw bytes of every
+// string it decodes in raw, and the encodings of the fonts in its font
+// table in fonts.
 type parser struct {
-	dec func([]byte) string
-	raw [][]byte
+	enc   *mactext.Encoding
+	raw   [][]byte
+	fonts []*mactext.Encoding
 	layout
 }
 
@@ -188,7 +189,47 @@ var (
 
 func (ps *parser) text(b []byte) string {
 	ps.raw = append(ps.raw, b)
-	return fontSymbols.Replace(ps.dec(b))
+	return fontSymbols.Replace(ps.enc.DecodeOrRoman(b))
+}
+
+// scriptText decodes a script, with its carriage returns as line breaks.
+// HyperTalk's continuation character is byte 0xC2 at the end of a line in
+// every script system, which is ¬ only in Mac Roman.
+func (ps *parser) scriptText(b []byte) string {
+	if ps.enc == mactext.Roman {
+		return strings.ReplaceAll(ps.text(b), "\r", "\n")
+	}
+	lines := bytes.Split(b, []byte("\r"))
+	out := make([]string, len(lines))
+	for i, l := range lines {
+		if n := len(l); n > 0 && l[n-1] == 0xC2 {
+			out[i] = ps.text(l[:n-1]) + "¬"
+		} else {
+			out[i] = ps.text(l)
+		}
+	}
+	return strings.Join(out, "\n")
+}
+
+// fontTable returns the encodings of the fonts in an FTBL block: from 24,
+// a 2-byte ID and a NUL-terminated name for each font, padded to an even
+// length.
+func fontTable(b []byte, bo binary.ByteOrder) []*mactext.Encoding {
+	if len(b) < 24 {
+		return nil
+	}
+	var encs []*mactext.Encoding
+	n := int(bo.Uint32(b[16:]))
+	for p := 24; n > 0 && p+3 <= len(b); n-- {
+		id := int(int16(bo.Uint16(b[p:])))
+		name := rawCString(b[p+2:])
+		p += 2 + len(name) + 1
+		p += p & 1
+		if e := mactext.ForFont(id, name); e != nil {
+			encs = append(encs, e)
+		}
+	}
+	return encs
 }
 
 // fontSymbols maps control characters that the system font draws as
@@ -224,6 +265,11 @@ func (ps *parser) parse(data []byte) (*Stack, error) {
 	}
 	if len(order) == 0 || order[0].typ != "STAK" {
 		return nil, ErrNotStack
+	}
+	for _, b := range order {
+		if b.typ == "FTBL" {
+			ps.fonts = append(ps.fonts, fontTable(b.data, bo)...)
+		}
 	}
 	stak := order[0].data
 	if len(stak) < 56 {
@@ -501,7 +547,7 @@ func rawCString(b []byte) []byte {
 // the header.
 func (ps *parser) script(b []byte) (text, language string, compiled []byte) {
 	if len(b) < 1+20 || b[0] != 0 || string(b[1:5]) != "WOSA" {
-		return ps.cString(b), "", nil
+		return ps.scriptText(rawCString(b)), "", nil
 	}
 	start := 1 + int(be.Uint32(b[5:]))
 	n := int(be.Uint32(b[9:]))
@@ -516,7 +562,7 @@ func (ps *parser) script(b []byte) (text, language string, compiled []byte) {
 	if string(b[17:21]) == "scpt" {
 		return "", language, data
 	}
-	return strings.ReplaceAll(ps.text(data), "\r", "\n"), language, nil
+	return ps.scriptText(data), language, nil
 }
 
 // cString decodes a NUL-terminated string, with HyperCard's carriage

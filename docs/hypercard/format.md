@@ -136,7 +136,7 @@ These files also start with a `STAK` block:
 
 ## Text encoding
 
-Text is Mac Roman, unless the stack is Japanese. The system font, Chicago, draws four control characters as symbols, which scriptview prints as Unicode: `0x11` as ⌘, `0x12` as ✓, `0x13` as ◆, and `0x14` as the Apple logo, U+F8FF. Like compiled AppleScript, a stack doesn't record its encoding. scriptview reads a stack as Mac Japanese, a variant of Shift JIS, when all its non-ASCII text decodes as Shift JIS and holds several kana. Kanji alone aren't enough: an accented Mac Roman letter followed by certain bytes forms a valid pair, so "Frédéric" reads in Shift JIS as "Fr仕屍ic". 455 of the 4,651 stacks in the test set read as Japanese.
+Text is Mac Roman, unless the stack is in another script system, such as Japanese. The system font, Chicago, draws four control characters as symbols, which scriptview prints as Unicode: `0x11` as ⌘, `0x12` as ✓, `0x13` as ◆, and `0x14` as the Apple logo, U+F8FF. Like compiled AppleScript, a stack doesn't record its encoding. scriptview tells from its text, and from the fonts in its `FTBL` block: from offset 16, the number of fonts, 4 bytes, and from 24, each font's ID, 2 bytes, and name, as a string that ends with a NUL byte, padded to an even length. See [Text encodings](../text-encodings.md).
 
 ## HyperCard 1.x
 

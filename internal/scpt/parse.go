@@ -262,7 +262,7 @@ func parseRecords(body []byte, b *builder) error {
 	if err != nil {
 		return err
 	}
-	b.dc.shiftJIS = looksJapanese(legacyTexts(objs))
+	b.dc.enc = legacyEncoding(legacyTexts(objs))
 	if b.dc.beta {
 		objs = translateBeta(objs)
 	}

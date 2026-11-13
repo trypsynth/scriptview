@@ -173,15 +173,7 @@ A comment keeps both a byte string and a UTF-16 copy. Use the UTF-16 copy, becau
 
 ### Text encodings
 
-Classic Mac OS stored text in the encoding of the script system that was running: Mac Roman for Western languages, and a Shift JIS variant for Japanese. A compiled script doesn't record which encoding it used.
-
-scriptview reads a file as Japanese when these conditions are all true:
-
-- Every byte string with non-ASCII bytes decodes as Shift JIS.
-- Together, the strings hold several kana or kanji.
-- No string reads as AppleScript raw code syntax in Mac Roman, such as `«class cfol»`.
-
-Western text almost never passes the test: an accented Mac Roman letter such as `é` is a Shift JIS lead byte, and the byte after it rarely makes a valid pair. The Shift JIS table comes from the macOS CP932 converter, through `tools/gensjis`.
+Classic Mac OS stored text in the encoding of the script system that was running: Mac Roman for Western languages, and others such as Mac Japanese. A compiled script doesn't record which encoding it used. See [Text encodings](../text-encodings.md) for how scriptview tells.
 
 ## Descriptors
 
