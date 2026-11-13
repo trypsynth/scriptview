@@ -186,7 +186,9 @@ func (dc *decompState) commandParts(n nodeRec) (string, string) {
 			if hasOf && dc.isBareOfRef(cell[1]) || dc.isBareOfRef(cell[1]) && strings.HasPrefix(value, label+" ") {
 				value = "(" + value + ")" // offset of x in (item 1 of y), output volume (output volume of s)
 			}
-			if dc.isCommand(cell[1]) && dc.hasArgs(cell[1]) {
+			if n := dc.nodes[cell[1]]; n.typ == 'e' {
+				value = "(" + value + ")" // default items (get item 1 of x)
+			} else if dc.isCommand(cell[1]) && dc.hasArgs(cell[1]) {
 				cmdParts[len(parts)] = label
 			}
 			parts = append(parts, label+" "+value)
