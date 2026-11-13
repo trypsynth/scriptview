@@ -141,9 +141,10 @@ func (dc *decompState) commandParts(n nodeRec) (string, string) {
 	if direct := child(n, 1); direct != 0 {
 		if dn, ok := dc.nodes[direct]; ok {
 			arg := dc.operand(direct)
-			if dn.typ == '6' || dn.typ == 'c' && dc.cmdLabels["as"] {
+			if dn.typ == '6' || dn.typ == 'c' && dc.cmdLabels["as"] || dc.fromBytecode && binOps[dn.typ].tok != "" && dc.mentionsLabel(direct, 0) {
 				// click (first item whose …); do shell script (x as string),
-				// where `as string` would be the command's own parameter.
+				// where `as string` would be the command's own parameter;
+				// do shell script ("x" & password), where password would be.
 				arg = "(" + arg + ")"
 			}
 			directPart = arg
@@ -1267,4 +1268,22 @@ func (dc *decompState) isAppLiteral(id int16) bool {
 	}
 	_, app := dc.appByID[child0(n)]
 	return app
+}
+
+// mentionsLabel reports whether expression id uses a variable named like
+// one of the current command's parameter labels.
+func (dc *decompState) mentionsLabel(id int16, depth int) bool {
+	n, ok := dc.nodes[id]
+	if !ok || depth > 64 {
+		return false
+	}
+	if n.typ == 'o' {
+		return dc.cmdLabels[strings.ToLower(dc.name(child0(n)))] // a name, or a term as a name
+	}
+	for _, c := range n.children {
+		if c > 0 && dc.mentionsLabel(c, depth+1) {
+			return true
+		}
+	}
+	return false
 }
