@@ -13,6 +13,8 @@ import (
 	"encoding/binary"
 	"os"
 	"path/filepath"
+
+	"github.com/trypsynth/scriptview/mactext"
 )
 
 // File is a classic Mac file.
@@ -78,8 +80,17 @@ func appleDoublePaths(path string) []string {
 	}
 }
 
-// Resources returns the resources of one type in a resource fork, by ID.
-func Resources(fork []byte, typ string) map[int16][]byte {
+// Resource is one resource of a resource fork.
+type Resource struct {
+	Type string // four characters, such as "STR#"
+	ID   int16
+	Name string // empty when the resource has none
+	Data []byte
+}
+
+// ResourceList returns every resource in a resource fork, in the order of
+// the fork's map. It returns what it can read of a damaged fork.
+func ResourceList(fork []byte) []Resource {
 	be := binary.BigEndian
 	if len(fork) < 16 {
 		return nil
@@ -89,18 +100,16 @@ func Resources(fork []byte, typ string) map[int16][]byte {
 		return nil
 	}
 	m := fork[mapOff:]
-	typeListOff := int(be.Uint16(m[24:]))
+	typeListOff, nameListOff := int(be.Uint16(m[24:])), int(be.Uint16(m[26:]))
 	if typeListOff+2 > len(m) {
 		return nil
 	}
 	typeList := m[typeListOff:]
 	nTypes := int(int16(be.Uint16(typeList))) + 1
-	out := map[int16][]byte{}
+	var out []Resource
 	for i := 0; i < nTypes && 2+i*8+8 <= len(typeList); i++ {
 		e := typeList[2+i*8:]
-		if string(e[:4]) != typ {
-			continue
-		}
+		typ := string(e[:4])
 		count := int(int16(be.Uint16(e[4:]))) + 1
 		refsOff := int(be.Uint16(e[6:]))
 		for j := range count {
@@ -117,7 +126,25 @@ func Resources(fork []byte, typ string) map[int16][]byte {
 			if n < 0 || off+4+n > len(fork) {
 				continue
 			}
-			out[int16(be.Uint16(ref))] = fork[off+4 : off+4+n]
+			res := Resource{Type: typ, ID: int16(be.Uint16(ref)), Data: fork[off+4 : off+4+n]}
+			// The name is a Pascal string in the name list, or -1 for none.
+			if no := int(int16(be.Uint16(ref[2:]))); no >= 0 {
+				if p := nameListOff + no; p < len(m) && p+1+int(m[p]) <= len(m) {
+					res.Name = mactext.MacRoman(m[p+1 : p+1+int(m[p])])
+				}
+			}
+			out = append(out, res)
+		}
+	}
+	return out
+}
+
+// Resources returns the resources of one type in a resource fork, by ID.
+func Resources(fork []byte, typ string) map[int16][]byte {
+	out := map[int16][]byte{}
+	for _, r := range ResourceList(fork) {
+		if r.Type == typ {
+			out[r.ID] = r.Data
 		}
 	}
 	return out
