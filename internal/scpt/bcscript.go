@@ -40,6 +40,12 @@ func DecompileBytecode(f *File) (string, error) {
 // [_, [names…], entries…] into top-level items.
 // parent is the object's parent, which an explicit property parent names.
 func (b *bcBuilder) scriptItems(v fasValue, top bool, parent fasValue) ([]int16, error) {
+	saved := b.prior
+	b.prior = map[string]bool{}
+	for n := range saved {
+		b.prior[n] = true
+	}
+	defer func() { b.prior = saved }()
 	table, ok := v.([]fasValue)
 	if ok && len(table) == 0 {
 		return nil, nil // an empty script object
@@ -67,6 +73,10 @@ func (b *bcBuilder) scriptItems(v fasValue, top bool, parent fasValue) ([]int16,
 	globalNames := map[string]bool{}
 	if top {
 		globalNames = b.globalAccesses(table[2:])
+		b.declared = map[string]bool{}
+		for _, g := range b.globals(table[2:]) {
+			b.declared[strings.ToLower(b.out.refName[child0(b.out.nodes[g])])] = true
+		}
 	}
 	for i, entry := range table[2:] {
 		var name fasValue
@@ -162,6 +172,9 @@ func (b *bcBuilder) scriptItems(v fasValue, top bool, parent fasValue) ([]int16,
 		}
 		// Anything else is a property with its initial value.
 		if name != nil {
+			if n, ok := name.(string); ok {
+				b.prior[strings.ToLower(n)] = true
+			}
 			prop := b.node('j', b.keyRef(name), b.literal(entry))
 			items = append(items, b.node('l', prop))
 		}
@@ -369,9 +382,18 @@ func (bh *bcHandler) localDecl(run bool) int16 {
 	// Declare vars[np..k] for the smallest k after which the remaining
 	// variables appear in use order, and every variable that must be
 	// declared is covered.
+	outer := func(name string) bool {
+		name = strings.ToLower(name)
+		if bh.b.declared[name] {
+			return true
+		}
+		return bh.b.prior[name]
+	}
 	k := np - 1
 	for i := np; i < len(vars); i++ {
-		if !seen[i] || run && !auto[i] {
+		// A variable that shares its name with a global or an enclosing
+		// script's property was declared, or it would be that one.
+		if !seen[i] || run && !auto[i] || outer(vars[i]) {
 			k = i
 		}
 	}

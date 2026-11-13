@@ -26,6 +26,12 @@ type bcBuilder struct {
 	// scopes holds the name tables of the script objects enclosing the
 	// code being decompiled, outermost first.
 	scopes [][]string
+	// declared holds the globals that handlers use, which a handler's own
+	// variable of the same name must have been declared local to hide.
+	declared map[string]bool
+	// prior holds the properties written so far, which the handlers after
+	// them see.
+	prior map[string]bool
 }
 
 func newBCBuilder(src *decompState) *bcBuilder {
