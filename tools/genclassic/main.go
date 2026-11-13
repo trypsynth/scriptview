@@ -4,8 +4,8 @@
 // Scripting Extension and Scriptable Text Editor. scriptview uses these
 // terms only for scripts from classic Mac OS.
 //
-// The dictionaries come from Apple's 1993 and 1994 discs, which we can't
-// include. Extract each English (ID 0) aete resource to a file, list them
+// The dictionaries come from Apple's 1993 and 1994 discs, which the repository
+// can't include. Extract each English (ID 0) aete resource to a file, list them
 // newest first in a manifest of tab-separated lines
 //
 //	file	type	creator	size	name
