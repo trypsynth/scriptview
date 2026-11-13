@@ -8,7 +8,7 @@ import (
 // Scripts lists every script in the stack, indented, each under a comment
 // that names its object the way HyperTalk refers to it, such as
 // -- card button "OK" of card "Home". Objects without a script are left
-// out.
+// out. When the stack has externals, two comments list them first.
 func (s *Stack) Scripts() string {
 	var sb strings.Builder
 	add := func(label, script string) {
@@ -20,6 +20,20 @@ func (s *Stack) Scripts() string {
 		}
 		sb.WriteString("-- " + label + "\n")
 		sb.WriteString(strings.TrimRight(Indent(script), "\n") + "\n")
+	}
+	var cmds, fns []string
+	for _, e := range s.Externals {
+		if e.Kind == "XFCN" {
+			fns = append(fns, e.Name)
+		} else {
+			cmds = append(cmds, e.Name)
+		}
+	}
+	if len(cmds) > 0 {
+		sb.WriteString("-- external commands: " + strings.Join(cmds, ", ") + "\n")
+	}
+	if len(fns) > 0 {
+		sb.WriteString("-- external functions: " + strings.Join(fns, ", ") + "\n")
 	}
 	add("stack", s.Script)
 	for _, b := range s.Backgrounds {

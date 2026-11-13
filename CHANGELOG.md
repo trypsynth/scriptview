@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Added HyperCard stacks, from HyperCard 1.x and 2.x. scriptview prints every script in a stack, indented the way HyperCard's script editor shows it and labeled with its object, and `scriptview text` prints the text of the stack's fields. The new `hypercard` package does the reading.
+- For a stack with its resource fork, scriptview lists the stack's external commands and functions before its scripts. `classic.ResourceList` reads every resource of a resource fork, with its name.
 - The `scpt` package is public, so other Go programs can decompile AppleScript. Two new packages share the classic Mac OS code: `classic` reads resource forks and the AppleSingle, AppleDouble, MacBinary, and BinHex wrappers, and `mactext` decodes Mac Roman and Mac Japanese text.
 
 ## 0.3.1

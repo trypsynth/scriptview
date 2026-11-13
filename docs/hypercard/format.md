@@ -107,6 +107,12 @@ HyperCard 1.x stacks use the same blocks with three differences:
 - The `LIST` block's page count and entry size, and the start of each page's entries, also come 4 bytes earlier.
 - Field text has no length and no styles. Each entry is the part's ID, then the text, ending with a NUL byte.
 
+## The resource fork
+
+A stack's resource fork holds what HyperCard keeps outside the stack format: icons, cursors, sounds, fonts, and pictures, and the externals that scripts call. An external is compiled code in an `XCMD` resource, for a command, or an `XFCN` resource, for a function. Scripts call it by the resource's name, as they would call a handler, so a script that calls one looks as if it calls a handler that doesn't exist. scriptview lists the externals' names at the top of its output.
+
+The Apple Event XCMDs stack, for example, carries `AESend` and 18 others, which let HyperCard 2.1 scripts send Apple events before HyperCard could run AppleScript.
+
 ## Scripts and indentation
 
 Scripts are stored as typed, without indentation: HyperCard's script editor indents a script each time it opens it. scriptview indents them the same way, two spaces per level:

@@ -57,7 +57,13 @@ func main() {
 		os.Exit(2)
 	}
 
-	data, err := readScript(scriptPath(path))
+	file, err := classic.ReadFile(scriptPath(path))
+	// A classic Mac script keeps its compiled data in the resource fork and
+	// leaves the data fork empty.
+	data := file.Data
+	if len(data) == 0 {
+		data = file.Rsrc
+	}
 	if err == nil && len(data) == 0 {
 		err = fmt.Errorf("%s is empty, and has no resource fork or ._ file with a script in it", path)
 	}
@@ -66,7 +72,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if stack := stackData(data); stack != nil {
+	if stack, ok := stackFile(file); ok {
 		runStack(cmd, stack)
 		return
 	}
@@ -110,37 +116,27 @@ func scriptPath(path string) string {
 	return path
 }
 
-// readScript reads a script file. A classic Mac script keeps its compiled
-// data in the resource fork and leaves the data fork empty: then read the
-// resource fork.
-func readScript(path string) ([]byte, error) {
-	f, err := classic.ReadFile(path)
-	if err != nil || len(f.Data) > 0 {
-		return f.Data, err
+// stackFile returns f as a HyperCard stack, unwrapping MacBinary, BinHex,
+// and AppleSingle files, or false if it isn't one.
+func stackFile(f classic.File) (classic.File, bool) {
+	if hypercard.IsStack(f.Data) {
+		return f, true
 	}
-	return f.Rsrc, nil
-}
-
-// stackData returns data as a HyperCard stack, unwrapping MacBinary,
-// BinHex, and AppleSingle files, or nil if it isn't one.
-func stackData(data []byte) []byte {
-	if hypercard.IsStack(data) {
-		return data
+	if inner, ok := classic.Unwrap(f.Data); ok && hypercard.IsStack(inner.Data) {
+		return inner, true
 	}
-	if f, ok := classic.Unwrap(data); ok && hypercard.IsStack(f.Data) {
-		return f.Data
-	}
-	return nil
+	return f, false
 }
 
 // runStack prints a HyperCard stack's scripts, or with the text command,
 // the text of its fields.
-func runStack(cmd string, data []byte) {
-	s, err := hypercard.Parse(data)
+func runStack(cmd string, f classic.File) {
+	s, err := hypercard.Parse(f.Data)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "scriptview: %v\n", err)
 		os.Exit(1)
 	}
+	s.AddResources(f.Rsrc)
 	switch cmd {
 	case "decompile":
 		fmt.Print(s.Scripts())

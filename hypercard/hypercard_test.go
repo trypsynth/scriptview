@@ -208,3 +208,16 @@ func FuzzParse(f *testing.F) {
 		}
 	})
 }
+
+// TestExternals lists the stack's externals before its scripts.
+func TestExternals(t *testing.T) {
+	s, err := Parse(sampleStack())
+	if err != nil {
+		t.Fatal(err)
+	}
+	s.Externals = []External{{"XCMD", "AESend"}, {"XFCN", "ShowList"}, {"XCMD", "Beep2"}}
+	want := "-- external commands: AESend, Beep2\n-- external functions: ShowList\n\n-- stack\n"
+	if got := s.Scripts(); !strings.HasPrefix(got, want) {
+		t.Errorf("got:\n%s", got[:min(len(got), 120)])
+	}
+}

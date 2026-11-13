@@ -38,7 +38,7 @@ It reads classic Mac OS scripts too, back to AppleScript 1.0 in 1993, including 
 
 ## HyperCard stacks
 
-Give scriptview a HyperCard stack, from HyperCard 1.x or 2.x, and it prints every script in it: the stack's, each background's and card's, and each button's and field's. A comment before each script names its object the way HyperTalk refers to it, such as `-- background button "Next" of background "Main"`. HyperCard stores scripts without indentation, so scriptview indents them the way HyperCard's script editor does.
+Give scriptview a HyperCard stack, from HyperCard 1.x or 2.x, and it prints every script in it: the stack's, each background's and card's, and each button's and field's. A comment before each script names its object the way HyperTalk refers to it, such as `-- background button "Next" of background "Main"`. HyperCard stores scripts without indentation, so scriptview indents them the way HyperCard's script editor does. When the stack's resource fork is there, the output starts with the names of the stack's external commands and functions (XCMDs and XFCNs), which its scripts call.
 
 `scriptview text` prints the text in the stack's fields instead.
 

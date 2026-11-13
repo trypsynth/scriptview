@@ -15,6 +15,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/trypsynth/scriptview/classic"
 	"github.com/trypsynth/scriptview/mactext"
 )
 
@@ -33,6 +34,26 @@ type Stack struct {
 	Script      string
 	Backgrounds []*Background // in the order of the stack's background chain
 	Cards       []*Card       // in stack order
+	// Externals lists the stack's external commands (XCMD) and functions
+	// (XFCN), compiled code in its resource fork that scripts call by name.
+	// AddResources fills it in.
+	Externals []External
+}
+
+// External is an external command or function.
+type External struct {
+	Kind string // "XCMD" for a command, "XFCN" for a function
+	Name string
+}
+
+// AddResources reads what the stack keeps in its resource fork: the names
+// of its external commands and functions.
+func (s *Stack) AddResources(rsrc []byte) {
+	for _, r := range classic.ResourceList(rsrc) {
+		if (r.Type == "XCMD" || r.Type == "XFCN") && r.Name != "" {
+			s.Externals = append(s.Externals, External{Kind: r.Type, Name: r.Name})
+		}
+	}
 }
 
 // Background is a background, which cards share.
