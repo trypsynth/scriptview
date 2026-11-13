@@ -11,7 +11,7 @@ scriptview was tested on these stacks:
 - 4,651 stacks from software CDs, through discmaster.textfiles.com and the HyperCard Online collection on archive.org: 3,227 from HyperCard 2.x, 1,381 from HyperCard 1.x, 38 from HyperCard IIGS, and 5 from Plus.
 - 12 stacks that came with text listings of their scripts, which show how HyperCard indents. See [Scripts and indentation](#scripts-and-indentation).
 
-All numbers are big-endian. Text is Mac Roman, with a carriage return at the end of each line.
+All numbers are big-endian, except in HyperCard IIGS stacks. Text is Mac Roman, with a carriage return at the end of each line.
 
 ## Blocks
 
@@ -131,12 +131,12 @@ The sum of the first 1,536 bytes of the `STAK` block, read as big-endian 32-bit 
 
 These files also start with a `STAK` block:
 
-- HyperCard IIGS, the Apple IIGS version, stores its numbers little-endian. Its scripts are plain text in the same block types. scriptview doesn't read these stacks yet.
+- HyperCard IIGS, the Apple IIGS version. See [HyperCard IIGS](#hypercard-iigs).
 - Plus, a cross-platform HyperCard clone, writes the format version `0x80000008`. Plus stacks read like HyperCard 2.x stacks. Plus stores its scripts already indented, which scriptview replaces with its own indentation.
 
 ## Text encoding
 
-Text is Mac Roman, unless the stack is Japanese. Like compiled AppleScript, a stack doesn't record its encoding. scriptview reads a stack as Mac Japanese, a variant of Shift JIS, when all its non-ASCII text decodes as Shift JIS and holds several kana. Kanji alone aren't enough: an accented Mac Roman letter followed by certain bytes forms a valid pair, so "Frédéric" reads in Shift JIS as "Fr仕屍ic". 455 of the 4,651 stacks in the test set read as Japanese.
+Text is Mac Roman, unless the stack is Japanese. The system font, Chicago, draws four control characters as symbols, which scriptview prints as Unicode: `0x11` as ⌘, `0x12` as ✓, `0x13` as ◆, and `0x14` as the Apple logo, U+F8FF. Like compiled AppleScript, a stack doesn't record its encoding. scriptview reads a stack as Mac Japanese, a variant of Shift JIS, when all its non-ASCII text decodes as Shift JIS and holds several kana. Kanji alone aren't enough: an accented Mac Roman letter followed by certain bytes forms a valid pair, so "Frédéric" reads in Shift JIS as "Fr仕屍ic". 455 of the 4,651 stacks in the test set read as Japanese.
 
 ## HyperCard 1.x
 
@@ -145,6 +145,20 @@ HyperCard 1.x stacks use the same blocks with three differences:
 - A background's or card's header has its picture ID at 12, where 2.x has an unused field, so every later field comes 4 bytes earlier than in 2.x.
 - The `LIST` block's page count and entry size, and the start of each page's entries, also come 4 bytes earlier.
 - Field text has no length and no styles. Each entry is the part's ID, then the text, ending with a NUL byte.
+
+## HyperCard IIGS
+
+HyperCard IIGS, the Apple IIGS version, writes the format version 5, and stores every number little-endian. scriptview read all 38 IIGS stacks in the test set, with card counts that match their headers. Its layout starts from HyperCard 1.x's, with these differences:
+
+- The stack script starts at 1540, after a 4-byte number, always 4.
+- The `LIST` block has its page count at 12, its entry size at 24, and its page table at 40. Page entries start at 24, as in 2.x.
+- A background's header is 4 bytes longer than in 1.x: its next and previous backgrounds are at 24 and 28, and its parts start at 36. A card's header is the same as in 1.x.
+- A part's name starts at 42, after a longer record that holds the part's colors. The low 4 bits of the kind byte give the kind. The high bits are set on many buttons.
+- Every script, of a part, a card, or a background, follows the same 4-byte number.
+- When bit `0x0400` of the 2-byte flags at 16 is set, a card or background has a 32-byte color table after its field text: 16 colors, 2 bytes each.
+- A background button's highlight entry on a card is the byte `0x80`, not `1`.
+
+Text is Mac Roman, like the Mac version's, with the same control characters for the system font's symbols.
 
 ## The resource fork
 

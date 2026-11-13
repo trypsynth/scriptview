@@ -287,3 +287,85 @@ beep
 		t.Errorf("got:\n%s\nwant:\n%s", got, want)
 	}
 }
+
+// TestIIGS reads a synthetic HyperCard IIGS stack: little-endian, with
+// HyperCard 1.x's card header, part names at offset 42, a 4-byte value
+// before each script, and a color table on a card whose flag 0x0400 is set.
+func TestIIGS(t *testing.T) {
+	le := binary.LittleEndian
+	var out []byte
+	// block writes a block whose body starts at offset 12, after its ID.
+	block := func(typ string, id int32, body []byte) {
+		h := le.AppendUint32(nil, uint32(12+len(body)))
+		h = append(h, typ...)
+		h = le.AppendUint32(h, uint32(id))
+		out = append(append(out, h...), body...)
+	}
+	at := func(n int) []byte { return make([]byte, n-12) } // a body up to offset n
+	script := func(s string) []byte {
+		return append(append([]byte{4, 0, 0, 0}, strings.ReplaceAll(s, "\n", "\r")...), 0)
+	}
+	stak := at(0x600)               // the 4 before the script sits at 0x600
+	le.PutUint32(stak[16-12:], 5)   // version
+	le.PutUint32(stak[40-12:], 200) // first background
+	le.PutUint32(stak[52-12:], 50)  // LIST
+	block("STAK", -1, append(stak, script("on openStack\nbeep\nend openStack")...))
+	list := at(46)
+	le.PutUint32(list, 1)         // pages, at 12
+	le.PutUint16(list[24-12:], 8) // entry size
+	le.PutUint32(list[40-12:], 60)
+	le.PutUint16(list[44-12:], 1)
+	block("LIST", 50, list)
+	page := at(32)
+	le.PutUint32(page[24-12:], 301)
+	block("PAGE", 60, page)
+	bg := at(50)
+	le.PutUint32(bg[24-12:], 200) // next background: itself
+	block("BKGD", 200, append(append(bg, "Main\x00"...), script("")...))
+
+	part := make([]byte, 42)
+	le.PutUint16(part[2:], 3)
+	part[4] = 0x11 // a button, with IIGS bits above
+	part = append(append(part, "Go\x00\x00"...), script("on mouseUp\ngo next\nend mouseUp")...)
+	le.PutUint16(part, uint16(len(part)))
+	text := append(le.AppendUint16(nil, 0xfffd), "Hi\x00"...) // card part 3
+	card := at(36)
+	le.PutUint16(card[16-12:], 0x0400) // flags: a color table follows the text
+	le.PutUint32(card[32-12:], 200)    // background
+	card = le.AppendUint16(card, 1)
+	card = le.AppendUint16(card, 4)
+	card = le.AppendUint32(card, uint32(len(part)))
+	card = le.AppendUint16(card, 1)
+	card = le.AppendUint32(card, uint32(len(text)))
+	card = append(append(card, part...), text...)
+	card = append(card, make([]byte, 32)...) // the color table
+	block("CARD", 301, append(append(card, "Home\x00"...), script("")...))
+	block("TAIL", -1, nil)
+
+	s, err := Parse(out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(s.Cards) != 1 || s.Cards[0].Name != "Home" || len(s.Cards[0].Parts) != 1 {
+		t.Fatalf("got %d cards: %+v", len(s.Cards), s.Cards)
+	}
+	if p := s.Cards[0].Parts[0]; p.Kind != Button || p.Name != "Go" {
+		t.Errorf("part: %+v", p)
+	}
+	want := `-- stack
+on openStack
+  beep
+end openStack
+
+-- card button "Go" of card "Home"
+on mouseUp
+  go next
+end mouseUp
+`
+	if got := s.Scripts(); got != want {
+		t.Errorf("got:\n%s\nwant:\n%s", got, want)
+	}
+	if got := s.Text(); got != "-- card button \"Go\" of card \"Home\"\nHi\n" {
+		t.Errorf("text: %q", got)
+	}
+}

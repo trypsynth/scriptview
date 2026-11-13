@@ -23,10 +23,6 @@ import (
 // ErrNotStack is returned for data that isn't a HyperCard stack.
 var ErrNotStack = errors.New("not a HyperCard stack")
 
-// ErrIIGS is returned for a stack from HyperCard IIGS, the Apple IIGS
-// version, which stores its numbers little-endian and isn't supported.
-var ErrIIGS = errors.New("HyperCard IIGS stacks aren't supported")
-
 // IsStack reports whether data starts like a HyperCard stack.
 func IsStack(data []byte) bool {
 	return len(data) >= 16 && string(data[4:8]) == "STAK"
@@ -161,28 +157,61 @@ func Parse(data []byte) (*Stack, error) {
 type parser struct {
 	dec func([]byte) string
 	raw [][]byte
+	layout
 }
+
+// layout is where a stack variant keeps its fields.
+type layout struct {
+	bo binary.ByteOrder
+	// shift moves a background's or card's header fields after the bitmap
+	// ID, and the LIST block's fields, which HyperCard 1.x and IIGS keep 4
+	// bytes earlier than HyperCard 2.x.
+	shift       int
+	stackScript int  // offset of the stack script in the STAK block
+	bkgdParts   int  // offset of a background's part count
+	partName    int  // offset of a part's name in its record
+	scriptAfter int  // bytes between a name's NUL and pad byte and its script
+	pageTable   int  // offset of the page table in the LIST block
+	pageEntries int  // offset of the first card entry in a PAGE block
+	plainText   bool // field text is the part's ID and a NUL-terminated string
+	// palettes marks HyperCard IIGS, where flag 0x0400 of a background or
+	// card means it has a 32-byte color table, 16 colors as 0x0RGB, after
+	// its field text.
+	palettes bool
+}
+
+var (
+	layout2x   = layout{bo: binary.BigEndian, stackScript: 0x600, bkgdParts: 36, partName: 30, pageTable: 48, pageEntries: 24}
+	layout1x   = layout{bo: binary.BigEndian, shift: -4, stackScript: 0x600, bkgdParts: 32, partName: 30, pageTable: 48, pageEntries: 20, plainText: true}
+	layoutIIGS = layout{bo: binary.LittleEndian, shift: -4, stackScript: 0x604, bkgdParts: 36, partName: 42, scriptAfter: 4, pageTable: 40, pageEntries: 24, plainText: true, palettes: true}
+)
 
 func (ps *parser) text(b []byte) string {
 	ps.raw = append(ps.raw, b)
-	return ps.dec(b)
+	return fontSymbols.Replace(ps.dec(b))
 }
+
+// fontSymbols maps control characters that the system font draws as
+// symbols, as in "press ⌘-H" in a field.
+var fontSymbols = strings.NewReplacer("\x11", "⌘", "\x12", "✓", "\x13", "◆", "\x14", "\uf8ff")
 
 func (ps *parser) parse(data []byte) (*Stack, error) {
 	if !IsStack(data) {
 		return nil, ErrNotStack
 	}
+	ps.layout = layout2x
 	if len(data) >= 20 && binary.LittleEndian.Uint32(data[16:]) < 0x100 && be.Uint32(data[16:]) >= 0x100 {
-		return nil, ErrIIGS // a format version that is small only read little-endian
+		ps.layout = layoutIIGS // a format version that is small only read little-endian
 	}
+	bo := ps.bo
 	blocks := map[string]map[int32]block{}
 	var order []block
 	for p := 0; p+12 <= len(data); {
-		size := int(be.Uint32(data[p:]))
+		size := int(bo.Uint32(data[p:]))
 		if size < 12 || p+size > len(data) {
 			break
 		}
-		b := block{typ: string(data[p+4 : p+8]), id: int32(be.Uint32(data[p+8:])), data: data[p : p+size]}
+		b := block{typ: string(data[p+4 : p+8]), id: int32(bo.Uint32(data[p+8:])), data: data[p : p+size]}
 		if blocks[b.typ] == nil {
 			blocks[b.typ] = map[int32]block{}
 		}
@@ -200,18 +229,16 @@ func (ps *parser) parse(data []byte) (*Stack, error) {
 	if len(stak) < 56 {
 		return nil, fmt.Errorf("hypercard: STAK block too short")
 	}
-	s := &Stack{Version: int(be.Uint32(stak[16:]))}
-	if len(stak) > 0x600 {
-		s.Script, s.Language, s.Compiled = ps.script(stak[0x600:])
+	s := &Stack{Version: int(bo.Uint32(stak[16:]))}
+	if ps.bo == binary.BigEndian && s.Version < 10 {
+		// HyperCard 1.x blocks lack a field before the bitmap ID, so the
+		// rest of a background's or card's header comes 4 bytes earlier.
+		ps.layout = layout1x
 	}
-
-	// HyperCard 1.x blocks lack a field before the bitmap ID, so the rest
-	// of a background's or card's header comes 4 bytes earlier.
-	shift := 0
-	if s.Version < 10 {
-		shift = -4
+	if len(stak) > ps.stackScript {
+		s.Script, s.Language, s.Compiled = ps.script(stak[ps.stackScript:])
 	}
-	chain := backgroundChain(blocks["BKGD"], int32(be.Uint32(stak[40:])), shift)
+	chain := ps.backgroundChain(blocks["BKGD"], int32(bo.Uint32(stak[40:])))
 	if len(chain) < len(blocks["BKGD"]) {
 		// A broken chain, as in a private-access stack, whose header is
 		// scrambled: take the backgrounds in file order.
@@ -224,22 +251,22 @@ func (ps *parser) parse(data []byte) (*Stack, error) {
 	}
 	bkgds := map[int32]*Background{}
 	for _, b := range chain {
-		bg := ps.parseBackground(b.data, shift)
+		bg := ps.parseBackground(b.data)
 		bkgds[bg.ID] = bg
 		s.Backgrounds = append(s.Backgrounds, bg)
 	}
-	for _, id := range cardOrder(blocks, int32(be.Uint32(stak[52:])), shift) {
+	for _, id := range ps.cardOrder(blocks, int32(bo.Uint32(stak[52:]))) {
 		b, ok := blocks["CARD"][id]
 		if !ok {
 			continue
 		}
-		s.Cards = append(s.Cards, ps.parseCard(b.data, bkgds, shift))
+		s.Cards = append(s.Cards, ps.parseCard(b.data, bkgds))
 	}
 	if len(s.Cards) == 0 {
 		// Without a usable card list, take the cards in file order.
 		for _, b := range order {
 			if b.typ == "CARD" {
-				s.Cards = append(s.Cards, ps.parseCard(b.data, bkgds, shift))
+				s.Cards = append(s.Cards, ps.parseCard(b.data, bkgds))
 			}
 		}
 	}
@@ -247,7 +274,7 @@ func (ps *parser) parse(data []byte) (*Stack, error) {
 }
 
 // backgroundChain follows the backgrounds' next links from the first one.
-func backgroundChain(bkgds map[int32]block, first int32, shift int) []block {
+func (ps *parser) backgroundChain(bkgds map[int32]block, first int32) []block {
 	var out []block
 	seen := map[int32]bool{}
 	for id := first; !seen[id]; {
@@ -257,41 +284,42 @@ func backgroundChain(bkgds map[int32]block, first int32, shift int) []block {
 		}
 		seen[id] = true
 		out = append(out, b)
-		id = int32(be.Uint32(b.data[28+shift:]))
+		id = int32(ps.bo.Uint32(b.data[28+ps.shift:]))
 	}
 	return out
 }
 
 // cardOrder reads the card IDs in stack order from the LIST block and its
 // pages.
-func cardOrder(blocks map[string]map[int32]block, listID int32, shift int) []int32 {
+func (ps *parser) cardOrder(blocks map[string]map[int32]block, listID int32) []int32 {
 	list, ok := blocks["LIST"][listID]
 	if !ok || len(list.data) < 48 {
 		return nil
 	}
 	l := list.data
-	pages := int(be.Uint32(l[16+shift:]))
-	entrySize := int(be.Uint16(l[28+shift:]))
+	bo := ps.bo
+	pages := int(bo.Uint32(l[16+ps.shift:]))
+	entrySize := int(bo.Uint16(l[28+ps.shift:]))
 	if entrySize < 4 {
 		return nil
 	}
 	var ids []int32
 	for i := range pages {
-		e := 48 + i*6
+		e := ps.pageTable + i*6
 		if e+6 > len(l) {
 			break
 		}
-		page, ok := blocks["PAGE"][int32(be.Uint32(l[e:]))]
+		page, ok := blocks["PAGE"][int32(bo.Uint32(l[e:]))]
 		if !ok {
 			continue
 		}
-		count := int(be.Uint16(l[e+4:]))
+		count := int(bo.Uint16(l[e+4:]))
 		for j := range count {
-			k := 24 + shift + j*entrySize
+			k := ps.pageEntries + j*entrySize
 			if k+4 > len(page.data) {
 				break
 			}
-			ids = append(ids, int32(be.Uint32(page.data[k:])))
+			ids = append(ids, int32(bo.Uint32(page.data[k:])))
 		}
 	}
 	return ids
@@ -315,31 +343,38 @@ type rawText struct {
 
 // parseLayer reads the parts and what follows them, starting at off with
 // the part count's fields: count(2), next part ID(2), part list size(4),
-// text count(2), text list size(4). A nonzero shift marks HyperCard 1.x.
-func (ps *parser) parseLayer(b []byte, off, shift int) layer {
+// text count(2), text list size(4).
+func (ps *parser) parseLayer(b []byte, off int) layer {
+	palette := ps.palettes && len(b) >= 18 && ps.bo.Uint16(b[16:])&0x0400 != 0
 	var l layer
 	if off+14 > len(b) {
 		return l
 	}
-	nParts := int(be.Uint16(b[off:]))
-	listSize := int(be.Uint32(b[off+4:]))
-	nText := int(be.Uint16(b[off+8:]))
-	textSize := int(be.Uint32(b[off+10:]))
+	bo := ps.bo
+	nParts := int(bo.Uint16(b[off:]))
+	listSize := int(bo.Uint32(b[off+4:]))
+	nText := int(bo.Uint16(b[off+8:]))
+	textSize := int(bo.Uint32(b[off+10:]))
 	p := off + 14
 	partsEnd := p + listSize
 	for range nParts {
-		if p+30 > len(b) || p >= partsEnd {
+		n := ps.partName
+		if p+n > len(b) || p >= partsEnd {
 			break
 		}
-		size := int(be.Uint16(b[p:]))
-		if size < 30 || p+size > len(b) {
+		size := int(bo.Uint16(b[p:]))
+		if size < n || p+size > len(b) {
 			break
 		}
 		part := b[p : p+size]
-		name := ps.cString(part[30:])
-		pt := &Part{ID: int(be.Uint16(part[2:])), Kind: PartKind(part[4]), Name: name}
-		if s := 30 + len(rawCString(part[30:])) + 2; s < len(part) {
-			pt.Script, pt.Language, pt.Compiled = ps.script(part[s:]) // the name, its NUL, and a pad byte
+		name := ps.cString(part[n:])
+		pt := &Part{ID: int(bo.Uint16(part[2:])), Kind: PartKind(part[4]), Name: name}
+		if ps.palettes {
+			pt.Kind &= 0x0f // IIGS keeps more in the kind byte's high bits
+		}
+		// The name, its NUL, and a pad byte.
+		if s := n + len(rawCString(part[n:])) + 2 + ps.scriptAfter; s < len(part) {
+			pt.Script, pt.Language, pt.Compiled = ps.script(part[s:])
 		}
 		l.parts = append(l.parts, pt)
 		p += size
@@ -347,21 +382,22 @@ func (ps *parser) parseLayer(b []byte, off, shift int) layer {
 	p = min(partsEnd, len(b))
 	textEnd := min(p+textSize, len(b))
 	for range nText {
-		if shift != 0 {
-			// HyperCard 1.x: the part's ID, then the text up to a NUL.
+		if ps.plainText {
+			// HyperCard 1.x and IIGS: the part's ID, then the text up to a
+			// NUL.
 			if p+2 > textEnd {
 				break
 			}
 			raw := rawCString(b[p+2 : textEnd])
-			l.text = append(l.text, rawText{int(int16(be.Uint16(b[p:]))), ps.text(raw)})
+			l.text = append(l.text, rawText{int(int16(bo.Uint16(b[p:]))), ps.text(raw)})
 			p += 2 + len(raw) + 1
 			continue
 		}
 		if p+4 > textEnd {
 			break
 		}
-		id := int(int16(be.Uint16(b[p:])))
-		n := int(be.Uint16(b[p+2:]))
+		id := int(int16(bo.Uint16(b[p:])))
+		n := int(bo.Uint16(b[p+2:]))
 		if p+4+n > len(b) {
 			break
 		}
@@ -369,10 +405,13 @@ func (ps *parser) parseLayer(b []byte, off, shift int) layer {
 		p += 4 + n + n&1 // padded to an even length
 	}
 	p = textEnd
+	if palette {
+		p += 32
+	}
 	if p < len(b) {
 		name := rawCString(b[p:])
 		l.name = ps.text(name)
-		if q := p + len(name) + 1; q < len(b) {
+		if q := p + len(name) + 1 + ps.scriptAfter; q < len(b) {
 			l.scr, l.lang, l.osa = ps.script(b[q:])
 		}
 	}
@@ -397,9 +436,9 @@ func (ps *parser) fieldText(b []byte) string {
 	return ps.text(bytes.TrimRight(b, "\x00"))
 }
 
-func (ps *parser) parseBackground(b []byte, shift int) *Background {
-	bg := &Background{ID: int32(be.Uint32(b[8:]))}
-	l := ps.parseLayer(b, 36+shift, shift)
+func (ps *parser) parseBackground(b []byte) *Background {
+	bg := &Background{ID: int32(ps.bo.Uint32(b[8:]))}
+	l := ps.parseLayer(b, ps.bkgdParts)
 	bg.Name, bg.Script, bg.Language, bg.Compiled, bg.Parts = l.name, l.scr, l.lang, l.osa, l.parts
 	for _, t := range l.text {
 		bg.Text = append(bg.Text, Text{Part: findPart(bg.Parts, t.partID), Text: t.text})
@@ -407,12 +446,12 @@ func (ps *parser) parseBackground(b []byte, shift int) *Background {
 	return bg
 }
 
-func (ps *parser) parseCard(b []byte, bkgds map[int32]*Background, shift int) *Card {
-	c := &Card{ID: int32(be.Uint32(b[8:]))}
+func (ps *parser) parseCard(b []byte, bkgds map[int32]*Background) *Card {
+	c := &Card{ID: int32(ps.bo.Uint32(b[8:]))}
 	if len(b) >= 40 {
-		c.Background = bkgds[int32(be.Uint32(b[36+shift:]))]
+		c.Background = bkgds[int32(ps.bo.Uint32(b[36+ps.shift:]))]
 	}
-	l := ps.parseLayer(b, 40+shift, shift)
+	l := ps.parseLayer(b, 40+ps.shift)
 	c.Name, c.Script, c.Language, c.Compiled, c.Parts = l.name, l.scr, l.lang, l.osa, l.parts
 	for _, t := range l.text {
 		// A negative ID is one of the card's own fields, a positive one a
@@ -424,8 +463,9 @@ func (ps *parser) parseCard(b []byte, bkgds map[int32]*Background, shift int) *C
 			part = findPart(c.Background.Parts, t.partID)
 			if part != nil && part.Kind == Button {
 				// A background button's entry on a card is its
-				// highlight there, "1" for on, not text.
-				if t.text == "1" {
+				// highlight there, not text: "1" for on, or 0x80 in
+				// HyperCard IIGS.
+				if t.text == "1" || t.text == "\u00c4" {
 					c.Highlighted = append(c.Highlighted, part)
 				}
 				continue
