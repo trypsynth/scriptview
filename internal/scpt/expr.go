@@ -188,7 +188,7 @@ func (dc *decompState) commandParts(n nodeRec) (string, string) {
 			switch {
 			case hasOf && dc.isBareOfRef(cell[1]) || dc.isBareOfRef(cell[1]) && strings.HasPrefix(value, label+" "):
 				value = "(" + value + ")" // offset of x in (item 1 of y), output volume (output volume of s)
-			case n.typ == 'e' || dc.fromBytecode && (n.typ == 'c' || dc.isLabeledCall(cell[1])):
+			case n.typ == 'e' || dc.fromBytecode && (n.typ == 'c' && dc.cmdLabels["as"] || dc.isLabeledCall(cell[1])):
 				// default items (get item 1 of x), message (m as text) as
 				// critical, on (f for x)
 				value = "(" + value + ")"

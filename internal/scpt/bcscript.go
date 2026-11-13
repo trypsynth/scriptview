@@ -414,9 +414,11 @@ func (bh *bcHandler) localDecl(run bool) int16 {
 	}
 	k := np - 1
 	for i := np; i < len(vars); i++ {
-		// A variable that shares its name with a global or an enclosing
-		// script's property was declared, or it would be that one.
-		if !seen[i] || run && !auto[i] || outer(vars[i]) {
+		// A variable that shares its name with a global or an earlier
+		// property was declared, or it would be that one. Loop and error
+		// variables are local anyway, and so is every variable of the run
+		// handler that the table lists.
+		if !seen[i] || run && !auto[i] || !run && !auto[i] && outer(vars[i]) {
 			k = i
 		}
 	}
