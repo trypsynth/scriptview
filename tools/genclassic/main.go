@@ -23,6 +23,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/trypsynth/scriptview/internal/aete"
@@ -80,7 +81,13 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		for _, scope := range scopes(typ, creator, name) {
+		sc := scopes(typ, creator, name)
+		if typ == "APPL" && bytes.Contains(data, []byte("HyperCard Suite")) && !slices.Contains(sc, "HyperCard") {
+			// A standalone app built with HyperCard carries HyperCard's own
+			// dictionary, which scripts inside stacks use.
+			sc = append(sc, "HyperCard")
+		}
+		for _, scope := range sc {
 			terms, err := aete.Parse(data, scope)
 			if err != nil {
 				log.Printf("skip %s: %v", name, err)

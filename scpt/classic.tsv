@@ -949,6 +949,481 @@ Contents Catalog	v	WMSGSPND	suspendApplication
 Contents Catalog	v	WMSGSSTK	suspendStack
 Contents Catalog	v	WMSGMWND	moveWindow
 Contents Catalog	v	WMSGSWND	sizeWindow
+HyperCard	v	WILDABS 	abs
+HyperCard	v	miscactv	activate
+HyperCard	v	WILDansr	answer
+HyperCard	a	WILDansr/kRPL	with
+HyperCard	v	WILDask 	ask
+HyperCard	a	WILDask /kDEF	with
+HyperCard	a	WILDask /PORP	as
+HyperCard	v	WILDATAN	atan
+HyperCard	v	WILDARWK	arrowKey
+HyperCard	v	WILDMEAN	average
+HyperCard	v	WILDBEEP	beep
+HyperCard	v	WILDC2NM	charToNum
+HyperCard	v	WILDCHOS	choose
+HyperCard	v	WILDCLIK	click
+HyperCard	a	WILDCLIK/kPNT	at
+HyperCard	a	WILDCLIK/kMKY	with
+HyperCard	v	WILDCKH 	clickH
+HyperCard	v	WILDCKLC	clickLoc
+HyperCard	v	WILDCKTX	clickText
+HyperCard	v	WILDCKV 	clickV
+HyperCard	v	coreclos	close
+HyperCard	v	WILDCKEY	commandKey
+HyperCard	v	WILDCMDK	commandKeyDown
+HyperCard	v	WILDCTLK	controlKey
+HyperCard	v	WILDCOS 	cos
+HyperCard	v	WILDCRE8	create
+HyperCard	a	WILDCRE8/CRME	menu
+HyperCard	a	WILDCRE8/CRST	stack
+HyperCard	a	WILDCRE8/WIBK	with
+HyperCard	a	WILDCRE8/kCWD	in
+HyperCard	v	WILDDATE	short date
+HyperCard	v	WILDLDAT	long date
+HyperCard	v	WILDADAT	abbreviated date
+HyperCard	v	WILDDBUG	debug
+HyperCard	v	WILDDIAL	dial
+HyperCard	a	WILDDIAL/kMOD	modem
+HyperCard	v	WILDDSPC	diskSpace
+HyperCard	v	miscdosc	do script
+HyperCard	v	miscmenu	doMenu
+HyperCard	a	miscmenu/menn	menu named
+HyperCard	a	miscmenu/kWOD	without
+HyperCard	a	miscmenu/kMKY	with
+HyperCard	v	WILDdrag	drag
+HyperCard	a	WILDdrag/FRPO	from
+HyperCard	a	WILDdrag/TOPO	to
+HyperCard	a	WILDdrag/kMKY	with
+HyperCard	v	WILDSCND	elapsed time
+HyperCard	v	WILDNTRF	enterInField
+HyperCard	v	WILDNTRK	enterKey
+HyperCard	v	WILDERRD	errorDialog
+HyperCard	v	misceval	evaluate
+HyperCard	v	WILDEXP 	exp
+HyperCard	v	WILDEXP1	exp1
+HyperCard	v	WILDEXP2	exp2
+HyperCard	v	WILDFIND	find
+HyperCard	a	WILDFIND/kMCH	match
+HyperCard	a	WILDFIND/kITL	international
+HyperCard	a	WILDFIND/kFLD	in
+HyperCard	a	WILDFIND/kMRK	within
+HyperCard	v	WILDFDTX	foundText
+HyperCard	v	WILDFCNK	functionKey
+HyperCard	v	WILDGO  	go
+HyperCard	a	WILDGO  /kCWD	in
+HyperCard	v	WILDHSPC	heapSpace
+HyperCard	v	WILDHELP	help
+HyperCard	v	WILDHIDE	hide
+HyperCard	v	WILDKDWN	keyDown
+HyperCard	v	WILDLEN 	stringLength
+HyperCard	v	WILDLN  	ln
+HyperCard	v	WILDLN1 	ln1
+HyperCard	v	WILDLOG2	log2
+HyperCard	v	WILDLOCK	lock
+HyperCard	v	WILDMAX 	max
+HyperCard	v	WILDMIN 	min
+HyperCard	v	WILDMOUS	mouse
+HyperCard	v	WILDMCLK	mouseClick
+HyperCard	v	WILDMSH 	mouseH
+HyperCard	v	WILDMSLC	mouseLoc
+HyperCard	v	WILDMSV 	mouseV
+HyperCard	v	WILDNM2C	numToChar
+HyperCard	v	aevtodoc	open
+HyperCard	a	aevtodoc/kOWT	with
+HyperCard	v	WILDOKEY	optionKey
+HyperCard	v	WILDPLAY	play
+HyperCard	a	WILDPLAY/kTEM	tempo
+HyperCard	a	WILDPLAY/kNOT	notes
+HyperCard	v	WILDPOP 	pop card
+HyperCard	a	WILDPOP /kPOP	into
+HyperCard	v	corepdoc	print
+HyperCard	a	corepdoc/FRPO	from
+HyperCard	a	corepdoc/TOPO	to
+HyperCard	v	WILDPUSH	push
+HyperCard	v	WILDRNDM	random
+HyperCard	v	WILDREAD	read
+HyperCard	a	WILDREAD/kFRM	from
+HyperCard	a	WILDREAD/kRAT	at
+HyperCard	a	WILDREAD/kNUM	for
+HyperCard	a	WILDREAD/kTIL	until
+HyperCard	v	WILDRSET	reset
+HyperCard	v	WILDRTNF	returnInField
+HyperCard	v	WILDRTNK	returnKey
+HyperCard	v	WILDRSLT	returnValue
+HyperCard	v	WILDROUN	round
+HyperCard	v	WILDSCRN	screenRect
+HyperCard	v	WILDSLLC	selectedLoc
+HyperCard	v	WILDSKEY	shiftKey
+HyperCard	v	WILDSHOW	show
+HyperCard	v	WILDSIN 	sin
+HyperCard	v	WILDSOUN	sound
+HyperCard	v	WILDSQRT	sqrt
+HyperCard	v	WILDSSPC	stackSpace
+HyperCard	v	WILDSUM 	sum
+HyperCard	v	WILDSYSV	systemVersion
+HyperCard	v	WILDTABK	tabKey
+HyperCard	v	WILDTAN 	tan
+HyperCard	v	WILDTCKS	ticks
+HyperCard	v	WILDTIME	short time
+HyperCard	v	WILDLTIM	long time
+HyperCard	v	WILDATIM	abbreviated time
+HyperCard	v	WILDTRNC	trunc
+HyperCard	v	WILDUNLK	unlock
+HyperCard	v	WILDVALU	value
+HyperCard	v	WILDVISL	visual
+HyperCard	a	WILDVISL/kSPD	speed
+HyperCard	a	WILDVISL/kIMG	to
+HyperCard	v	WILDWAIT	wait
+HyperCard	a	WILDWAIT/kWSC	seconds
+HyperCard	a	WILDWAIT/kWUN	until
+HyperCard	a	WILDWAIT/kWAS	as
+HyperCard	v	WILDWRIT	write
+HyperCard	a	WILDWRIT/kWTO	to
+HyperCard	a	WILDWRIT/kWAT	at
+HyperCard	c	capp	application
+HyperCard	p	addr	address
+HyperCard	p	blnd	blindTyping
+HyperCard	p	brsh	brush
+HyperCard	p	crwi	card window
+HyperCard	p	cent	centered
+HyperCard	p	pcls	class
+HyperCard	p	pcli	clipboard
+HyperCard	p	curs	cursor
+HyperCard	p	curb	current bkgnd
+HyperCard	p	curc	current card
+HyperCard	p	crst	current stack
+HyperCard	p	ctrg	current target
+HyperCard	p	cdst	current destination
+HyperCard	p	debg	debugger
+HyperCard	p	dilt	dialingTime
+HyperCard	p	dilv	dialingVolume
+HyperCard	p	drsp	dragSpeed
+HyperCard	p	ebkg	editBkgnd
+HyperCard	p	penv	environment
+HyperCard	p	fild	filled
+HyperCard	p	grid	grid
+HyperCard	p	txdl	text item delimiters
+HyperCard	p	pisf	frontmost
+HyperCard	p	lang	language
+HyperCard	p	lins	lineSize
+HyperCard	p	loke	lockErrorDialogs
+HyperCard	p	lokm	lockMessages
+HyperCard	p	lokr	lockRecent
+HyperCard	p	loks	lockScreen
+HyperCard	p	lwti	longWindowTitles
+HyperCard	p	mewa	messageWatcher
+HyperCard	p	mult	multiple
+HyperCard	p	mspc	multiSpace
+HyperCard	p	pnam	name
+HyperCard	p	numf	numberFormat
+HyperCard	p	patt	pattern
+HyperCard	p	sidz	polySides
+HyperCard	p	pwrk	powerKeys
+HyperCard	p	pmrg	printMargins
+HyperCard	p	prtx	printTextAlign
+HyperCard	p	prtf	printTextFont
+HyperCard	p	pthi	printTextHeight
+HyperCard	p	prts	printTextSize
+HyperCard	p	pstl	printTextStyle
+HyperCard	p	sced	scriptEditor
+HyperCard	p	scla	scriptingLanguage
+HyperCard	p	sctf	scriptTextFont
+HyperCard	p	sele	selection
+HyperCard	p	scts	scriptTextSize
+HyperCard	p	stks	stacksInUse
+HyperCard	p	susp	suspended
+HyperCard	p	txal	textAlign
+HyperCard	p	txar	textArrows
+HyperCard	p	ptxf	textFont
+HyperCard	p	tehe	textHeight
+HyperCard	p	ptps	textSize
+HyperCard	p	tstl	textStyle
+HyperCard	p	trdl	traceDelay
+HyperCard	p	usrl	userLevel
+HyperCard	p	umod	userModify
+HyperCard	p	vrwa	variableWatcher
+HyperCard	p	vers	version
+HyperCard	p	curt	current tool
+HyperCard	c	cwin	window
+HyperCard	p	pbnd	bounds
+HyperCard	p	hclb	closeable
+HyperCard	p	ptit	titled
+HyperCard	p	pidx	index
+HyperCard	p	isfl	floating
+HyperCard	p	pmod	modal
+HyperCard	p	oown	owner
+HyperCard	p	rect	rect
+HyperCard	p	prsz	resizable
+HyperCard	p	scrl	scroll
+HyperCard	p	iszm	zoomable
+HyperCard	p	pzum	zoomed
+HyperCard	p	pvis	visible
+HyperCard	p	ID  	ID
+HyperCard	c	cmnu	menu
+HyperCard	p	enbl	enabled
+HyperCard	c	cmen	menu item
+HyperCard	p	chma	checkMark
+HyperCard	p	cmdc	commandChar
+HyperCard	p	mchr	markChar
+HyperCard	p	menm	menuMessage
+HyperCard	c	cTUL	tool
+HyperCard	c	cVAR	variable
+HyperCard	c	cSTK	stack
+HyperCard	p	noab	cantAbort
+HyperCard	p	node	cantDelete
+HyperCard	p	nomo	cantModify
+HyperCard	p	nopk	cantPeek
+HyperCard	p	free	freeSize
+HyperCard	p	rete	reportTemplates
+HyperCard	p	scpt	script
+HyperCard	p	ptsz	size
+HyperCard	c	cBGD	bkgnd
+HyperCard	p	nosr	dontSearch
+HyperCard	p	spct	showPict
+HyperCard	c	cCRD	card
+HyperCard	p	botr	bottomRight
+HyperCard	p	hite	height
+HyperCard	p	mark	marked
+HyperCard	p	topl	topLeft
+HyperCard	p	widt	width
+HyperCard	c	cBTN	button
+HyperCard	p	ahil	autoHilite
+HyperCard	p	faml	family
+HyperCard	p	hlit	hilite
+HyperCard	p	picn	icon
+HyperCard	p	loco	loc
+HyperCard	p	prno	partNumber
+HyperCard	p	shhl	sharedHilite
+HyperCard	p	snam	showName
+HyperCard	p	styl	style
+HyperCard	p	tiwi	titleWidth
+HyperCard	c	cCBN	card button
+HyperCard	c	cBBN	bkgnd button
+HyperCard	c	cFLD	field
+HyperCard	p	ausl	autoSelect
+HyperCard	p	otta	autoTab
+HyperCard	p	nowr	dontWrap
+HyperCard	p	fxlh	fixedLineHeight
+HyperCard	p	lokt	lockText
+HyperCard	p	mlin	multipleLines
+HyperCard	p	shte	sharedText
+HyperCard	p	slin	showLines
+HyperCard	p	widm	wideMargins
+HyperCard	c	cCFD	card field
+HyperCard	c	cBFD	bkgnd field
+HyperCard	e	SAME	same window
+HyperCard	E	eCWD/SAME	same window
+HyperCard	e	NEW 	new window
+HyperCard	E	eCWD/NEW 	new window
+HyperCard	e	ALL 	all cards
+HyperCard	E	eMRK/ALL 	all cards
+HyperCard	e	MRKD	marked cards
+HyperCard	E	eMRK/MRKD	marked cards
+HyperCard	e	yes 	yes
+HyperCard	E	eYNO/yes 	yes
+HyperCard	e	no  	no
+HyperCard	E	eYNO/no  	no
+HyperCard	e	NRML	normal
+HyperCard	E	eMCH/NRML	normal
+HyperCard	e	CHRS	chars
+HyperCard	E	eMCH/CHRS	chars
+HyperCard	e	WRDS	only words
+HyperCard	E	eMCH/WRDS	only words
+HyperCard	e	STR 	continuous string
+HyperCard	E	eMCH/STR 	continuous string
+HyperCard	e	HOLE	whole
+HyperCard	E	eMCH/HOLE	whole
+HyperCard	e	left	left
+HyperCard	E	eDRN/left	left
+HyperCard	e	rght	right
+HyperCard	E	eDRN/rght	right
+HyperCard	e	up  	up
+HyperCard	E	eDRN/up  	up
+HyperCard	e	down	down
+HyperCard	E	eDRN/down	down
+HyperCard	e	mess	messages
+HyperCard	E	eLOK/mess	messages
+HyperCard	e	errd	error dialogs
+HyperCard	E	eLOK/errd	error dialogs
+HyperCard	e	rcnt	recent
+HyperCard	E	eLOK/rcnt	recent
+HyperCard	e	scrn	screen
+HyperCard	E	eLOK/scrn	screen
+HyperCard	e	MNBR	menuBar
+HyperCard	E	eSHW/MNBR	menuBar
+HyperCard	e	GRPS	groups
+HyperCard	E	eSHW/GRPS	groups
+HyperCard	e	CPIC	card picture
+HyperCard	E	eSHW/CPIC	card picture
+HyperCard	e	BPIC	background picture
+HyperCard	E	eSHW/BPIC	background picture
+HyperCard	e	TBAR	titleBar
+HyperCard	E	eSHW/TBAR	titleBar
+HyperCard	e	SHFT	shift key
+HyperCard	E	eKez/SHFT	shift key
+HyperCard	e	COMM	command key
+HyperCard	E	eKez/COMM	command key
+HyperCard	e	OKEY	option key
+HyperCard	E	eKez/OKEY	option key
+HyperCard	e	DEFL	modemDefault
+HyperCard	E	eHYP/DEFL	modemDefault
+HyperCard	e	DILG	dialog
+HyperCard	E	eHYP/DILG	dialog
+HyperCard	e	FEND	end of file
+HyperCard	E	eHYP/FEND	end of file
+HyperCard	e	FEOL	eof
+HyperCard	E	eHYP/FEOL	eof
+HyperCard	E	eHYP/MNBR	menuBar
+HyperCard	e	EPAI	paint
+HyperCard	E	eHYP/EPAI	paint
+HyperCard	e	PSWR	password
+HyperCard	E	eHYP/PSWR	password
+HyperCard	e	PRNT	printing
+HyperCard	E	eHYP/PRNT	printing
+HyperCard	e	PUFL	putfile
+HyperCard	E	eHYP/PUFL	putfile
+HyperCard	e	RPRN	report printing
+HyperCard	E	eHYP/RPRN	report printing
+HyperCard	e	STOP	stop
+HyperCard	E	eHYP/STOP	stop
+HyperCard	e	EXTD	extended
+HyperCard	E	eHYP/EXTD	extended
+HyperCard	e	GRUP	group
+HyperCard	E	eHYP/GRUP	group
+HyperCard	e	VISX	barn door close
+HyperCard	E	eVIS/VISX	barn door close
+HyperCard	e	VISW	barn door open
+HyperCard	E	eVIS/VISW	barn door open
+HyperCard	e	VISR	checkerboard
+HyperCard	E	eVIS/VISR	checkerboard
+HyperCard	e	VISC	dissolve
+HyperCard	E	eVIS/VISC	dissolve
+HyperCard	e	VISQ	iris close
+HyperCard	E	eVIS/VISQ	iris close
+HyperCard	e	VISP	iris open
+HyperCard	E	eVIS/VISP	iris open
+HyperCard	e	plan	plain
+HyperCard	E	eVIS/plan	plain
+HyperCard	e	VISY	push left
+HyperCard	E	eVIS/VISY	push left
+HyperCard	e	VISZ	push right
+HyperCard	E	eVIS/VISZ	push right
+HyperCard	e	VIS[	push up
+HyperCard	E	eVIS/VIS[	push up
+HyperCard	e	VIS\	push down
+HyperCard	E	eVIS/VIS\	push down
+HyperCard	e	VISG	scroll up
+HyperCard	E	eVIS/VISG	scroll up
+HyperCard	e	VISH	scroll down
+HyperCard	E	eVIS/VISH	scroll down
+HyperCard	e	VISE	scroll left
+HyperCard	E	eVIS/VISE	scroll left
+HyperCard	e	VISF	scroll right
+HyperCard	E	eVIS/VISF	scroll right
+HyperCard	e	VISM	shrink to top
+HyperCard	E	eVIS/VISM	shrink to top
+HyperCard	e	VISN	shrink to center
+HyperCard	E	eVIS/VISN	shrink to center
+HyperCard	e	VISO	shrink to bottom
+HyperCard	E	eVIS/VISO	shrink to bottom
+HyperCard	e	VISJ	stretch from top
+HyperCard	E	eVIS/VISJ	stretch from top
+HyperCard	e	VISK	stretch from center
+HyperCard	E	eVIS/VISK	stretch from center
+HyperCard	e	VISL	stretch from bottom
+HyperCard	E	eVIS/VISL	stretch from bottom
+HyperCard	e	VISD	venetian blinds
+HyperCard	E	eVIS/VISD	venetian blinds
+HyperCard	e	VISU	wipe up
+HyperCard	E	eVIS/VISU	wipe up
+HyperCard	e	VISV	wipe down
+HyperCard	E	eVIS/VISV	wipe down
+HyperCard	e	VISS	wipe left
+HyperCard	E	eVIS/VISS	wipe left
+HyperCard	e	VIST	wipe right
+HyperCard	E	eVIS/VIST	wipe right
+HyperCard	e	VISB	zoom close
+HyperCard	E	eVIS/VISB	zoom close
+HyperCard	e	VISA	zoom open
+HyperCard	E	eVIS/VISA	zoom open
+HyperCard	e	FAST	fast
+HyperCard	E	eSPD/FAST	fast
+HyperCard	e	VYFS	very fast
+HyperCard	E	eSPD/VYFS	very fast
+HyperCard	e	SLOW	slow
+HyperCard	E	eSPD/SLOW	slow
+HyperCard	e	VYSL	very slow
+HyperCard	E	eSPD/VYSL	very slow
+HyperCard	e	BLAK	black
+HyperCard	E	eIMG/BLAK	black
+HyperCard	e	WITE	white
+HyperCard	E	eIMG/WITE	white
+HyperCard	e	GRAY	gray
+HyperCard	E	eIMG/GRAY	gray
+HyperCard	e	INVR	inverse
+HyperCard	E	eIMG/INVR	inverse
+HyperCard	e	CARD	card
+HyperCard	E	eIMG/CARD	card
+HyperCard	e	PST0	transparent
+HyperCard	E	ePST/PST0	transparent
+HyperCard	e	PST1	opaque
+HyperCard	E	ePST/PST1	opaque
+HyperCard	e	PST2	rectangle
+HyperCard	E	ePST/PST2	rectangle
+HyperCard	e	PST3	roundRect
+HyperCard	E	ePST/PST3	roundRect
+HyperCard	e	shad	shadow
+HyperCard	E	ePST/shad	shadow
+HyperCard	e	PST5	checkBox
+HyperCard	E	ePST/PST5	checkBox
+HyperCard	e	PST6	radioButton
+HyperCard	E	ePST/PST6	radioButton
+HyperCard	e	PST7	scrolling
+HyperCard	E	ePST/PST7	scrolling
+HyperCard	e	PST8	standard
+HyperCard	E	ePST/PST8	standard
+HyperCard	e	PST9	default
+HyperCard	E	ePST/PST9	default
+HyperCard	e	PST:	oval
+HyperCard	E	ePST/PST:	oval
+HyperCard	e	PST;	popup
+HyperCard	E	ePST/PST;	popup
+HyperCard	v	WMSGCBGD	closeBackground
+HyperCard	v	WMSGCCRD	closeCard
+HyperCard	v	WMSGCFLD	closeField
+HyperCard	v	WMSGCSTK	closeStack
+HyperCard	v	WMSGDBGD	deleteBackground
+HyperCard	v	WMSGDBTN	deleteButton
+HyperCard	v	WMSGDCRD	deleteCard
+HyperCard	v	WMSGDFLD	deleteField
+HyperCard	v	WMSGDSTK	deleteStack
+HyperCard	v	WMSGXFLD	exitField
+HyperCard	v	miscidle	idle
+HyperCard	v	WMSGMDBL	mouseDoubleClick
+HyperCard	v	WMSGMDWN	mouseDown
+HyperCard	v	WMSGMNTR	mouseEnter
+HyperCard	v	WMSGMLVE	mouseLeave
+HyperCard	v	WMSGMSDN	mouseStillDown
+HyperCard	v	WMSGMUP 	mouseUp
+HyperCard	v	WMSGMWTN	mouseWithin
+HyperCard	v	WMSGNBGD	newBackground
+HyperCard	v	WMSGNBTN	newButton
+HyperCard	v	WMSGNCRD	newCard
+HyperCard	v	WMSGNFLD	newField
+HyperCard	v	WMSGNSTK	newStack
+HyperCard	v	WMSGOBGD	openBackground
+HyperCard	v	WMSGOCRD	openCard
+HyperCard	v	WMSGOFLD	openField
+HyperCard	v	WMSGOSTK	openStack
+HyperCard	v	WMSGQUIT	quitApplication
+HyperCard	v	WMSGRSME	resumeApplication
+HyperCard	v	WMSGRSTK	resumeStack
+HyperCard	v	WMSGSRTP	startUp
+HyperCard	v	WMSGSPND	suspendApplication
+HyperCard	v	WMSGSSTK	suspendStack
+HyperCard	v	WMSGMWND	moveWindow
+HyperCard	v	WMSGSWND	sizeWindow
 Clipboard Magician	v	MAGITXED	Edit It
 Clipboard Magician	v	MAGISLIC	Select Icon
 Clipboard Magician	v	MAGIPCPR	Print Picture
@@ -2606,12 +3081,14 @@ Contents Catalog 2.0ß9	v	WMSGSPND	suspendApplication
 Contents Catalog 2.0ß9	v	WMSGSSTK	suspendStack
 Contents Catalog 2.0ß9	v	WMSGMWND	moveWindow
 Contents Catalog 2.0ß9	v	WMSGSWND	sizeWindow
+HyperCard	c	HFRM	HyperTalk format
+HyperCard	c	LFRM	long format
+HyperCard	c	SFRM	short format
+HyperCard	c	EFRM	English format
 HyperCard Player	v	aevtclos	close documents
 HyperCard Player	v	miscdosc	do script
 HyperCard Player	v	misceval	evaluate
 HyperCard	v	aevtclos	close documents
-HyperCard	v	miscdosc	do script
-HyperCard	v	misceval	evaluate
 MovieShop™ V1.0c2	v	mshpSMve	Status of last processing
 MovieShop™ V1.0c2	v	mshpCkPM	See if still processing
 MovieShop™ V1.0c2	v	mshpPMve	Start Processing
