@@ -185,8 +185,17 @@ func TestIndent(t *testing.T) {
 		"on f\nif a then b\nelse\nc\nend if\nend f": "on f\n  if a then b\n  else\n    c\n  end if\nend f",
 		// else if chains, and else with a statement ending the block.
 		"if a then\nb\nelse if c then\nd\nelse e": "if a then\n  b\nelse if c then\n  d\nelse e",
-		// A continued line, and a comment that ends in then.
-		"repeat with i = 1 to 3 -- count then\nput i ¬\ninto x\nend repeat": "repeat with i = 1 to 3 -- count then\n  put i ¬\n    into x\nend repeat",
+		// A continued line stays at its statement's level, and a comment
+		// that ends in then opens nothing.
+		"repeat with i = 1 to 3 -- count then\nput i ¬\ninto x\nend repeat": "repeat with i = 1 to 3 -- count then\n  put i ¬\n  into x\nend repeat",
+		// An else cascade: each else belongs to the single-line if above it.
+		"if a then x\nelse\nif b then y\nelse z\nend if": "if a then x\nelse\n  if b then y\n  else z\nend if",
+		// then on its own line, after if or else if.
+		"if a\nthen\nx\nelse if b\nthen\ny\nend if": "if a\nthen\n  x\nelse if b\nthen\n  y\nend if",
+		// else repeat ends the if and opens a loop.
+		"if a then\nx\nelse repeat 3\ny\nend repeat\nz": "if a then\n  x\nelse repeat 3\n  y\nend repeat\nz",
+		// end with another name than the handler's closes nothing.
+		"on f-- x\ny\nend f": "on f-- x\n  y\n  end f",
 		// end with the handler's name closes a block left open.
 		"on f\nif a then\nb\nend f\non g\nend g": "on f\n  if a then\n    b\nend f\non g\nend g",
 		// then inside a string doesn't open a block.
