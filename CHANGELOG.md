@@ -2,8 +2,11 @@
 
 ## 0.3.1
 
-- Run-only output compiles back to the same bytecode for 11,825 of 12,150 scripts from GitHub, up from 11,632
+- Run-only output compiles back to the same bytecode for 11,887 of 12,150 scripts from GitHub, up from 11,632
 - Rebuilt `local` declarations, which run-only scripts don't store, from the order of each handler's variables
+- Run-only output keeps `use` statements and `property parent` inside script objects, and refers by name to a script object or handler that another property holds, instead of writing it twice
+- Objective-C calls in run-only scripts with no `use` statement print as `foo_bar_(x, y)`, since `foo:x bar:y` needs one
+- Fixed more run-only parentheses: an explicit `get` or a labeled call passed as a parameter, a labeled call used as an index or operand, `(a reference to x)` as a container, and `do shell script ("x" & password)`
 - Run-only output keeps `property parent`, an explicit `on run` handler that is empty or ends in a blank line, `on run argv as text`, `application (get "X")`, applications given by URL, and `my POSIX file x` inside a `tell` block
 - Fixed run-only output of `set {a} to x` and `set {text:t} to x`, and of `[a, b] of x`
 - Fixed parentheses around an Objective-C call or a command used as a container, as in `item 2 of (x's foo:y)` and `(make x)'s f()`, and around `(x ^ 2) ^ 0.5`

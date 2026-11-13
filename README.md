@@ -61,7 +61,7 @@ A run-only script has no source code in it, only bytecode. scriptview decompiles
 
 scriptview adds a comment at the top of the output to tell you that it decompiled a run-only script.
 
-To test this, the decompiled source is compiled again, and the new bytecode is compared with the original. All 163 macOS scripts and 11,825 of the 12,150 GitHub scripts come back identical.
+To test this, the decompiled source is compiled again, and the new bytecode is compared with the original. All 163 macOS scripts and 11,887 of the 12,150 GitHub scripts come back identical.
 
 ## Limitations
 
