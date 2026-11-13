@@ -148,7 +148,7 @@ HyperCard 1.x stacks use the same blocks with three differences:
 
 ## HyperCard IIGS
 
-HyperCard IIGS, the Apple IIGS version, writes the format version 5, and stores every number little-endian. scriptview read all 38 IIGS stacks in the test set, with card counts that match their headers. Its layout starts from HyperCard 1.x's, with these differences:
+HyperCard IIGS, the Apple IIGS version, writes the format version 5, and stores every number little-endian. scriptview reads all 724 IIGS stacks in a second, larger test set, which hold 36,930 scripts. Their card counts match their headers, apart from one truncated file and two private-access stacks, whose headers are scrambled as on the Mac. Its layout starts from HyperCard 1.x's, with these differences:
 
 - The stack script starts at 1540, after a 4-byte number, always 4.
 - The `LIST` block has its page count at 12, its entry size at 24, and its page table at 40. Page entries start at 24, as in 2.x.
