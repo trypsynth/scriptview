@@ -531,9 +531,11 @@ func (bh *bcHandler) run(lo, hi int, stack []stackVal) ([]int16, []stackVal, err
 			if err != nil {
 				return out, stack, err
 			}
+			// The operand names the property, not a variable: 1 is parent,
+			// whatever slot the parent variable has.
 			key := bh.varRef(in.args[0])
-			if i := in.args[0]; i < 0 || i >= len(bh.h.vars) {
-				key = b.termRef(fasCode{kind: osKindCode, code: "pare"}) // the unnamed slot is parent
+			if i := in.args[0]; i == 1 || i < 0 || i >= len(bh.h.vars) {
+				key = b.termRef(fasCode{kind: osKindCode, code: "pare"})
 			}
 			emit(b.node('j', key, v.id))
 			stack = append(stack, stackVal{id: v.id, assigned: true, count: -1})
