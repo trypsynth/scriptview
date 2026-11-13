@@ -79,7 +79,7 @@ func (b *bcBuilder) scriptItems(v fasValue, top bool) ([]int16, error) {
 				if c, ok := h.name.(fasCode); ok && c.code == "aevtoapp" && top && len(h.params) == 0 && !h.hasPattern && i == lastHandler {
 					// The implicit run handler: its body is the script's
 					// top-level code.
-					body, err := b.handlerBody(h)
+					body, err := b.handlerBody(h, bodyRun)
 					if err != nil {
 						return nil, err
 					}
@@ -250,7 +250,14 @@ func (b *bcBuilder) globals(entries []fasValue) []int16 {
 }
 
 // handlerBody decompiles a handler's code into statements.
-func (b *bcBuilder) handlerBody(h handlerCode) ([]int16, error) {
+// Handler kinds for handlerBody: which variables a local declaration names.
+const (
+	bodyInit = iota // a script object's own code: its variables are properties
+	bodyHandler
+	bodyRun // the implicit run handler: its undeclared variables are global
+)
+
+func (b *bcBuilder) handlerBody(h handlerCode, kind int) ([]int16, error) {
 	prog, err := disassemble(h.code)
 	if err != nil {
 		return nil, err
@@ -266,12 +273,118 @@ func (b *bcBuilder) handlerBody(h handlerCode) ([]int16, error) {
 		// this tail instead of a bare Return.
 		stmts = append(stmts, b.node('l'))
 	}
+	if err == nil && kind != bodyInit {
+		if decl := bh.localDecl(kind == bodyRun); decl != 0 {
+			stmts = append([]int16{decl}, stmts...)
+		}
+	}
 	return stmts, err
+}
+
+// localDecl rebuilds the local declaration that the order of the handler's
+// variables implies. The compiler numbers variables in the order its code
+// first uses them, so a variable numbered out of that order, or never used,
+// was declared: local a, b. In the implicit run handler, a variable is local
+// only when declared, or as a loop or error variable.
+func (bh *bcHandler) localDecl(run bool) int16 {
+	vars := bh.h.vars
+	np := paramVarCount(bh.h.params)
+	if len(vars) <= np || bh.h.hasPattern { // on open {a, b}: the pattern's names follow
+		return 0
+	}
+	index := map[string]int{}
+	for i, v := range vars {
+		if _, ok := index[strings.ToLower(v)]; !ok {
+			index[strings.ToLower(v)] = i
+		}
+	}
+	seen := map[int]bool{}
+	auto := map[int]bool{} // loop and error variables
+	var order []int
+	use := func(i int, implicit bool) {
+		if i < np || i >= len(vars) || seen[i] {
+			return
+		}
+		seen[i] = true
+		order = append(order, i)
+		if implicit {
+			auto[i] = true
+		}
+	}
+	byName := func(v fasValue, implicit bool) {
+		if name, ok := v.(string); ok {
+			if i, ok := index[strings.ToLower(name)]; ok {
+				use(i, implicit)
+			}
+		}
+	}
+	for _, in := range bh.prog {
+		switch in.name {
+		case "PushVariable", "PopVariable", "PushVariableExtended", "PopVariableExtended":
+			use(in.args[len(in.args)-1], false)
+		case "EndDefineActor":
+			// script x … end script defines x, local without a declaration.
+			if i := bh.index[in.off+in.size]; i < len(bh.prog) {
+				if next := bh.prog[i]; next.name == "PopVariable" || next.name == "PopVariableExtended" {
+					use(next.args[len(next.args)-1], true)
+				}
+			}
+		case "RepeatInRange", "RepeatInCollection":
+			if len(in.args) > 0 {
+				use(in.args[0], true)
+			}
+		case "HandleError":
+			if len(in.args) >= 1 {
+				byName(bh.lit(in.args[0]), true)
+			}
+			if len(in.args) >= 2 {
+				if bind, ok := bh.lit(in.args[1]).(fasBinding); ok {
+					for _, v := range bind.values {
+						byName(v, true)
+					}
+				}
+			}
+		}
+	}
+	// Declare vars[np..k] for the smallest k after which the remaining
+	// variables appear in use order, and every variable that must be
+	// declared is covered.
+	k := np - 1
+	for i := np; i < len(vars); i++ {
+		if !seen[i] || run && !auto[i] {
+			k = i
+		}
+	}
+	for ; k < len(vars)-1; k++ {
+		next := k + 1
+		ok := true
+		for _, i := range order {
+			if i <= k {
+				continue
+			}
+			if i != next {
+				ok = false
+				break
+			}
+			next++
+		}
+		if ok && next == len(vars) {
+			break
+		}
+	}
+	if k < np {
+		return 0
+	}
+	var names []int16
+	for i := np; i <= k; i++ {
+		names = append(names, bh.varRef(i))
+	}
+	return bh.b.node('l', bh.b.node('q', bh.b.cons(names)))
 }
 
 // handlerDef builds an 'i' handler definition node.
 func (b *bcBuilder) handlerDef(h handlerCode, blk *fasBlock) (int16, error) {
-	stmts, err := b.handlerBody(h)
+	stmts, err := b.handlerBody(h, bodyHandler)
 	if err != nil {
 		return 0, err
 	}
@@ -488,7 +601,7 @@ func (b *bcBuilder) scriptInit(blk *fasBlock) ([]int16, error) {
 	for _, v := range h.vars {
 		own[v] = true
 	}
-	stmts, err := b.handlerBody(h)
+	stmts, err := b.handlerBody(h, bodyInit)
 	if err != nil {
 		return nil, err
 	}
@@ -514,4 +627,22 @@ func (b *bcBuilder) scriptInit(blk *fasBlock) ([]int16, error) {
 func (b *bcBuilder) isBlankLine(stmt int16) bool {
 	n, ok := b.out.nodes[stmt]
 	return ok && n.typ == 'l' && len(n.children) == 0
+}
+
+// paramVarCount counts the variables a handler's parameters name: one for
+// each name, including those in a pattern such as {a, b}.
+func paramVarCount(params []fasValue) int {
+	n := 0
+	for _, p := range params {
+		if list, ok := p.([]fasValue); ok {
+			n += paramVarCount(list)
+		} else if blk, ok := p.(*fasBlock); ok && blk.kind == 0 {
+			n += paramVarCount(blk.items)
+		} else if ok && blk.kind == 4 && len(blk.items) >= 2 {
+			n += paramVarCount(blk.items[1:]) // {count, names}
+		} else {
+			n++
+		}
+	}
+	return n
 }
