@@ -315,42 +315,42 @@ func scanRecords(body []byte, b *builder) {
 			break
 		}
 		switch op {
-		case OpcodeParam, OpcodeRecordCell:
+		case objList, objBinding:
 			ref, children := collectParamRecord(r)
 			if children != nil {
 				b.dc.paramMap[ref] = children
 			}
-		case OpcodeNode:
+		case objCmdBlock:
 			if id, rec := collectNodeRecord(r); rec != nil {
 				b.node(id, *rec)
 			}
-		case OpcodeBlob:
+		case objDataBlock:
 			if id, name, ok := peekAppBlob(r); ok {
 				b.dc.appByID[id] = name
 			} else if id, d, ok := readDescBlob(r); ok {
 				b.dc.descByID[id] = d
 			}
-		case OpcodeComment:
+		case objString:
 			if id, text, ok := readComment(r); ok {
 				b.dc.comments[id] = text
 			}
-		case OpcodeLong:
+		case objLong:
 			if ref, v, ok := readSizedRecord(r, 4); ok && ref < 0 {
 				b.integer(ref, int(int32(binary.BigEndian.Uint32(v))))
 			}
-		case OpcodeReal:
+		case objFloat:
 			if id, v, ok := readSizedRecord(r, 8); ok && id > 0 {
 				b.dc.realByID[id] = math.Float64frombits(binary.BigEndian.Uint64(v))
 			}
-		case OpcodeText:
+		case objDataBlockRaw:
 			if nodeID, s, _, err := readTextLiteral(r); err == nil {
 				b.text(nodeID, s)
 			}
-		case OpcodeIdent:
+		case objUserID:
 			if ref, names, ok, err := readIdentRecord(r); err == nil && ok {
 				b.ident(ref, names)
 			}
-		case OpcodeInt:
+		case objFixnum:
 			if ref, v, ok, err := readIntLiteral(r); err == nil && ok {
 				b.integer(ref, v)
 			}

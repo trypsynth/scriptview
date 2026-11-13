@@ -66,7 +66,7 @@ func TestMagicRejected(t *testing.T) {
 
 func TestStringLiteralUTF16BE(t *testing.T) {
 	// Build a synthetic FASD file containing a known string literal.
-	// OpcodeText(0x11) + node_id(2BE) + byte_len(2BE) + UTF-16BE
+	// objDataBlockRaw(0x11) + node_id(2BE) + byte_len(2BE) + UTF-16BE
 	input := "café"
 	u16 := utf16.Encode([]rune(input))
 	raw := make([]byte, len(u16)*2)
@@ -77,7 +77,7 @@ func TestStringLiteralUTF16BE(t *testing.T) {
 	byteLen := len(raw)
 
 	var payload []byte
-	payload = append(payload, OpcodeText)
+	payload = append(payload, objDataBlockRaw)
 	payload = append(payload, 0x00, 0x01) // node_id = 1
 	payload = append(payload, byte(byteLen>>8), byte(byteLen))
 	payload = append(payload, raw...)

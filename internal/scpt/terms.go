@@ -266,7 +266,7 @@ var paramNames = map[string]string{
 	"each": "each",
 }
 
-// osTypeKind is the kind byte that follows an OpcodeOSType record header.
+// osTypeKind is the kind byte that follows an objCodeID record header.
 const (
 	osKindCode     = 0x0a // 4-byte class/property/constant code
 	osKindCode2    = 0x2f // the same, in some AppleScript 1.0 files
@@ -274,7 +274,7 @@ const (
 	osKindEvent    = 0x2e // suite(4) + event(4) + result type(4) + flags…
 )
 
-// scanOSTypeNames scans raw FASD bytecode for OpcodeOSType records:
+// scanOSTypeNames scans raw FASD bytecode for objCodeID records:
 //
 //	0x0a ref(2, negative) len(2) kind(1) data(len)
 //
@@ -286,7 +286,7 @@ func scanOSTypeNames(body []byte) (osCode map[int16]string, evCode map[int16]str
 	evCode = make(map[int16]string)
 
 	for i := 0; i+6 <= len(body); i++ {
-		if body[i] != OpcodeOSType {
+		if body[i] != objCodeID {
 			continue
 		}
 		ref := int16(uint16(body[i+1])<<8 | uint16(body[i+2]))
