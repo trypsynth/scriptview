@@ -115,7 +115,7 @@ The Apple Event XCMDs stack, for example, carries `AESend` and 18 others, which 
 
 ## Scripts and indentation
 
-Scripts are stored as typed, without indentation: HyperCard's script editor indents a script each time it opens it. scriptview indents them the same way, two spaces per level:
+Scripts are stored without indentation: HyperCard's script editor indents a script each time it opens it, and removes the indentation when it saves. Of the 2,609 scripts in the 29 stacks, not one stored line starts with a space or a tab, although field text in the same stacks often does. scriptview indents them the same way, two spaces per level:
 
 - `on` and `function` handlers, `repeat` loops, and `if … then` at the end of a line open a level.
 - `else` lines up with its `if`. `else` followed by a statement on the same line ends the `if`.
