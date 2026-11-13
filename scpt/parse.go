@@ -31,9 +31,27 @@ type nodeRec struct {
 	children   []int16
 }
 
-// Parse reads and validates a .scpt file, extracting literals, identifiers,
-// and handler definitions.
+// Parse reads a compiled script: a .scpt file, the data or resource fork
+// of a classic Mac OS script, a wrapper that holds one, a JavaScript for
+// Automation script, or a .scpt file that holds plain text.
 func Parse(data []byte) (*File, error) {
+	return ParseWith(data, Options{})
+}
+
+// Options change how ParseWith reads a script.
+type Options struct {
+	// Classic reads the script as one from classic Mac OS, which gets the
+	// terms of classic scripting additions and apps. Parse decides this
+	// from the file.
+	Classic bool
+	// Host is the application that runs the script, whose terms the script
+	// uses without a tell block: "HyperCard" for a script in a stack.
+	Host string
+}
+
+// ParseWith parses a script like Parse, with options for a script that
+// comes from inside another file.
+func ParseWith(data []byte, opts Options) (*File, error) {
 	if bytes.HasPrefix(data, JXAMagic) {
 		src, err := parseJXA(data)
 		if err != nil {
@@ -47,7 +65,7 @@ func Parse(data []byte) (*File, error) {
 			data = data[i+1:]
 		}
 	}
-	classic := false
+	classic := opts.Classic
 	if fasdHeaderLen(data) == 0 {
 		if s, ok := unwrapScript(data); ok {
 			data = s // a classic resource fork, AppleDouble, MacBinary or BinHex file
@@ -80,6 +98,7 @@ func Parse(data []byte) (*File, error) {
 		b := newBuilder()
 		b.dc.legacy, b.dc.beta = version < "1.01", version < "0.98"
 		b.dc.classic = classic || b.dc.legacy
+		b.dc.host = opts.Host
 		return b
 	}
 	b := newVersioned()

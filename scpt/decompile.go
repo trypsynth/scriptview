@@ -61,6 +61,9 @@ type decompState struct {
 	// classic is set for scripts from classic Mac OS: AppleScript 1.0 files,
 	// and scripts read from a resource fork. They get classic terminology.
 	classic bool
+	// host is the application that runs the script, whose terms it uses
+	// without a tell block, such as HyperCard for a script in a stack.
+	host string
 	// fromBytecode is set for output rebuilt from bytecode (run-only
 	// scripts), which must compile back to the same code: reals keep every
 	// digit, and a raw property code of the tell target is written
@@ -113,6 +116,9 @@ func decompileWith(dc *decompState) string {
 	// scanner does not record wrappers; there the body is the first node.
 	dc.noAdditions = dc.usesWithoutAdditions()
 	dc.scopes = dc.usedApps() // `use application "Finder"` imports its terms everywhere
+	if dc.host != "" {
+		dc.scopes = append([]string{dc.host}, dc.scopes...)
+	}
 	var lines []string
 	if root, ok := dc.wraps[0]; ok && len(root) > 1 && root[1] > 0 {
 		lines = dc.block(root[1], 0)

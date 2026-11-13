@@ -59,6 +59,7 @@ func newBCBuilder(src *decompState) *bcBuilder {
 		// Run-only output must compile back to the same values.
 		fromBytecode: true,
 		classic:      src.classic,
+		host:         src.host,
 		propertyRefs: map[int16]bool{},
 	}
 	return &bcBuilder{src: src, out: out, nextID: 1, nextRef: -1}
