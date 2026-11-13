@@ -657,6 +657,9 @@ func (dc *decompState) expr(id int16) string {
 		// Script Editor parenthesizes `my f()` only as the right operand of
 		// arithmetic.
 		left, right := dc.sub(n.children[0], op.prec), dc.sub(n.children[1], op.prec+1)
+		if n.typ == 'a' { // ^ groups to the right: (x ^ 2) ^ 0.5, x ^ 2 ^ 0.5
+			left, right = dc.sub(n.children[0], op.prec+1), dc.sub(n.children[1], op.prec)
+		}
 		if l, ok := binOps[dc.nodes[n.children[0]].typ]; ok && (op.prec == 3 || op.prec == 4) && l.prec == op.prec {
 			left = "(" + left + ")" // comparisons don't chain: (x = "") = false
 		}
