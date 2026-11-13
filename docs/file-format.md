@@ -224,13 +224,13 @@ Files with the versions 0.98 and 1.00 use the same records as current files, wit
 
 ### The symbol table
 
-Current macOS no longer has the symbol table. scriptview's copy, in `internal/scpt/legacy.go`, comes from the startup code of the AppleScript 1.0 extension: resource `PROC` 128 of version 1.0, from Apple's October 1993 Developer CD. That code builds the table one entry at a time. It pushes a four-character code, or an event's class and ID, calls a constructor, and stores the result in the next slot. Counting the calls in a disassembly gives each entry's index.
+Current macOS no longer has the symbol table. scriptview's copy, in `scpt/legacy.go`, comes from the startup code of the AppleScript 1.0 extension: resource `PROC` 128 of version 1.0, from Apple's October 1993 Developer CD. That code builds the table one entry at a time. It pushes a four-character code, or an event's class and ID, calls a constructor, and stores the result in the next slot. Counting the calls in a disassembly gives each entry's index.
 
 The table has 139 entries. About 30 of them are objects that the runtime uses only internally, such as anonymous `obj ` placeholders, and scriptview leaves them out. A symbol that isn't in the table prints as a `<ref>` placeholder.
 
 ## The AppleScript 1.0b1 beta
 
-The beta wrote `FasdUAS 0.95`. Its records are the same as later versions', and its syntax tree holds the same statements in nearly the same layouts, under different names. scriptview translates a beta file into the AppleScript 1.0 form when it reads it (`internal/scpt/beta.go`), and then prints it like any other script. The beta CD has plain-text copies of 16 of its 26 compiled scripts, which give the expected output.
+The beta wrote `FasdUAS 0.95`. Its records are the same as later versions', and its syntax tree holds the same statements in nearly the same layouts, under different names. scriptview translates a beta file into the AppleScript 1.0 form when it reads it (`scpt/beta.go`), and then prints it like any other script. The beta CD has plain-text copies of 16 of its 26 compiled scripts, which give the expected output.
 
 ### Node letters
 

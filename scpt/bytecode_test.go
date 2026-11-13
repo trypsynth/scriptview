@@ -75,7 +75,7 @@ func TestBytecodeCorpus(t *testing.T) {
 
 // TestBytecodeFixtures checks that every fixture's bytecode decodes cleanly.
 func TestBytecodeFixtures(t *testing.T) {
-	paths, _ := filepath.Glob("../../testdata/scpt/*.scpt")
+	paths, _ := filepath.Glob("../testdata/scpt/*.scpt")
 	for _, path := range paths {
 		data, err := os.ReadFile(path)
 		if err != nil {
@@ -101,7 +101,7 @@ func TestBytecodeFixtures(t *testing.T) {
 // `osacompile -x`, so they carry bytecode but no syntax tree) and compares
 // with their recorded output.
 func TestRunOnlyGolden(t *testing.T) {
-	paths, _ := filepath.Glob("../../testdata/runonly/*.scpt")
+	paths, _ := filepath.Glob("../testdata/runonly/*.scpt")
 	if len(paths) == 0 {
 		t.Fatal("no run-only fixtures")
 	}
@@ -136,7 +136,7 @@ func TestRunOnlyRoundTrip(t *testing.T) {
 	if _, err := exec.LookPath("osacompile"); err != nil {
 		t.Skip("osacompile not available")
 	}
-	paths, _ := filepath.Glob("../../testdata/runonly/*.scpt")
+	paths, _ := filepath.Glob("../testdata/runonly/*.scpt")
 	for _, path := range paths {
 		t.Run(filepath.Base(path), func(t *testing.T) {
 			orig := mustParse(t, path)

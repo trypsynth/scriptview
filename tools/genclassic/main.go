@@ -1,4 +1,4 @@
-// genclassic writes internal/scpt/classic.tsv: terminology from classic Mac
+// genclassic writes scpt/classic.tsv: terminology from classic Mac
 // OS scripting dictionaries (aete resources) that macOS no longer has, such
 // as old scripting additions, PlainTalk's Speech Scripting, the Finder
 // Scripting Extension and Scriptable Text Editor. scriptview uses these
@@ -110,7 +110,7 @@ func main() {
 	if err := sc.Err(); err != nil {
 		log.Fatal(err)
 	}
-	if err := os.WriteFile("internal/scpt/classic.tsv", buf.Bytes(), 0o644); err != nil {
+	if err := os.WriteFile("scpt/classic.tsv", buf.Bytes(), 0o644); err != nil {
 		log.Fatal(err)
 	}
 	fmt.Printf("%d terms\n", count)

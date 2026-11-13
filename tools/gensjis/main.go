@@ -1,4 +1,4 @@
-// Command gensjis writes internal/scpt/sjis.bin, the Shift JIS double-byte
+// Command gensjis writes scpt/sjis.bin, the Shift JIS double-byte
 // table that scriptview uses for old Japanese scripts. It needs macOS's
 // iconv, which knows CP932 (Shift JIS with the usual extensions).
 //
@@ -49,7 +49,7 @@ func main() {
 			binary.Write(&out, binary.BigEndian, unit)
 		}
 	}
-	if err := os.WriteFile("internal/scpt/sjis.bin", out.Bytes(), 0o644); err != nil {
+	if err := os.WriteFile("scpt/sjis.bin", out.Bytes(), 0o644); err != nil {
 		log.Fatal(err)
 	}
 }

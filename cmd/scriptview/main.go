@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/trypsynth/scriptview/internal/scpt"
+	"github.com/trypsynth/scriptview/scpt"
 )
 
 const helpText = `Usage: scriptview [command] <file.scpt | bundle.scptd | applet.app>
