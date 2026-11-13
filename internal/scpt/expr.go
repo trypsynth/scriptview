@@ -874,7 +874,7 @@ func (dc *decompState) expr(id int16) string {
 			return prefix + words[p.typ] + dc.expr(n.children[1])
 		}
 		container := dc.expr(n.children[1])
-		if c, ok := dc.nodes[n.children[1]]; dc.isCommand(n.children[1]) || dc.isLabeledCall(n.children[1]) || dc.endsInInterleavedCall(n.children[1]) || ok && (c.typ == 'c' || c.typ == '6' || binOps[c.typ].tok != "") {
+		if c, ok := dc.nodes[n.children[1]]; dc.isCommand(n.children[1]) || dc.isLabeledCall(n.children[1]) || dc.endsInInterleavedCall(n.children[1]) || ok && (c.typ == 'c' || c.typ == '6' || c.typ == 'N' || binOps[c.typ].tok != "") {
 			container = "(" + container + ")" // hours of (current date), x of (a & b), item 2 of (f of x by y)
 		}
 		part := dc.expr(n.children[0])
