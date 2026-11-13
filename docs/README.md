@@ -23,3 +23,7 @@ About these notes:
 
 - [Testing](applescript/testing.md): probes, corpora, round trips, classic scripts, and fuzzing.
 - [Sources](applescript/sources.md): documentation, papers, mailing list posts, and tools.
+
+## HyperCard
+
+- [Stack format](hypercard/format.md): the blocks of a stack file, where the scripts and field text are, card order, the differences in HyperCard 1.x, and how scriptview indents HyperTalk.

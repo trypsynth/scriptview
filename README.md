@@ -1,6 +1,6 @@
 # scriptview
 
-scriptview shows you the source code of compiled AppleScript files (`.scpt`). It runs on macOS, Linux, and Windows, so you can read a script without a Mac.
+scriptview shows you the source code of compiled AppleScript files (`.scpt`) and the scripts in HyperCard stacks. It runs on macOS, Linux, and Windows, so you can read them without a Mac.
 
 On a Mac you can do this with `osadecompile`. scriptview tries to print exactly what `osadecompile` prints, line for line.
 
@@ -30,10 +30,19 @@ Other commands:
 - `bytecode`: the source code, rebuilt from the bytecode only.
 - `disasm`: the bytecode as annotated assembly.
 - `tree`: the raw syntax tree, for debugging.
+- `text`: the text of a HyperCard stack's fields.
 
 scriptview also reads JavaScript for Automation (JXA) scripts and `.scpt` files that hold plain text.
 
 It reads classic Mac OS scripts too, back to AppleScript 1.0 in 1993, including Japanese ones. Current macOS refuses to open many of these ("data format obsolete"). Before Mac OS X, a compiled script kept its data in the file's resource fork. scriptview finds it in the resource fork itself (on a Mac), in the `._name` file or `__MACOSX` folder that a Mac makes when it copies or zips the file, and in MacBinary (`.bin`) and BinHex (`.hqx`) files.
+
+## HyperCard stacks
+
+Give scriptview a HyperCard stack, from HyperCard 1.x or 2.x, and it prints every script in it: the stack's, each background's and card's, and each button's and field's. A comment before each script names its object the way HyperTalk refers to it, such as `-- background button "Next" of background "Main"`. HyperCard stores scripts without indentation, so scriptview indents them the way HyperCard's script editor does.
+
+`scriptview text` prints the text in the stack's fields instead.
+
+A stack can be a plain file, or inside a MacBinary, BinHex, or AppleSingle file.
 
 ## How well it works
 
@@ -70,10 +79,11 @@ To test this, the decompiled source is compiled again, and the new bytecode is c
 
 A compiled script is a serialized graph of objects. It holds a syntax tree, with flags that record how you wrote each part, and the bytecode that the AppleScript virtual machine runs. scriptview reads the syntax tree and prints it back as source. For run-only scripts it simulates the virtual machine's stack to rebuild a syntax tree from the bytecode.
 
-The code is in three packages, which other Go programs can import:
+The code is in four packages, which other Go programs can import:
 
 - `scpt` reads compiled AppleScript and JavaScript for Automation scripts. `Parse` reads a file, `Decompile` prints its source, `DecompileBytecode` rebuilds the source from the bytecode alone, and `Disassemble` lists the bytecode.
 - `classic` reads the files of classic Mac OS: resource forks, and the AppleSingle, AppleDouble, MacBinary, and BinHex wrappers that carry them on other systems.
+- `hypercard` reads HyperCard stacks: their scripts, buttons, fields, and field text.
 - `mactext` decodes the classic Mac text encodings, Mac Roman and Mac Japanese.
 
 Inside `scpt`:
@@ -85,7 +95,7 @@ Inside `scpt`:
 
 ## Notes
 
-The [docs](docs/README.md) folder is a reference for the format: the file layout, the syntax tree, every opcode of the bytecode, terminology, how often each structure occurs in real scripts, and the rules of `osadecompile`'s printer.
+The [docs](docs/README.md) folder is a reference for the formats. For AppleScript: the file layout, the syntax tree, every opcode of the bytecode, terminology, how often each structure occurs in real scripts, and the rules of `osadecompile`'s printer. For HyperCard: the blocks of a stack file, and where the scripts and field text are.
 
 ## Tests
 

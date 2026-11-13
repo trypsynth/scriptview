@@ -6,18 +6,23 @@ import (
 	"path/filepath"
 
 	"github.com/trypsynth/scriptview/classic"
+	"github.com/trypsynth/scriptview/hypercard"
 	"github.com/trypsynth/scriptview/scpt"
 )
 
-const helpText = `Usage: scriptview [command] <file.scpt | bundle.scptd | applet.app>
+const helpText = `Usage: scriptview [command] <file>
 
-With no command, scriptview decompiles the file.
+The file can be a compiled AppleScript (.scpt), a script bundle (.scptd),
+an applet (.app), or a HyperCard stack. With no command, scriptview prints
+the file's source: the decompiled AppleScript, or every script in the
+stack.
 
 Commands:
   decompile   print the reconstructed AppleScript source
   tree        print the raw syntax node graph (for format debugging)
   disasm      print the compiled bytecode as annotated assembly
   bytecode    decompile from the bytecode alone (as for run-only scripts)
+  text        print the text of a stack's fields
   version     print the version
   help        print this help
 `
@@ -46,7 +51,7 @@ func main() {
 	cmd, path := args[0], args[1]
 
 	switch cmd {
-	case "decompile", "tree", "disasm", "bytecode":
+	case "decompile", "tree", "disasm", "bytecode", "text":
 	default:
 		fmt.Fprintf(os.Stderr, "scriptview: unknown command %q\n\n%s", cmd, helpText)
 		os.Exit(2)
@@ -59,6 +64,15 @@ func main() {
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "scriptview: %v\n", err)
 		os.Exit(1)
+	}
+
+	if stack := stackData(data); stack != nil {
+		runStack(cmd, stack)
+		return
+	}
+	if cmd == "text" {
+		fmt.Fprintln(os.Stderr, "scriptview: text works only on HyperCard stacks")
+		os.Exit(2)
 	}
 
 	f, err := scpt.Parse(data)
@@ -105,4 +119,35 @@ func readScript(path string) ([]byte, error) {
 		return f.Data, err
 	}
 	return f.Rsrc, nil
+}
+
+// stackData returns data as a HyperCard stack, unwrapping MacBinary,
+// BinHex, and AppleSingle files, or nil if it isn't one.
+func stackData(data []byte) []byte {
+	if hypercard.IsStack(data) {
+		return data
+	}
+	if f, ok := classic.Unwrap(data); ok && hypercard.IsStack(f.Data) {
+		return f.Data
+	}
+	return nil
+}
+
+// runStack prints a HyperCard stack's scripts, or with the text command,
+// the text of its fields.
+func runStack(cmd string, data []byte) {
+	s, err := hypercard.Parse(data)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "scriptview: %v\n", err)
+		os.Exit(1)
+	}
+	switch cmd {
+	case "decompile":
+		fmt.Print(s.Scripts())
+	case "text":
+		fmt.Print(s.Text())
+	default:
+		fmt.Fprintf(os.Stderr, "scriptview: %s works only on compiled AppleScript files\n", cmd)
+		os.Exit(2)
+	}
 }
