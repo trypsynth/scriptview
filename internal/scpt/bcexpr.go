@@ -84,9 +84,10 @@ func (bh *bcHandler) objectAlias(in instr, stack *[]stackVal) (int16, error) {
 	case 2: // some class
 		part = b.node('3', bh.keyOf(cls.id))
 	case 3: // class index
-		if b.out.osCode[bh.keyOf(cls.id)] == "capp" && b.out.nodes[idx.id].typ == 'm' {
+		if b.out.osCode[bh.keyOf(cls.id)] == "capp" && b.out.nodes[idx.id].typ == 'm' && b.out.nodes[container.id].typ == 'g' {
 			// application "X" is a constant; built at run time, its name
-			// was an expression: application (get "X").
+			// was an expression: application (get "X"). Of a machine, it's
+			// always built at run time.
 			idx.id = b.node('e', idx.id)
 		}
 		part = b.node('4', bh.keyOf(cls.id), idx.id)
