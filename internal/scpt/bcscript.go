@@ -119,7 +119,18 @@ func (b *bcBuilder) scriptItems(v fasValue, top bool, parent fasValue) ([]int16,
 					continue // a top-level variable's saved value: set BS to load script …
 				}
 				// A script object: {name, _, _, table}.
+				if prev, ok := b.emittedScripts[e]; ok && len(e.items) >= 4 {
+					// property suite : S, for a script S written above.
+					items = append(items, b.node('l', b.node('j', b.keyRef(name), b.node('o', b.keyRef(prev)))))
+					continue
+				}
 				if len(e.items) >= 4 {
+					if b.emittedScripts == nil {
+						b.emittedScripts = map[*fasBlock]fasValue{}
+					}
+					if e.items[0] != nil {
+						b.emittedScripts[e] = e.items[0]
+					}
 					inner, err := b.scriptItems(e.items[3], false, e.items[2])
 					if err != nil {
 						return nil, err
