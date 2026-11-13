@@ -49,7 +49,7 @@ The latest results, on macOS 26.5:
 | Set | Matches `osadecompile` | Round trip gives the same bytecode |
 | --- | --- | --- |
 | macOS scripts | 163 of 163 | 163 of 163 |
-| GitHub | 12,105 of 12,143 | 11,632 of 12,150 |
+| GitHub | 12,106 of 12,143 | 11,825 of 12,150 |
 
 Most of the remaining GitHub differences have causes outside scriptview:
 

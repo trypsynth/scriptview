@@ -44,7 +44,7 @@ It reads classic Mac OS scripts too, back to AppleScript 1.0 in 1993, including 
 scriptview is tested against `osadecompile` on two sets of scripts:
 
 - The 163 compiled scripts that ship with macOS 26: all 163 match.
-- 12,143 compiled scripts from 4,535 public AppleScript repositories on GitHub: 12,105 match.
+- 12,143 compiled scripts from 4,535 public AppleScript repositories on GitHub: 12,106 match.
 
 Most of the 38 that don't match depend on the Mac that ran the test, such as which apps are installed there. scriptview includes the terminology of the apps that ship with macOS. For other apps it prints raw codes, such as `«class pURL»`, which is what `osadecompile` does when it can't find the app. For details, see [Testing](docs/testing.md).
 
@@ -61,7 +61,7 @@ A run-only script has no source code in it, only bytecode. scriptview decompiles
 
 scriptview adds a comment at the top of the output to tell you that it decompiled a run-only script.
 
-To test this, the decompiled source is compiled again, and the new bytecode is compared with the original. All 163 macOS scripts and 11,632 of the 12,150 GitHub scripts come back identical.
+To test this, the decompiled source is compiled again, and the new bytecode is compared with the original. All 163 macOS scripts and 11,825 of the 12,150 GitHub scripts come back identical.
 
 ## Limitations
 
