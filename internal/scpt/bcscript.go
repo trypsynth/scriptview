@@ -33,7 +33,7 @@ func DecompileBytecode(f *File) (string, error) {
 	}
 	out := b.out
 	out.wraps[0] = []int16{-1, b.node('k', b.cons(items))}
-	return decompileWith(out, nil), nil
+	return decompileWith(out), nil
 }
 
 // scriptItems decompiles a script object's table

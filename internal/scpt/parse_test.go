@@ -1,6 +1,7 @@
 package scpt
 
 import (
+	"maps"
 	"os"
 	"path/filepath"
 	"slices"
@@ -63,17 +64,6 @@ func TestMagicRejected(t *testing.T) {
 
 // --- String literal tests ---
 
-func TestStringLiteralHello(t *testing.T) {
-	data := readFixture(t, "hello.scpt")
-	f, err := Parse(data)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !containsString(f.Strings, "hello world") {
-		t.Errorf("expected \"hello world\" in strings %v", f.Strings)
-	}
-}
-
 func TestStringLiteralUTF16BE(t *testing.T) {
 	// Build a synthetic FASD file containing a known string literal.
 	// OpcodeText(0x11) + node_id(2BE) + byte_len(2BE) + UTF-16BE
@@ -99,38 +89,9 @@ func TestStringLiteralUTF16BE(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !containsString(f.Strings, input) {
-		t.Errorf("expected %q in strings %v", input, f.Strings)
+	if !slices.Contains(slices.Collect(maps.Values(f.dc.textByID)), input) {
+		t.Errorf("expected %q in texts %v", input, f.dc.textByID)
 	}
-}
-
-// --- Identifier tests ---
-
-func TestIdentifierExtraction(t *testing.T) {
-	data := readFixture(t, "test.scpt")
-	f, err := Parse(data)
-	if err != nil {
-		t.Fatal(err)
-	}
-	// test.scpt: set x to 42 / set y to x + 1 / return y
-	for _, want := range []string{"x", "y"} {
-		if !containsIdent(f.Idents, want) {
-			t.Errorf("identifier %q not found in %v", want, f.Idents)
-		}
-	}
-}
-
-func TestIdentifierExtractionLargeScript(t *testing.T) {
-	data := readFixture(t, "uptime.scpt")
-	f, err := Parse(data)
-	if err != nil {
-		t.Fatal(err)
-	}
-	// The uptime script should contain an identifier like "uptime"
-	if len(f.Idents) == 0 {
-		t.Error("expected at least one identifier in uptime.scpt")
-	}
-	t.Logf("identifiers found: %v", f.Idents)
 }
 
 // --- Identifier parsing unit tests ---
@@ -172,61 +133,6 @@ func TestParseIdentDataEmpty(t *testing.T) {
 	}
 }
 
-// --- Integer literal tests ---
-
-func TestIntLiteralTest(t *testing.T) {
-	data := readFixture(t, "test.scpt")
-	f, err := Parse(data)
-	if err != nil {
-		t.Fatal(err)
-	}
-	// test.scpt has set x to 42 and set y to x + 1 → integers 42 and 1
-	if !containsInt(f.Ints, 42) {
-		t.Errorf("expected 42 in integers %v", f.Ints)
-	}
-	if !containsInt(f.Ints, 1) {
-		t.Errorf("expected 1 in integers %v", f.Ints)
-	}
-}
-
-// --- Extract end-to-end tests ---
-
-func TestExtractHello(t *testing.T) {
-	path := filepath.Join(fixtureDir(t), "scpt", "hello.scpt")
-	src, err := Extract(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !strings.Contains(src, "hello world") {
-		t.Errorf("expected \"hello world\" in extracted source:\n%s", src)
-	}
-}
-
-func TestExtractTest(t *testing.T) {
-	path := filepath.Join(fixtureDir(t), "scpt", "test.scpt")
-	src, err := Extract(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, want := range []string{"x", "y", "42"} {
-		if !strings.Contains(src, want) {
-			t.Errorf("expected %q in extracted source:\n%s", want, src)
-		}
-	}
-}
-
-func TestExtractUptime(t *testing.T) {
-	path := filepath.Join(fixtureDir(t), "scpt", "uptime.scpt")
-	src, err := Extract(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if src == "" {
-		t.Error("expected non-empty source for uptime.scpt")
-	}
-	t.Logf("extracted:\n%s", src)
-}
-
 // --- UTF-16BE decode unit tests ---
 
 func TestDecodeUTF16BEASCIIRange(t *testing.T) {
@@ -252,48 +158,6 @@ func TestDecodeUTF16BEEmpty(t *testing.T) {
 	if got != "" {
 		t.Errorf("got %q, want empty", got)
 	}
-}
-
-// --- Best-effort extraction tests ---
-
-func TestBestEffortSourceContainsIdents(t *testing.T) {
-	data := readFixture(t, "test.scpt")
-	f, err := Parse(data)
-	if err != nil {
-		t.Fatal(err)
-	}
-	src := BestEffortSource(f)
-	for _, id := range []string{"x", "y"} {
-		if !strings.Contains(src, id) {
-			t.Errorf("best-effort source missing identifier %q:\n%s", id, src)
-		}
-	}
-}
-
-func TestBestEffortSourceContainsIntegers(t *testing.T) {
-	data := readFixture(t, "test.scpt")
-	f, err := Parse(data)
-	if err != nil {
-		t.Fatal(err)
-	}
-	src := BestEffortSource(f)
-	if !strings.Contains(src, "42") {
-		t.Errorf("best-effort source missing integer 42:\n%s", src)
-	}
-}
-
-// --- helpers ---
-
-func containsString(ss []string, want string) bool {
-	return slices.Contains(ss, want)
-}
-
-func containsIdent(ss []string, want string) bool {
-	return containsString(ss, want)
-}
-
-func containsInt(ints []int, want int) bool {
-	return slices.Contains(ints, want)
 }
 
 func TestJunkAfterTrailer(t *testing.T) {

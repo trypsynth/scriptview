@@ -13,12 +13,7 @@ const helpText = `Usage: scriptview [command] <file.scpt | bundle.scptd | applet
 With no command, scriptview decompiles the file.
 
 Commands:
-  strings     print string literals found in the bytecode
-  idents      print identifier names found in the bytecode
-  ints        print integer literals found in the bytecode
-  handlers    print handler (function) names found in the bytecode
   decompile   print the reconstructed AppleScript source
-  dump        print all extracted content with annotations
   tree        print the raw syntax node graph (for format debugging)
   disasm      print the compiled bytecode as annotated assembly
   bytecode    decompile from the bytecode alone (as for run-only scripts)
@@ -50,7 +45,7 @@ func main() {
 	cmd, path := args[0], args[1]
 
 	switch cmd {
-	case "strings", "idents", "ints", "handlers", "decompile", "dump", "tree", "disasm", "bytecode":
+	case "decompile", "tree", "disasm", "bytecode":
 	default:
 		fmt.Fprintf(os.Stderr, "scriptview: unknown command %q\n\n%s", cmd, helpText)
 		os.Exit(2)
@@ -72,22 +67,6 @@ func main() {
 	}
 
 	switch cmd {
-	case "strings":
-		for _, s := range f.Strings {
-			fmt.Println(s)
-		}
-	case "idents":
-		for _, id := range f.Idents {
-			fmt.Println(id)
-		}
-	case "ints":
-		for _, v := range f.Ints {
-			fmt.Println(v)
-		}
-	case "handlers":
-		for _, h := range f.Handlers {
-			fmt.Println(h.Name)
-		}
 	case "decompile":
 		src := scpt.Decompile(f)
 		fmt.Print(src)
@@ -105,12 +84,6 @@ func main() {
 		fmt.Print(scpt.Disassemble(f))
 	case "tree":
 		fmt.Print(scpt.Tree(f))
-	case "dump":
-		src := scpt.BestEffortSource(f)
-		fmt.Print(src)
-		if len(src) > 0 && src[len(src)-1] != '\n' {
-			fmt.Println()
-		}
 	}
 }
 

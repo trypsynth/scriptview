@@ -32,8 +32,6 @@ Other commands:
 | `bytecode` | The source code, rebuilt from the bytecode only |
 | `disasm` | The bytecode as annotated assembly |
 | `tree` | The raw syntax tree, for debugging |
-| `dump` | Everything scriptview extracts, with notes |
-| `strings`, `idents`, `ints`, `handlers` | String literals, identifier names, integers or handler names |
 
 scriptview also reads JavaScript for Automation (JXA) scripts and `.scpt` files that hold plain text.
 

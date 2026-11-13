@@ -9,23 +9,8 @@ import (
 	"unicode/utf8"
 )
 
-// HandlerSig is a detected handler definition with its resolved parameter list.
-type HandlerSig struct {
-	Name   string
-	Params []string
-}
-
 // File holds the parsed contents of a .scpt file.
 type File struct {
-	// Strings contains all text literals found in the bytecode, in order.
-	Strings []string
-	// Idents contains all user-defined identifier names, preserving original case.
-	// Each entry is deduplicated; the first occurrence wins.
-	Idents []string
-	// Ints contains all non-negative integer literals found in the bytecode.
-	Ints []int
-	// Handlers contains handler definitions in source order, with parameter names where resolvable.
-	Handlers []HandlerSig
 	// dc carries the full parse tree for body reconstruction.
 	dc *decompState
 	// source is set for files that carry their source directly: compiled
@@ -115,19 +100,13 @@ func trailerLen(data []byte) int {
 
 // builder accumulates decoded records into a File.
 type builder struct {
-	f         *File
-	seenIdent map[string]int
-	seenStr   map[string]bool
-	seenInt   map[int]bool
-	dc        *decompState
+	f  *File
+	dc *decompState
 }
 
 func newBuilder() *builder {
 	return &builder{
-		f:         &File{},
-		seenIdent: make(map[string]int),
-		seenStr:   make(map[string]bool),
-		seenInt:   make(map[int]bool),
+		f: &File{},
 		dc: &decompState{
 			nodes:     make(map[int16]nodeRec),
 			refName:   make(map[int16]string),
@@ -152,7 +131,6 @@ func newBuilder() *builder {
 
 func (b *builder) finish() *File {
 	dc := b.dc
-	b.f.Handlers = extractHandlerSigs(dc.nodeOrder, dc.nodes, dc.refName, dc.paramMap)
 	b.f.dc = dc
 	return b.f
 }
@@ -166,10 +144,6 @@ func (b *builder) node(id int16, rec nodeRec) {
 
 func (b *builder) text(id int16, s string) {
 	b.dc.textByID[id] = s
-	if isDisplayable(s) && !b.seenStr[s] {
-		b.seenStr[s] = true
-		b.f.Strings = append(b.f.Strings, s)
-	}
 }
 
 func (b *builder) ident(ref int16, names []string) {
@@ -193,28 +167,10 @@ func (b *builder) ident(ref int16, names []string) {
 			}
 		}
 	}
-	for _, name := range names {
-		if name == "" {
-			continue
-		}
-		key := strings.ToLower(name)
-		if idx, exists := b.seenIdent[key]; exists {
-			if b.f.Idents[idx] == key && name != key {
-				b.f.Idents[idx] = name
-			}
-		} else {
-			b.seenIdent[key] = len(b.f.Idents)
-			b.f.Idents = append(b.f.Idents, name)
-		}
-	}
 }
 
 func (b *builder) integer(ref int16, v int) {
 	b.dc.intByRef[ref] = v
-	if v >= 0 && !b.seenInt[v] {
-		b.seenInt[v] = true
-		b.f.Ints = append(b.f.Ints, v)
-	}
 }
 
 // osType records a 0x0a term reference: kind byte plus payload.
@@ -401,79 +357,6 @@ func scanRecords(body []byte, b *builder) {
 		}
 	}
 	b.dc.osCode, b.dc.evCode = scanOSTypeNames(body)
-}
-
-// extractHandlerSigs finds handler definitions from the node tree and resolves
-// their parameter names.
-//
-// 'I' node layout: children = [name_ref, params_ref, end_ref].
-// params_ref is negative (no params) or positive (a 0x02 param-list record).
-// Each 0x02 record child that is a positive node ID of type 'o' carries the
-// ident ref for one parameter name.
-func extractHandlerSigs(order []int16, nodes map[int16]nodeRec, refName map[int16]string, paramMap map[int16][]int16) []HandlerSig {
-	var sigs []HandlerSig
-	seen := make(map[string]bool)
-
-	for _, id := range order {
-		rec := nodes[id]
-		if rec.typ != 'i' {
-			continue
-		}
-		for _, childRef := range rec.children {
-			if childRef <= 0 {
-				continue
-			}
-			sig, ok := nodes[childRef]
-			if !ok || sig.typ != 'I' || len(sig.children) == 0 {
-				continue
-			}
-			nameRef := sig.children[0]
-			if nameRef >= 0 {
-				continue
-			}
-			name, ok := refName[nameRef]
-			if !ok || !isValidIdent(name) {
-				continue
-			}
-			key := strings.ToLower(name)
-			if seen[key] {
-				continue
-			}
-			seen[key] = true
-
-			var params []string
-			if len(sig.children) >= 2 {
-				paramsRef := sig.children[1]
-				if paramsRef > 0 {
-					params = resolveParams(paramsRef, nodes, refName, paramMap)
-				}
-			}
-
-			sigs = append(sigs, HandlerSig{Name: name, Params: params})
-		}
-	}
-	return sigs
-}
-
-// resolveParams resolves a handler signature's positional parameter names
-// from its cons chain ([head, tail] cells whose heads are 'o' variable nodes).
-func resolveParams(paramsRef int16, nodes map[int16]nodeRec, refName map[int16]string, paramMap map[int16][]int16) []string {
-	var params []string
-	seen := make(map[int16]bool)
-	for ref := paramsRef; ref > 0 && !seen[ref]; {
-		seen[ref] = true
-		cell, ok := paramMap[ref]
-		if !ok || len(cell) != 2 {
-			break
-		}
-		if o, ok := nodes[cell[0]]; ok && o.typ == 'o' && len(o.children) == 1 {
-			if name, ok := refName[o.children[0]]; ok {
-				params = append(params, name)
-			}
-		}
-		ref = cell[1]
-	}
-	return params
 }
 
 // collectParamRecord reads a 0x02 parameter-list record (opcode already consumed).
@@ -830,4 +713,21 @@ func legacyTexts(objs []*object) [][]byte {
 		}
 	}
 	return out
+}
+
+// RunOnly reports whether the script was saved run-only: it carries bytecode
+// but no syntax tree.
+func (f *File) RunOnly() bool {
+	dc := f.dc
+	if dc == nil || dc.objects == nil {
+		return false
+	}
+	// The root's second item is the syntax tree; run-only scripts have none.
+	// (Script objects inside closures can still carry fragments of one.)
+	root, ok := dc.objects[0]
+	if !ok || len(root.refs) < 2 {
+		return false
+	}
+	tree, ok := dc.objects[root.refs[1]]
+	return ok && tree.typ == objSymbol
 }

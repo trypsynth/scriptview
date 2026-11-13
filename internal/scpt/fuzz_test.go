@@ -27,6 +27,5 @@ func FuzzDecompile(f *testing.F) {
 		_, _ = DecompileBytecode(file)
 		_ = Disassemble(file)
 		_ = Tree(file)
-		_ = BestEffortSource(file)
 	})
 }

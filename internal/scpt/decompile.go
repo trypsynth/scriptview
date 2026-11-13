@@ -1,6 +1,9 @@
 package scpt
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+)
 
 // decompState holds the full FASD parse tree needed for source reconstruction.
 type decompState struct {
@@ -85,8 +88,23 @@ type decompState struct {
 	hoisted map[int16]bool
 }
 
+// Decompile reconstructs AppleScript source from the FASD parse tree.
+func Decompile(f *File) string {
+	if f.dc == nil {
+		return f.source
+	}
+	if f.RunOnly() {
+		src, err := DecompileBytecode(f)
+		if err != nil {
+			return fmt.Sprintf("-- run-only script; bytecode decompilation failed: %v\n", err) + src
+		}
+		return "-- Decompiled from run-only bytecode: comments and original formatting are not recoverable.\n\n" + src
+	}
+	return decompileWith(f.dc)
+}
+
 // decompileWith generates AppleScript source from the full parse tree.
-func decompileWith(dc *decompState, handlers []HandlerSig) string {
+func decompileWith(dc *decompState) string {
 	var sb strings.Builder
 
 	// The first node is the script's top-level block: handler definitions,
