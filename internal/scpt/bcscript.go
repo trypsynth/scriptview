@@ -86,7 +86,9 @@ func (b *bcBuilder) scriptItems(v fasValue, top bool) ([]int16, error) {
 					// A blank line or comment at the end of the body leaves a
 					// StoreResult, GetResult tail, which only an explicit
 					// on run … end run compiles to.
-					if k := len(body); k == 0 || !b.isBlankLine(body[k-1]) {
+					// An empty body is an empty on run handler too: code
+					// with no statements has no run handler.
+					if k := len(body); k > 0 && !b.isBlankLine(body[k-1]) {
 						runBody = body
 						continue
 					}
