@@ -108,10 +108,19 @@ func (b *bcBuilder) scriptItems(v fasValue, top bool, parent fasValue) ([]int16,
 						continue
 					}
 				}
+				if prev, ok := b.emittedScripts[e]; ok {
+					// property sort : mergeSort, for a handler written above.
+					items = append(items, b.node('l', b.node('j', b.keyRef(name), b.node('o', b.keyRef(prev)))))
+					continue
+				}
 				def, err := b.handlerDef(h, e)
 				if err != nil {
 					return nil, err
 				}
+				if b.emittedScripts == nil {
+					b.emittedScripts = map[*fasBlock]fasValue{}
+				}
+				b.emittedScripts[e] = h.name
 				items = append(items, def, b.node('l'))
 				continue
 			case 15:

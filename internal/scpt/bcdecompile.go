@@ -32,8 +32,8 @@ type bcBuilder struct {
 	// prior holds the properties written so far, which the handlers after
 	// them see.
 	prior map[string]bool
-	// emittedScripts names the script objects already written, so another
-	// property holding the same object refers to it by name.
+	// emittedScripts names the script objects and handlers already written,
+	// so another property holding the same one refers to it by name.
 	emittedScripts map[*fasBlock]fasValue
 }
 
