@@ -1077,7 +1077,9 @@ func (dc *decompState) sub(id int16, minPrec int) string {
 		return "(" + dc.expr(id) + ")"
 	}
 	s := dc.expr(id)
-	if dc.prec(id) < minPrec {
+	if dc.prec(id) < minPrec || minPrec >= precAtom && dc.isLabeledCall(id) {
+		// file (f of x at y), named (f for x): a labeled call takes the
+		// rest of the line as its parameters.
 		return "(" + s + ")"
 	}
 	return s
