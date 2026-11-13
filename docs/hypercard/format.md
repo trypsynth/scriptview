@@ -108,6 +108,19 @@ Entries are padded to an even length. A background's own field text list holds t
 
 Buttons have entries too. A card part's entry is the button's text. A background button's entry on a card isn't text: it's `1` when the button is highlighted on that card, for buttons that don't share their highlight across cards.
 
+## Scripts in other languages
+
+From HyperCard 2.2 on, an object's script can be in another OSA language, such as AppleScript. 77 of the 4,651 stacks in the test set have such scripts, 376 in all. The script field then starts with a NUL byte, followed by a 32-byte header:
+
+- 4 bytes: `WOSA`.
+- 4 bytes: the header's length, 32.
+- 4 bytes: the length of the data after the header.
+- 4 bytes: the scripting component, `ascr` for AppleScript.
+- 4 bytes: the storage type: `scpt` for a compiled script, or a text type, such as `TEXT`, for source that wasn't compiled.
+- The rest is padding.
+
+A compiled script is an ordinary compiled AppleScript, from `FasdUAS` to `FADEDEAD`, so scriptview decompiles it. It reads it as a classic Mac OS script, with HyperCard's terms in scope without a `tell` block, because HyperCard runs it: `on mouseUp` is HyperCard's `«event WMSGMUP »`, and `answer` is `«event WILDansr»`. HyperCard's AppleScript dictionary comes from HyperCard 2.2. A standalone application built with it, Contents Catalog 2.0 on Apple's May 1994 Developer CD, carries the dictionary in its resource fork.
+
 ## Protected stacks
 
 A stack with private access needs a password to open. Bit `0x2000` of the 16-bit flags word at offset 76 of the `STAK` block marks it. In such a stack, HyperCard scrambles the `STAK` block's header from offset 36 on: the numbers of backgrounds and cards, and the IDs of the first background, the first card, and the `LIST` block. The rest of the file isn't scrambled. scriptview reads the backgrounds and cards in file order when the header doesn't lead to them. Of the 11 protected stacks in the test set, the 10 that have scripts print them.

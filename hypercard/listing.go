@@ -3,15 +3,29 @@ package hypercard
 import (
 	"fmt"
 	"strings"
+
+	"github.com/trypsynth/scriptview/scpt"
 )
 
 // Scripts lists every script in the stack, indented, each under a comment
 // that names its object the way HyperTalk refers to it, such as
-// -- card button "OK" of card "Home". Objects without a script are left
+// -- card button "OK" of card "Home". A script in another language says so
+// in its comment, and compiled AppleScript is decompiled. Objects without a script are left
 // out. When the stack has externals, two comments list them first.
 func (s *Stack) Scripts() string {
 	var sb strings.Builder
-	add := func(label, script string) {
+	add := func(label, script, language string, compiled []byte) {
+		switch {
+		case len(compiled) > 0 && language == "AppleScript":
+			script = decompile(compiled)
+		case len(compiled) > 0:
+			script = fmt.Sprintf("-- (%d bytes of compiled %s)", len(compiled), language)
+		case language == "":
+			script = Indent(script)
+		}
+		if language != "" {
+			label += " (" + language + ")"
+		}
 		if strings.TrimSpace(script) == "" {
 			return
 		}
@@ -19,7 +33,7 @@ func (s *Stack) Scripts() string {
 			sb.WriteString("\n")
 		}
 		sb.WriteString("-- " + label + "\n")
-		sb.WriteString(strings.TrimRight(Indent(script), "\n") + "\n")
+		sb.WriteString(strings.TrimRight(script, "\n") + "\n")
 	}
 	var cmds, fns []string
 	for _, e := range s.Externals {
@@ -35,17 +49,17 @@ func (s *Stack) Scripts() string {
 	if len(fns) > 0 {
 		sb.WriteString("-- external functions: " + strings.Join(fns, ", ") + "\n")
 	}
-	add("stack", s.Script)
+	add("stack", s.Script, s.Language, s.Compiled)
 	for _, b := range s.Backgrounds {
-		add(b.ref(), b.Script)
+		add(b.ref(), b.Script, b.Language, b.Compiled)
 		for _, p := range b.Parts {
-			add("background "+p.ref()+" of "+b.ref(), p.Script)
+			add("background "+p.ref()+" of "+b.ref(), p.Script, p.Language, p.Compiled)
 		}
 	}
 	for _, c := range s.Cards {
-		add(c.ref(), c.Script)
+		add(c.ref(), c.Script, c.Language, c.Compiled)
 		for _, p := range c.Parts {
-			add("card "+p.ref()+" of "+c.ref(), p.Script)
+			add("card "+p.ref()+" of "+c.ref(), p.Script, p.Language, p.Compiled)
 		}
 	}
 	return sb.String()
@@ -100,4 +114,15 @@ func ref(kind, name string, id int) string {
 		return fmt.Sprintf("%s id %d", kind, id)
 	}
 	return kind + ` "` + name + `"`
+}
+
+// decompile prints compiled AppleScript data, or a comment when it doesn't
+// read. The script ran inside HyperCard, so HyperCard's terms need no tell
+// block.
+func decompile(data []byte) string {
+	f, err := scpt.ParseWith(data, scpt.Options{Classic: true, Host: "HyperCard"})
+	if err != nil {
+		return "-- (compiled script that doesn't read: " + err.Error() + ")"
+	}
+	return scpt.Decompile(f)
 }

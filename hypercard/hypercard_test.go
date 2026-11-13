@@ -2,6 +2,7 @@ package hypercard
 
 import (
 	"encoding/binary"
+	"os"
 	"strings"
 	"testing"
 )
@@ -26,12 +27,26 @@ func part(id int, kind PartKind, name, script string) []byte {
 	b = append(b, byte(kind), 0)
 	b = append(b, make([]byte, 30-len(b))...)
 	b = append(append(b, name...), 0, 0)
-	b = append(append(b, strings.ReplaceAll(script, "\n", "\r")...), 0)
+	if !strings.HasPrefix(script, "\x00") {
+		script = strings.ReplaceAll(script, "\n", "\r")
+	}
+	b = append(append(b, script...), 0)
 	if len(b)%2 == 1 {
 		b = append(b, 0)
 	}
 	binary.BigEndian.PutUint16(b, uint16(len(b)))
 	return b
+}
+
+// osaScript encodes a script in another language: a NUL byte, then the
+// WOSA header and the data.
+func osaScript(storage string, data []byte) string {
+	h := []byte("\x00WOSA")
+	h = binary.BigEndian.AppendUint32(h, 32)
+	h = binary.BigEndian.AppendUint32(h, uint32(len(data)))
+	h = append(h, "ascr"+storage...)
+	h = append(h, make([]byte, 1+32-len(h))...)
+	return string(append(h, data...))
 }
 
 // encodeLayer encodes the part and text lists, then the name and the script.
@@ -228,5 +243,47 @@ func TestExternals(t *testing.T) {
 	want := "-- external commands: AESend, Beep2\n-- external functions: ShowList\n\n-- stack\n"
 	if got := s.Scripts(); !strings.HasPrefix(got, want) {
 		t.Errorf("got:\n%s", got[:min(len(got), 120)])
+	}
+}
+
+// TestAppleScript decompiles a part whose script is compiled AppleScript,
+// and prints one whose AppleScript is stored as text.
+func TestAppleScript(t *testing.T) {
+	compiled, err := os.ReadFile("../testdata/scpt/hello.scpt")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var sb stackBuilder
+	be := binary.BigEndian
+	stak := make([]byte, 0x600-16)
+	be.PutUint32(stak[0:], 10)
+	be.PutUint32(stak[24:], 200)
+	be.PutUint32(stak[36:], 50)
+	sb.block("STAK", -1, append(stak, 0))
+	bg := make([]byte, 20)
+	be.PutUint32(bg[12:], 200)
+	bg = append(bg, encodeLayer([][]byte{
+		part(1, Button, "Compiled", osaScript("scpt", compiled)),
+		part(2, Button, "Text", osaScript("TEXT", []byte("beep\rbeep"))),
+	}, nil, "Main", "")...)
+	sb.block("BKGD", 200, bg)
+	sb.block("TAIL", -1, nil)
+
+	s, err := Parse(sb.out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if p := s.Backgrounds[0].Parts[0]; p.Language != "AppleScript" || len(p.Compiled) != len(compiled) {
+		t.Errorf("compiled part: language %q, %d bytes", p.Language, len(p.Compiled))
+	}
+	want := `-- background button "Compiled" of background "Main" (AppleScript)
+display dialog "hello world"
+
+-- background button "Text" of background "Main" (AppleScript)
+beep
+beep
+`
+	if got := s.Scripts(); got != want {
+		t.Errorf("got:\n%s\nwant:\n%s", got, want)
 	}
 }

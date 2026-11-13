@@ -35,8 +35,13 @@ func IsStack(data []byte) bool {
 // Stack is a HyperCard stack.
 type Stack struct {
 	// Version is the stack format: 8 and 9 for HyperCard 1.x, 10 for 2.x.
-	Version     int
-	Script      string
+	Version int
+	Script  string
+	// Language is the script's language when it isn't HyperTalk, such as
+	// "AppleScript". Such a script is stored as text in Script, or as the
+	// compiled data of its scripting component in Compiled.
+	Language    string
+	Compiled    []byte
 	Backgrounds []*Background // in the order of the stack's background chain
 	Cards       []*Card       // in stack order
 	// Externals lists the stack's external commands (XCMD) and functions
@@ -63,10 +68,12 @@ func (s *Stack) AddResources(rsrc []byte) {
 
 // Background is a background, which cards share.
 type Background struct {
-	ID     int32
-	Name   string
-	Script string
-	Parts  []*Part
+	ID       int32
+	Name     string
+	Script   string
+	Language string // see Stack.Language
+	Compiled []byte
+	Parts    []*Part
 	// Text holds the text of background fields that share their text
 	// across cards.
 	Text []Text
@@ -77,6 +84,8 @@ type Card struct {
 	ID         int32
 	Name       string
 	Script     string
+	Language   string // see Stack.Language
+	Compiled   []byte
 	Background *Background
 	Parts      []*Part
 	// Text holds the text of the card's own fields, and of its background's
@@ -108,10 +117,12 @@ func (k PartKind) String() string {
 
 // Part is a button or a field.
 type Part struct {
-	ID     int
-	Kind   PartKind
-	Name   string
-	Script string
+	ID       int
+	Kind     PartKind
+	Name     string
+	Script   string
+	Language string // see Stack.Language
+	Compiled []byte
 }
 
 // Text is the text of one field.
@@ -191,7 +202,7 @@ func (ps *parser) parse(data []byte) (*Stack, error) {
 	}
 	s := &Stack{Version: int(be.Uint32(stak[16:]))}
 	if len(stak) > 0x600 {
-		s.Script = ps.cString(stak[0x600:])
+		s.Script, s.Language, s.Compiled = ps.script(stak[0x600:])
 	}
 
 	// HyperCard 1.x blocks lack a field before the bitmap ID, so the rest
@@ -293,6 +304,8 @@ type layer struct {
 	text  []rawText
 	name  string
 	scr   string
+	lang  string
+	osa   []byte
 }
 
 type rawText struct {
@@ -324,11 +337,11 @@ func (ps *parser) parseLayer(b []byte, off, shift int) layer {
 		}
 		part := b[p : p+size]
 		name := ps.cString(part[30:])
-		script := ""
+		pt := &Part{ID: int(be.Uint16(part[2:])), Kind: PartKind(part[4]), Name: name}
 		if s := 30 + len(rawCString(part[30:])) + 2; s < len(part) {
-			script = ps.cString(part[s:]) // the name, its NUL, and a pad byte
+			pt.Script, pt.Language, pt.Compiled = ps.script(part[s:]) // the name, its NUL, and a pad byte
 		}
-		l.parts = append(l.parts, &Part{ID: int(be.Uint16(part[2:])), Kind: PartKind(part[4]), Name: name, Script: script})
+		l.parts = append(l.parts, pt)
 		p += size
 	}
 	p = min(partsEnd, len(b))
@@ -360,7 +373,7 @@ func (ps *parser) parseLayer(b []byte, off, shift int) layer {
 		name := rawCString(b[p:])
 		l.name = ps.text(name)
 		if q := p + len(name) + 1; q < len(b) {
-			l.scr = ps.cString(b[q:])
+			l.scr, l.lang, l.osa = ps.script(b[q:])
 		}
 	}
 	return l
@@ -387,7 +400,7 @@ func (ps *parser) fieldText(b []byte) string {
 func (ps *parser) parseBackground(b []byte, shift int) *Background {
 	bg := &Background{ID: int32(be.Uint32(b[8:]))}
 	l := ps.parseLayer(b, 36+shift, shift)
-	bg.Name, bg.Script, bg.Parts = l.name, l.scr, l.parts
+	bg.Name, bg.Script, bg.Language, bg.Compiled, bg.Parts = l.name, l.scr, l.lang, l.osa, l.parts
 	for _, t := range l.text {
 		bg.Text = append(bg.Text, Text{Part: findPart(bg.Parts, t.partID), Text: t.text})
 	}
@@ -400,7 +413,7 @@ func (ps *parser) parseCard(b []byte, bkgds map[int32]*Background, shift int) *C
 		c.Background = bkgds[int32(be.Uint32(b[36+shift:]))]
 	}
 	l := ps.parseLayer(b, 40+shift, shift)
-	c.Name, c.Script, c.Parts = l.name, l.scr, l.parts
+	c.Name, c.Script, c.Language, c.Compiled, c.Parts = l.name, l.scr, l.lang, l.osa, l.parts
 	for _, t := range l.text {
 		// A negative ID is one of the card's own fields, a positive one a
 		// background field's text on this card.
@@ -438,6 +451,32 @@ func rawCString(b []byte) []byte {
 		return b[:i]
 	}
 	return b
+}
+
+// script reads a script: HyperTalk text, or, after a NUL byte, a script
+// in another language. That one has a 32-byte header, which starts with
+// WOSA and holds the header's length, the data's length, the scripting
+// component (ascr for AppleScript), and the storage type: scpt for compiled
+// data, or a text type for source that wasn't compiled. The data follows
+// the header.
+func (ps *parser) script(b []byte) (text, language string, compiled []byte) {
+	if len(b) < 1+20 || b[0] != 0 || string(b[1:5]) != "WOSA" {
+		return ps.cString(b), "", nil
+	}
+	start := 1 + int(be.Uint32(b[5:]))
+	n := int(be.Uint32(b[9:]))
+	if start > len(b) || n < 0 {
+		return "", "", nil
+	}
+	data := b[start:min(start+n, len(b))]
+	language = string(b[13:17])
+	if language == "ascr" {
+		language = "AppleScript"
+	}
+	if string(b[17:21]) == "scpt" {
+		return "", language, data
+	}
+	return strings.ReplaceAll(ps.text(data), "\r", "\n"), language, nil
 }
 
 // cString decodes a NUL-terminated string, with HyperCard's carriage
