@@ -227,6 +227,8 @@ type bcHandler struct {
 	// blankTails marks StoreResult, GetResult pairs already turned into a
 	// trailing blank line, so an enclosing block doesn't count them again.
 	blankTails map[int]bool
+	// tellDepth counts the tell blocks around the code being decompiled.
+	tellDepth int
 }
 
 // blankTail reports whether instructions j-2 and j-1 are an unclaimed

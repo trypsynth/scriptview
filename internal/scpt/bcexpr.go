@@ -130,8 +130,16 @@ func (bh *bcHandler) objectAlias(in instr, stack *[]stackVal) (int16, error) {
 		}
 		return part, nil // implicit container: the tell target or whose's it
 	}
-	if cn := b.out.nodes[container.id]; (kind == 3 || kind == 4) && cn.typ == 'f' && b.out.osCode[bh.keyOf(cls.id)] == "psxf" {
-		return part, nil // POSIX file "/x", not … of me; but application (name) of me
+	if cn := b.out.nodes[container.id]; (kind == 3 || kind == 4) && cn.typ == 'f' && b.out.osCode[bh.keyOf(cls.id)] == "psxf" && (bh.tellDepth == 0 || b.out.nodes[idx.id].typ == 'm') {
+		// POSIX file "/x", not … of me; but application (name) of me. In a
+		// tell block, POSIX file x takes the tell target, so a me container
+		// was written out: my POSIX file x.
+		return part, nil
+	}
+	if cn := b.out.nodes[container.id]; kind == 3 && cn.typ == 'f' && b.out.osCode[bh.keyOf(cls.id)] == "psxf" {
+		id := b.node('n', part, container.id)
+		b.out.nodes[id] = nodeRec{typ: 'n', flags: flagAltSyntax, children: []int16{part, container.id}} // my POSIX file x
+		return id, nil
 	}
 	id := b.node('n', part, container.id)
 	if kind == 0 {

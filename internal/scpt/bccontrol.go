@@ -92,7 +92,9 @@ func (bh *bcHandler) tellStmt(pc int, stack *[]stackVal) (int16, int, bool, erro
 	if err != nil {
 		return 0, 0, false, err
 	}
+	bh.tellDepth++
 	stmts, rest, err := bh.run(in.off+in.size, bh.prog[j].off, nil)
+	bh.tellDepth--
 	if err != nil {
 		return 0, 0, false, err
 	}
