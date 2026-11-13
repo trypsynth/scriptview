@@ -70,7 +70,13 @@ To test this, the decompiled source is compiled again, and the new bytecode is c
 
 A compiled script is a serialized graph of objects. It holds a syntax tree, with flags that record how you wrote each part, and the bytecode that the AppleScript virtual machine runs. scriptview reads the syntax tree and prints it back as source. For run-only scripts it simulates the virtual machine's stack to rebuild a syntax tree from the bytecode.
 
-The code is in `scpt`:
+The code is in three packages, which other Go programs can import:
+
+- `scpt` reads compiled AppleScript and JavaScript for Automation scripts. `Parse` reads a file, `Decompile` prints its source, `DecompileBytecode` rebuilds the source from the bytecode alone, and `Disassemble` lists the bytecode.
+- `classic` reads the files of classic Mac OS: resource forks, and the AppleSingle, AppleDouble, MacBinary, and BinHex wrappers that carry them on other systems.
+- `mactext` decodes the classic Mac text encodings, Mac Roman and Mac Japanese.
+
+Inside `scpt`:
 
 - `objects.go` and `parse.go` read the object graph.
 - `stmt.go`, `expr.go`, and `scope.go` print the syntax tree.

@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- The `scpt` package is public, so other Go programs can decompile AppleScript. Two new packages share the classic Mac OS code: `classic` reads resource forks and the AppleSingle, AppleDouble, MacBinary, and BinHex wrappers, and `mactext` decodes Mac Roman and Mac Japanese text.
+
 ## 0.3.1
 
 - Removed the `strings`, `idents`, `ints`, `handlers`, and `dump` commands, which date from before scriptview could decompile. `decompile`, `bytecode`, `disasm`, and `tree` remain.
