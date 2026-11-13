@@ -183,12 +183,15 @@ func (dc *decompState) commandParts(n nodeRec) (string, string) {
 			without = append(without, label)
 		default:
 			value := dc.expr(cell[1])
-			if hasOf && dc.isBareOfRef(cell[1]) || dc.isBareOfRef(cell[1]) && strings.HasPrefix(value, label+" ") {
+			n := dc.nodes[cell[1]]
+			switch {
+			case hasOf && dc.isBareOfRef(cell[1]) || dc.isBareOfRef(cell[1]) && strings.HasPrefix(value, label+" "):
 				value = "(" + value + ")" // offset of x in (item 1 of y), output volume (output volume of s)
-			}
-			if n := dc.nodes[cell[1]]; n.typ == 'e' {
-				value = "(" + value + ")" // default items (get item 1 of x)
-			} else if dc.isCommand(cell[1]) && dc.hasArgs(cell[1]) {
+			case n.typ == 'e' || dc.fromBytecode && (n.typ == 'c' || dc.isLabeledCall(cell[1])):
+				// default items (get item 1 of x), message (m as text) as
+				// critical, on (f for x)
+				value = "(" + value + ")"
+			case dc.isCommand(cell[1]) && dc.hasArgs(cell[1]):
 				cmdParts[len(parts)] = label
 			}
 			parts = append(parts, label+" "+value)
@@ -661,6 +664,16 @@ func (dc *decompState) expr(id int16) string {
 		left, right := dc.sub(n.children[0], op.prec), dc.sub(n.children[1], op.prec+1)
 		if n.typ == 'a' { // ^ groups to the right: (x ^ 2) ^ 0.5, x ^ 2 ^ 0.5
 			left, right = dc.sub(n.children[0], op.prec+1), dc.sub(n.children[1], op.prec)
+		}
+		if dc.fromBytecode {
+			// (f of x from a) & (f of x from b): a labeled call takes the
+			// rest of the line as its parameters.
+			if dc.isLabeledCall(n.children[0]) {
+				left = "(" + left + ")"
+			}
+			if dc.isLabeledCall(n.children[1]) {
+				right = "(" + right + ")"
+			}
 		}
 		if l, ok := binOps[dc.nodes[n.children[0]].typ]; ok && (op.prec == 3 || op.prec == 4) && l.prec == op.prec {
 			left = "(" + left + ")" // comparisons don't chain: (x = "") = false
