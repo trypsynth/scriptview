@@ -257,6 +257,11 @@ func (dc *decompState) isBareOfRef(id int16) bool {
 // "foo_bar_" with arguments (a, b) as "foo:a bar:b", as Script Editor does
 // whenever the name's segments line up with the positional arguments.
 func (dc *decompState) interleaved(n nodeRec) (string, bool) {
+	if dc.noUse {
+		// Without a use statement, foo:x bar:y doesn't compile, so the
+		// script wrote foo_bar_(x, y).
+		return "", false
+	}
 	raw := dc.refName[child0(n)]
 	if !strings.HasSuffix(raw, "_") || child(n, 2) != 0 {
 		return "", false

@@ -210,6 +210,9 @@ func (b *bcBuilder) scriptItems(v fasValue, top bool, parent fasValue) ([]int16,
 	if len(runBody) > 0 {
 		items = append(items, runBody...)
 	}
+	if top && len(uses) == 0 {
+		b.out.noUse = true
+	}
 	if len(uses) > 0 {
 		if !b.usesAdditions(uses) && b.callsAdditions() {
 			// Standard Additions commands compile only before a `use` that

@@ -63,6 +63,9 @@ type decompState struct {
 	// digit, and a raw property code of the tell target is written
 	// its «class x».
 	fromBytecode bool
+	// noUse is set for run-only output of a script with no use statement,
+	// where Objective-C calls can't use the interleaved form.
+	noUse bool
 	// propertyRefs marks bytecode property references (MakeObjectAlias), as
 	// against constant references the compiler folded into literals.
 	propertyRefs map[int16]bool
