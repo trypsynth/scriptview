@@ -568,10 +568,23 @@ func decodeUTF16BE(b []byte) string {
 // aliasAppName extracts the application name from blob data embedding an
 // alias record ("alis"), from the alias's filename field, minus ".app".
 func aliasAppName(blob []byte) (string, bool) {
-	i := bytes.Index(blob, []byte("alis"))
-	if i < 0 {
-		return "", false
+	// Some specifiers hold an empty alias before the one with the name, as
+	// in a script that HyperCard saved in a stack: try each.
+	for off := 0; ; {
+		i := bytes.Index(blob[off:], []byte("alis"))
+		if i < 0 {
+			return "", false
+		}
+		if name, ok := aliasAt(blob, off+i); ok {
+			return name, true
+		}
+		off += i + 4
 	}
+}
+
+// aliasAt reads the application name from the alias record whose type,
+// alis, is at offset i of blob.
+func aliasAt(blob []byte, i int) (string, bool) {
 	// "alis" + length(4), then the alias record: userType(4) size(2) version(2)
 	// kind(2) volumeName(str27, 28 bytes) createDate(4) fsType(2) driveType(2)
 	// parentDirID(4) fileName(str63) — i.e. the filename Pascal string is at +50.
