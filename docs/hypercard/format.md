@@ -1,6 +1,15 @@
 # Stack format
 
-This page describes a HyperCard stack file as scriptview reads it. Apple never published the format. The description comes from reading 29 stacks on Apple's 1993 and 1994 discs: 27 from HyperCard 2.x and 2 from HyperCard 1.x, among them HyperCard's own Home stack and Apple's AppleScript developer tools. Uli Kusterer's [stackimport](https://github.com/uliwitness/stackimport) reads the same format, including the pictures that scriptview skips.
+This page describes a HyperCard stack file as scriptview reads it. Apple never published the format. The description comes from reading stacks, checked against two earlier readings of the format:
+
+- Rebecca Bettencourt's format notes (`HC_FILE_FORMAT_2010.TXT`, kreativekorp.com), based on Tyler Vano's work.
+- Uli Kusterer's [stackimport](https://github.com/uliwitness/stackimport), which reads the same format, including the pictures that scriptview skips. It handles only HyperCard 2.x.
+
+scriptview was tested on these stacks:
+
+- 29 stacks from Apple's 1993 and 1994 discs, among them HyperCard's own Home stack and Apple's AppleScript developer tools.
+- 4,651 stacks from software CDs, through discmaster.textfiles.com and the HyperCard Online collection on archive.org: 3,227 from HyperCard 2.x, 1,381 from HyperCard 1.x, 38 from HyperCard IIGS, and 5 from Plus.
+- 12 stacks that came with text listings of their scripts, which show how HyperCard indents. See [Scripts and indentation](#scripts-and-indentation).
 
 All numbers are big-endian. Text is Mac Roman, with a carriage return at the end of each line.
 
@@ -99,6 +108,23 @@ Entries are padded to an even length. A background's own field text list holds t
 
 Buttons have entries too. A card part's entry is the button's text. A background button's entry on a card isn't text: it's `1` when the button is highlighted on that card, for buttons that don't share their highlight across cards.
 
+## Protected stacks
+
+A stack with private access needs a password to open. Bit `0x2000` of the 16-bit flags word at offset 76 of the `STAK` block marks it. In such a stack, HyperCard scrambles the `STAK` block's header from offset 36 on: the numbers of backgrounds and cards, and the IDs of the first background, the first card, and the `LIST` block. The rest of the file isn't scrambled. scriptview reads the backgrounds and cards in file order when the header doesn't lead to them. Of the 11 protected stacks in the test set, the 10 that have scripts print them.
+
+The sum of the first 1,536 bytes of the `STAK` block, read as big-endian 32-bit words, is 0 in an ordinary stack, and not in a protected one.
+
+## Other stack formats
+
+These files also start with a `STAK` block:
+
+- HyperCard IIGS, the Apple IIGS version, stores its numbers little-endian. Its scripts are plain text in the same block types. scriptview doesn't read these stacks yet.
+- Plus, a cross-platform HyperCard clone, writes the format version `0x80000008`. Plus stacks read like HyperCard 2.x stacks. Plus stores its scripts already indented, which scriptview replaces with its own indentation.
+
+## Text encoding
+
+Text is Mac Roman, unless the stack is Japanese. Like compiled AppleScript, a stack doesn't record its encoding. scriptview reads a stack as Mac Japanese, a variant of Shift JIS, when all its non-ASCII text decodes as Shift JIS and holds several kana. Kanji alone aren't enough: an accented Mac Roman letter followed by certain bytes forms a valid pair, so "Frédéric" reads in Shift JIS as "Fr仕屍ic". 455 of the 4,651 stacks in the test set read as Japanese.
+
 ## HyperCard 1.x
 
 HyperCard 1.x stacks use the same blocks with three differences:
@@ -115,14 +141,28 @@ The Apple Event XCMDs stack, for example, carries `AESend` and 18 others, which 
 
 ## Scripts and indentation
 
-Scripts are stored without indentation: HyperCard's script editor indents a script each time it opens it, and removes the indentation when it saves. Of the 2,609 scripts in the 29 stacks, not one stored line starts with a space or a tab, although field text in the same stacks often does. scriptview indents them the same way, two spaces per level:
+Scripts are stored without indentation: HyperCard indents a script each time it shows it, and removes the indentation when it saves. Of the 2,609 scripts in Apple's 29 stacks, not one stored line starts with a space or a tab, although field text in the same stacks often does.
 
-- `on` and `function` handlers, `repeat` loops, and `if … then` at the end of a line open a level.
-- `else` lines up with its `if`. `else` followed by a statement on the same line ends the `if`.
-- `if … then` followed by a statement on the same line opens nothing.
-- A line continued with `¬` is indented one level deeper than the line it continues.
-- `end` with a handler's name closes the handler, and any block left open inside it.
+The indentation rules come from 12 stacks that their authors distributed with listings of their scripts, written out by tools such as Script Stripper, which save `the script` of each object as HyperCard hands it out. scriptview's indentation matches 7,444 of the 7,453 lines in those listings. The rules:
 
-HyperTalk strings have no escape characters, so `then` or `--` inside quotes never counts. The two-space width and the depth of continued lines match HyperCard 2.x's editor as far as the stacks show. The exact rules of that editor aren't known.
+- Each level is two spaces.
+- `on` and `function` start a handler at the left margin, and open a level. A new handler closes anything that an earlier one left open.
+- `end` with the handler's name, as written, closes the handler and any block left open in it. In `on f-- x`, the name is `f--`, so `end f` doesn't close it. `end if` and `end repeat` close one block.
+- `repeat` opens a level.
+- `if … then` at the end of a line opens a level. `if … then` followed by a statement opens none.
+- `then` can start the next line, after `if c`. It lines up with the `if`, and opens a level when nothing follows it.
+- `else` lines up with its `if`. After `if … then x` on one line, a bare `else` on the next line belongs to that `if` and opens a level, which gives cascades:
 
-Over the 2,609 scripts in the 29 stacks, every handler closes back at the left margin, which is a check that the rules agree with how the scripts were written.
+  ```
+  if a then x
+  else
+    if b then y
+    else z
+  end if
+  ```
+
+- `else` followed by a statement ends the `if`. `else repeat` ends the `if` and opens a loop.
+- A line continued with `¬` stays at the level of the line it continues.
+- Blank lines and comment lines take the current level.
+
+HyperTalk strings have no escape characters, so `then` or `--` inside quotes never counts.

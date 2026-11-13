@@ -42,7 +42,9 @@ Give scriptview a HyperCard stack, from HyperCard 1.x or 2.x, and it prints ever
 
 `scriptview text` prints the text in the stack's fields instead.
 
-A stack can be a plain file, or inside a MacBinary, BinHex, or AppleSingle file.
+A stack can be a plain file, or inside a MacBinary, BinHex, or AppleSingle file. scriptview reads Japanese stacks, and the scripts of password-protected ones. It doesn't read stacks from HyperCard IIGS, the Apple IIGS version.
+
+scriptview was tested on 4,651 stacks without a failure, apart from the 38 IIGS stacks. Its indentation matches 99.9% of the lines in 12 listings of scripts that HyperCard wrote out.
 
 ## How well it works
 
