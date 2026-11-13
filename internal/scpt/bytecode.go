@@ -121,6 +121,9 @@ func (dc *decompState) decodeValue(ref int16, depth int) fasValue {
 		if name, ok := aliasAppName(o.data); ok {
 			return fasApp(name)
 		}
+		if name, ok := dc.appByID[ref]; ok {
+			return fasApp(name) // by URL: a SOAP endpoint or a file:// URL
+		}
 		if o.kind == 0x0d && len(o.data) >= 4 {
 			return fasDesc{typ: string(o.data[:4]), data: o.data[4:]}
 		}
