@@ -41,12 +41,7 @@ Scripts that pass through other systems sometimes gain junk bytes after the trai
 
 ## Header
 
-The header is the ASCII text `FasdUAS ` and one or two versions of four characters each:
-
-```
-46 61 73 64 55 41 53 20  31 2E 31 30  31 2E 31 30
-F  a  s  d  U  A  S  ␠   1  .  1  0   1  .  1  0
-```
+The header is the ASCII text `FasdUAS`, a space, and one or two versions of four characters each, such as `1.10` followed by `1.10` in `FasdUAS 1.101.10`.
 
 There are four headers:
 
@@ -72,7 +67,7 @@ The trailer comes from the Open Scripting Architecture, not from AppleScript. In
 
 The length is usually 12. A length of 13 includes one pad byte before `ascr`. The body is everything between the header and the trailer.
 
-The marker is a joke that also works: "a terminating sequence that won't appear in any script," as Jon Pugh put it.
+Jon Pugh described the marker as "a terminating sequence that won't appear in any script."
 
 ## Records
 
@@ -205,11 +200,7 @@ An application specifier can also hold an `aprl` URL instead of an alias, for an
 
 ## The root object
 
-Object 0 is the root. In every file from AppleScript 1.0 on, it's a kind 15 script object with four items:
-
-```
-{name, syntax tree, parent, handler table}
-```
+Object 0 is the root. In every file from AppleScript 1.0 on, it's a kind 15 script object with four items: the name, the syntax tree, the parent, and the handler table.
 
 - The name is nil for the top-level script.
 - The syntax tree is the top block of statements. A run-only script has nil here. That is the only difference between a run-only script and a normal one: the bytecode is still all there.
@@ -250,7 +241,7 @@ Later versions added node types in the middle of the alphabet, which moved every
 - `P` to `i` map to `J` to `c`, 6 letters back: lists, records, control statements, arithmetic, and `as`.
 - `m` to `z` map to `f` to `s`, 7 letters back: `me`, `it`, script objects, handlers, blocks, variables, `set`, and `copy`.
 
-For example, `tell` is `U` in the beta and `O` later, and `set` is `y` and `r`. The beta files never use `E`, `F`, `G`, `O`, `S`, `T`, `V`, `X`, or `j` to `l`, so the mapping of those letters is an inference from their neighbors. In particular, `F` and `G` have no 1.0 counterpart, and scriptview maps `j` to unary minus and `k` to `get`.
+For example, `tell` is `U` in the beta and `O` later, and `set` is `y` and `r`. The beta files never use `E`, `F`, `G`, `O`, `S`, `T`, `V`, `X`, or `j` to `l`, so the mapping of those letters is an inference from their neighbors. `F` and `G` have no 1.0 counterpart, and scriptview maps `j` to unary minus and `k` to `get`.
 
 ### Layouts
 

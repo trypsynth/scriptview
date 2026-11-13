@@ -6,11 +6,7 @@ The opcode names come from Jinmo's [applescript-disassembler](https://github.com
 
 ## Handlers
 
-Each handler is a typed vector of kind 16, or kind 17 for a closure, with seven items:
-
-```
-{name, nil, positional parameters, labeled parameters, variable names, literals, code}
-```
+Each handler is a typed vector of kind 16, or kind 17 for a closure, with seven items: the name, an unused nil, the positional parameters, the labeled parameters, the variable names, the literals, and the code.
 
 - Name: an identifier, or an event code for handlers such as `on run` and `on open`.
 - Positional parameters: a kind 4 vector, `{count, {names}}`. A bare name instead is a direct parameter, of an event handler (`on open x`) or a labeled handler (`on mk of x by y`). A kind 123 vector is a direct parameter with a type or a default, as in `on run argv as text`. A list of names is a pattern, as in `on run {a, b}`. AppleScript 1.0 lists positional parameters as plain names.
@@ -28,7 +24,7 @@ The top level of a script is its implicit `run` handler. The compiler puts the i
 The last handler can be explicit too. Two things show it:
 
 - The code ends with `StoreResult`, `GetResult`, `Return` instead of a bare `Return`. Only a blank line or a comment after the last statement of an explicit `on run` produces this ending. At the top level, trailing blank lines and comments leave no trace.
-- The handler is empty: just `PushUndefined`, `Return`. A script with no top-level statements has no `run` handler at all, so an empty one was written as `on run` and `end run`.
+- The handler is empty: `PushUndefined`, then `Return`. A script with no top-level statements has no `run` handler at all, so an empty one was written as `on run` and `end run`.
 
 ### Variable numbers and local declarations
 
@@ -170,11 +166,7 @@ The bytes `48`, `49`, `72` to `74`, and `77` to `9f` aren't instructions.
 
 ## Commands
 
-A command pushes its arguments, then runs `MessageSend` with the literal index of the event:
-
-```
-direct parameter (or PushIt), then for each labeled parameter: key, value, then the count
-```
+A command pushes its direct parameter, or `PushIt` when it has none, then a key and a value for each labeled parameter, then a count. Then it runs `MessageSend` with the literal index of the event.
 
 The count is the number of keys and values together, which is twice the number of labeled parameters. It doesn't include the direct parameter.
 
