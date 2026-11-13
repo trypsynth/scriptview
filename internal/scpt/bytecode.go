@@ -252,6 +252,11 @@ func (dc *decompState) handlerFrom(v fasValue) (handlerCode, bool) {
 	// handler's direct parameter is a bare name.
 	switch p := b.items[2].(type) {
 	case *fasBlock:
+		if p.kind == 123 {
+			// A typed direct parameter: on run argv as text.
+			h.params, h.direct = []fasValue{p}, true
+			break
+		}
 		if len(p.items) >= 2 {
 			if names, ok := p.items[1].(*fasBlock); ok {
 				h.params = names.items
