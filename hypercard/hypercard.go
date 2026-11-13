@@ -22,6 +22,10 @@ import (
 // ErrNotStack is returned for data that isn't a HyperCard stack.
 var ErrNotStack = errors.New("not a HyperCard stack")
 
+// ErrIIGS is returned for a stack from HyperCard IIGS, the Apple IIGS
+// version, which stores its numbers little-endian and isn't supported.
+var ErrIIGS = errors.New("HyperCard IIGS stacks aren't supported")
+
 // IsStack reports whether data starts like a HyperCard stack.
 func IsStack(data []byte) bool {
 	return len(data) >= 16 && string(data[4:8]) == "STAK"
@@ -127,6 +131,9 @@ var be = binary.BigEndian
 func Parse(data []byte) (*Stack, error) {
 	if !IsStack(data) {
 		return nil, ErrNotStack
+	}
+	if len(data) >= 20 && binary.LittleEndian.Uint32(data[16:]) < 0x100 && be.Uint32(data[16:]) >= 0x100 {
+		return nil, ErrIIGS // a format version that is small only read little-endian
 	}
 	blocks := map[string]map[int32]block{}
 	var order []block
