@@ -464,7 +464,9 @@ func (bh *bcHandler) foldDestructuringOnce(stmts []int16) []int16 {
 		leftover := j < len(stmts) && bh.isValue(stmts[j], x)
 		xn := b.out.nodes[x]
 		inner := xn.typ == 'n' && len(xn.children) == 2 && b.out.nodes[xn.children[0]].typ == '4'
-		if len(targets) < 2 || !leftover && !inner {
+		// With one target, only the leftover value tells set {a} to x from
+		// set a to item 1 of x.
+		if len(targets) == 0 || !leftover && (!inner || len(targets) < 2) {
 			out = append(out, stmts[i])
 			continue
 		}
