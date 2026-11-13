@@ -652,6 +652,13 @@ func (b *bcBuilder) scriptInit(blk *fasBlock) ([]int16, error) {
 		n := b.out.nodes[child0(b.out.nodes[st])]
 		if n.typ == 'r' && len(n.children) == 2 {
 			if t := b.out.nodes[n.children[1]]; t.typ == 'o' && own[b.out.refName[child0(t)]] {
+				if b.out.osCode[child0(t)] == "pimr" {
+					// use framework "X" inside the script object.
+					if uses := b.usesFromNode(n.children[0]); len(uses) > 0 {
+						props = append(props, uses...)
+						continue
+					}
+				}
 				props = append(props, b.node('l', b.node('j', child0(t), n.children[0])))
 				continue
 			}
@@ -687,4 +694,55 @@ func paramVarCount(params []fasValue) int {
 		}
 	}
 	return n
+}
+
+// usesFromNode turns the value a script object's init handler gives its
+// required import items, {{item:a reference to framework "X"}, …}, into use
+// statements.
+func (b *bcBuilder) usesFromNode(list int16) []int16 {
+	l := b.out.nodes[list]
+	if l.typ == 'b' && len(l.children) == 2 && b.out.osCode[child0(b.out.nodes[l.children[0]])] == "pimr" {
+		// A later use: required import items & {{item:…}}.
+		return b.usesFromNode(l.children[1])
+	}
+	if l.typ != 'J' {
+		return nil
+	}
+	var out []int16
+	for ref, steps := child0(l), 0; ref > 0 && steps < 1000; steps++ {
+		cell, ok := b.out.paramMap[ref]
+		if !ok || len(cell) != 2 {
+			break
+		}
+		rec := b.out.nodes[cell[0]]
+		if rec.typ != 'K' {
+			return nil
+		}
+		var target int16
+		var keys, values []int16
+		for _, c := range b.out.cells(child0(rec)) {
+			switch code := b.out.osCode[c[0]]; {
+			case code == "cobj" || b.out.refName[c[0]] == "item":
+				target = c[1]
+				if t := b.out.nodes[target]; t.typ == 'N' {
+					target = child0(t) // the reference, not a reference to
+				}
+			case code == "vers" || b.out.refName[c[0]] == "version":
+				keys = append(keys, b.termRef(fasCode{kind: osKindCode, code: "minv"}))
+				values = append(values, c[1])
+			default:
+				return nil
+			}
+		}
+		if target == 0 {
+			return nil
+		}
+		labels := b.ref()
+		if len(keys) > 0 {
+			labels = b.cells(keys, values)
+		}
+		out = append(out, b.node('l', b.node('x', b.ref(), target, labels)))
+		ref = cell[1]
+	}
+	return out
 }
