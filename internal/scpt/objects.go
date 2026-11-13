@@ -101,8 +101,8 @@ func readObjects(body []byte) ([]*object, error) {
 			if o.kind, err = r.readByte(); err != nil {
 				return nil, err
 			}
-			hdr, err := r.readBytes(6)
-			if err != nil {
+			var hdr []byte
+			if hdr, err = r.readBytes(6); err != nil {
 				return nil, err
 			}
 			o.flags = binary.BigEndian.Uint16(hdr)
