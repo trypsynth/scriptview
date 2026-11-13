@@ -12,14 +12,14 @@ import (
 // TestDecompileGolden checks every fixture against the osadecompile output
 // recorded in testdata/expected (generated on macOS by tools/genscripts).
 func TestDecompileGolden(t *testing.T) {
-	paths, err := filepath.Glob("../testdata/scpt/*.scpt")
+	paths, err := filepath.Glob("../../testdata/scpt/*.scpt")
 	if err != nil || len(paths) == 0 {
 		t.Fatalf("no fixtures: %v", err)
 	}
 	for _, path := range paths {
 		name := strings.TrimSuffix(filepath.Base(path), ".scpt")
 		t.Run(name, func(t *testing.T) {
-			want, err := os.ReadFile(filepath.Join("../testdata/expected", name+".txt"))
+			want, err := os.ReadFile(filepath.Join("../../testdata/expected", name+".txt"))
 			if err != nil {
 				t.Skip("no expected output")
 			}
@@ -59,7 +59,7 @@ func normalize(s string) string {
 // TestStrictParse checks that every fixture decodes as a clean record
 // sequence, without falling back to the tolerant scanner.
 func TestStrictParse(t *testing.T) {
-	paths, _ := filepath.Glob("../testdata/scpt/*.scpt")
+	paths, _ := filepath.Glob("../../testdata/scpt/*.scpt")
 	for _, path := range paths {
 		data, err := os.ReadFile(path)
 		if err != nil {

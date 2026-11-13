@@ -1,6 +1,6 @@
 package scpt
 
-import "github.com/trypsynth/scriptview/classic"
+import "github.com/trypsynth/scriptview/internal/classic"
 
 // Before Mac OS X, a compiled script kept its data in the file's resource
 // fork, as a 'scpt' resource, and left the data fork empty. unwrapScript

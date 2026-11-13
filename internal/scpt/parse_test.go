@@ -13,8 +13,8 @@ import (
 // fixtureDir returns the path to the testdata directory relative to this file.
 func fixtureDir(t *testing.T) string {
 	t.Helper()
-	// scpt/ → ../testdata
-	return filepath.Join("..", "testdata")
+	// internal/scpt/ → ../../testdata
+	return filepath.Join("..", "..", "testdata")
 }
 
 // readFixture loads a file from testdata/scpt/.

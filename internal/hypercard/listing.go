@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/trypsynth/scriptview/scpt"
+	"github.com/trypsynth/scriptview/internal/scpt"
 )
 
 // Scripts lists every script in the stack, indented, each under a comment

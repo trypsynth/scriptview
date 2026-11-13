@@ -249,7 +249,7 @@ func TestExternals(t *testing.T) {
 // TestAppleScript decompiles a part whose script is compiled AppleScript,
 // and prints one whose AppleScript is stored as text.
 func TestAppleScript(t *testing.T) {
-	compiled, err := os.ReadFile("../testdata/scpt/hello.scpt")
+	compiled, err := os.ReadFile("../../testdata/scpt/hello.scpt")
 	if err != nil {
 		t.Fatal(err)
 	}

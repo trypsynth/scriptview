@@ -102,4 +102,4 @@ Apple owns these scripts, so they aren't in the repository. The tests use synthe
 - A marker character that the printer used internally, which could also appear in a string.
 - Deep recursion in two helper functions.
 
-Every walk over the object graph now has a limit. The inputs that found bugs are in `scpt/testdata/fuzz`, and run with the normal tests.
+Every walk over the object graph now has a limit. The inputs that found bugs are in `internal/scpt/testdata/fuzz`, and run with the normal tests.

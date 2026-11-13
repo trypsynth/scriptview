@@ -5,7 +5,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/trypsynth/scriptview/mactext"
+	"github.com/trypsynth/scriptview/internal/mactext"
 )
 
 // Classic Mac OS kept text in the script system's encoding: Mac Roman for

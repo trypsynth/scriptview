@@ -9,7 +9,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/trypsynth/scriptview/mactext"
+	"github.com/trypsynth/scriptview/internal/mactext"
 )
 
 // Term is one dictionary entry. Kind is v (command), a (command parameter,

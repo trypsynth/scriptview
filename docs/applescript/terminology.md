@@ -4,7 +4,7 @@ A compiled script doesn't store words such as `window` or `display dialog`. It s
 
 ## Where the terms come from
 
-`tools/genterms` runs on a Mac and writes the current terms to `scpt/terms.tsv`. It reads these sources:
+`tools/genterms` runs on a Mac and writes the current terms to `internal/scpt/terms.tsv`. It reads these sources:
 
 - AppleScript's own terms. These aren't in an `.sdef` file, but in an `aeut` resource inside `AppleScript.component`, in the classic Mac OS resource format. The `internal/aete` package parses it.
 - Standard Additions (`display dialog`, `do shell script`, and others), from its `.sdef` file.
@@ -13,7 +13,7 @@ A compiled script doesn't store words such as `window` or `display dialog`. It s
 
 ## Classic Mac OS terms
 
-Scripts from classic Mac OS often use scripting additions and apps that macOS dropped long ago, such as Jon's Commands, PlainTalk's speech commands (`acknowledge`, `click`), Scriptable Text Editor, and the Finder Scripting Extension of System 7. `tools/genclassic` reads their dictionaries, the `aete` resources from Apple's 1993 and 1994 discs, and writes them to `scpt/classic.tsv`. The discs can't be part of the repository, so the tool reads `aete` files that you extract yourself. Its package comment explains how.
+Scripts from classic Mac OS often use scripting additions and apps that macOS dropped long ago, such as Jon's Commands, PlainTalk's speech commands (`acknowledge`, `click`), Scriptable Text Editor, and the Finder Scripting Extension of System 7. `tools/genclassic` reads their dictionaries, the `aete` resources from Apple's 1993 and 1994 discs, and writes them to `internal/scpt/classic.tsv`. The discs can't be part of the repository, so the tool reads `aete` files that you extract yourself. Its package comment explains how.
 
 scriptview uses these terms only for scripts from classic Mac OS: AppleScript 1.0 files, and scripts read from a resource fork. For any other script, `osadecompile` on a current Mac doesn't know them either and prints raw codes, so scriptview does too. Even for a classic script, a classic term only names a code that the current dictionaries leave raw. A word that prints one way today doesn't change.
 

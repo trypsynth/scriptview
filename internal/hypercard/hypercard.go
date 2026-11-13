@@ -16,8 +16,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/trypsynth/scriptview/classic"
-	"github.com/trypsynth/scriptview/mactext"
+	"github.com/trypsynth/scriptview/internal/classic"
+	"github.com/trypsynth/scriptview/internal/mactext"
 )
 
 // ErrNotStack is returned for data that isn't a HyperCard stack.

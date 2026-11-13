@@ -14,7 +14,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/trypsynth/scriptview/mactext"
+	"github.com/trypsynth/scriptview/internal/mactext"
 )
 
 // File is a classic Mac file.

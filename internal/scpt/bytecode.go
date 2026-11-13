@@ -6,7 +6,7 @@ import (
 	"math"
 	"strings"
 
-	"github.com/trypsynth/scriptview/mactext"
+	"github.com/trypsynth/scriptview/internal/mactext"
 )
 
 // Every compiled script, run-only or not, carries bytecode for a small

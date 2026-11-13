@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/trypsynth/scriptview/mactext"
+	"github.com/trypsynth/scriptview/internal/mactext"
 )
 
 // coreDict holds AppleScript's own value classes, which take precedence over

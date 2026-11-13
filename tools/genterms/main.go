@@ -2,7 +2,7 @@
 
 // genterms extracts scripting terminology from the sdef dictionaries of
 // Standard Additions and common macOS applications into
-// scpt/terms.tsv, so decompilation can name app-specific classes,
+// internal/scpt/terms.tsv, so decompilation can name app-specific classes,
 // properties, constants and commands on any platform.
 //
 // Run from the repo root:
@@ -236,7 +236,7 @@ func main() {
 		}
 		buf.WriteByte('\n')
 	}
-	if err := os.WriteFile("scpt/terms.tsv", buf.Bytes(), 0o644); err != nil {
+	if err := os.WriteFile("internal/scpt/terms.tsv", buf.Bytes(), 0o644); err != nil {
 		log.Fatal(err)
 	}
 	scopes := map[string]int{}

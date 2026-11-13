@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/trypsynth/scriptview/mactext"
+	"github.com/trypsynth/scriptview/internal/mactext"
 )
 
 // formatReal prints a real the way AppleScript does: always with a decimal

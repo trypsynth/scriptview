@@ -5,9 +5,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/trypsynth/scriptview/classic"
-	"github.com/trypsynth/scriptview/hypercard"
-	"github.com/trypsynth/scriptview/scpt"
+	"github.com/trypsynth/scriptview/internal/classic"
+	"github.com/trypsynth/scriptview/internal/hypercard"
+	"github.com/trypsynth/scriptview/internal/scpt"
 )
 
 const helpText = `Usage: scriptview [command] <file>
