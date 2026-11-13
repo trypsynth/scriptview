@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"math"
-	"os"
 	"strings"
 	"unicode/utf16"
 	"unicode/utf8"
@@ -158,15 +157,7 @@ func (b *builder) finish() *File {
 	return b.f
 }
 
-// canonicalFlags, set by SCRIPTVIEW_CANONICAL=1, discards the syntax tree's
-// surface-syntax flags so its output uses default spellings, as bytecode
-// decompilation must. It exists for comparing the two decompilers.
-var canonicalFlags = os.Getenv("SCRIPTVIEW_CANONICAL") == "1"
-
 func (b *builder) node(id int16, rec nodeRec) {
-	if canonicalFlags && (rec.typ != 'l' || len(rec.children) < 2 || rec.children[1] <= 0) {
-		rec.flags = 0 // keep only statement lines' comment styles
-	}
 	if _, exists := b.dc.nodes[id]; !exists {
 		b.dc.nodeOrder = append(b.dc.nodeOrder, id)
 	}
