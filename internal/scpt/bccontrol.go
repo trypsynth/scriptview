@@ -436,8 +436,9 @@ func (bh *bcHandler) foldDestructuringOnce(stmts []int16) []int16 {
 				}
 				keys, targets = append(keys, key), append(targets, t)
 			}
-			if len(keys) >= 2 && j < len(stmts) && bh.isValue(stmts[j], x) {
-				// set {year:y, month:m} to d
+			if j < len(stmts) && bh.isValue(stmts[j], x) {
+				// set {year:y, month:m} to d, or set {text:t} to d: a plain
+				// set leaves no value behind.
 				out = append(out, b.node('l', b.node('r', x, b.node('K', b.cells(keys, targets)))))
 				i = j
 				continue
