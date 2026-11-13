@@ -1,0 +1,206 @@
+package hypercard
+
+import (
+	"encoding/binary"
+	"strings"
+	"testing"
+)
+
+// stackBuilder writes a small HyperCard 2.x stack.
+type stackBuilder struct{ out []byte }
+
+func (sb *stackBuilder) block(typ string, id int32, body []byte) {
+	size := 16 + len(body)
+	h := binary.BigEndian.AppendUint32(nil, uint32(size))
+	h = append(h, typ...)
+	h = binary.BigEndian.AppendUint32(h, uint32(id))
+	h = append(h, 0, 0, 0, 0)
+	sb.out = append(append(sb.out, h...), body...)
+}
+
+// part encodes a part record: size, ID, kind, flags, rectangle, style
+// fields, then the name, a pad byte, and the script.
+func part(id int, kind PartKind, name, script string) []byte {
+	b := binary.BigEndian.AppendUint16(nil, 0)
+	b = binary.BigEndian.AppendUint16(b, uint16(id))
+	b = append(b, byte(kind), 0)
+	b = append(b, make([]byte, 30-len(b))...)
+	b = append(append(b, name...), 0, 0)
+	b = append(append(b, strings.ReplaceAll(script, "\n", "\r")...), 0)
+	if len(b)%2 == 1 {
+		b = append(b, 0)
+	}
+	binary.BigEndian.PutUint16(b, uint16(len(b)))
+	return b
+}
+
+// encodeLayer encodes the part and text lists, then the name and the script.
+func encodeLayer(parts [][]byte, texts map[int16]string, name, script string) []byte {
+	var pl []byte
+	for _, p := range parts {
+		pl = append(pl, p...)
+	}
+	var tl []byte
+	for id, text := range texts {
+		t := append([]byte{0}, text...)
+		tl = binary.BigEndian.AppendUint16(tl, uint16(id))
+		tl = binary.BigEndian.AppendUint16(tl, uint16(len(t)))
+		tl = append(tl, t...)
+		if len(t)%2 == 1 {
+			tl = append(tl, 0)
+		}
+	}
+	b := binary.BigEndian.AppendUint16(nil, uint16(len(parts)))
+	b = binary.BigEndian.AppendUint16(b, 100)
+	b = binary.BigEndian.AppendUint32(b, uint32(len(pl)))
+	b = binary.BigEndian.AppendUint16(b, uint16(len(texts)))
+	b = binary.BigEndian.AppendUint32(b, uint32(len(tl)))
+	b = append(append(b, pl...), tl...)
+	b = append(append(b, name...), 0)
+	return append(append(b, strings.ReplaceAll(script, "\n", "\r")...), 0)
+}
+
+func sampleStack() []byte {
+	be := binary.BigEndian
+	var sb stackBuilder
+	stak := make([]byte, 0x600-16)
+	be.PutUint32(stak[0:], 10)   // version, at 16
+	be.PutUint32(stak[20:], 1)   // backgrounds
+	be.PutUint32(stak[24:], 200) // first background
+	be.PutUint32(stak[28:], 2)   // cards
+	be.PutUint32(stak[32:], 301) // first card
+	be.PutUint32(stak[36:], 50)  // LIST
+	stak = append(stak, "on openStack\rput 1 into x\rend openStack\x00"...)
+	sb.block("STAK", -1, stak)
+
+	list := make([]byte, 32)
+	be.PutUint32(list[0:], 1) // pages
+	be.PutUint16(list[12:], 8)
+	list = be.AppendUint32(list, 60) // page ID
+	list = be.AppendUint16(list, 2)  // cards on the page
+	sb.block("LIST", 50, list)
+	page := make([]byte, 8)
+	for _, id := range []int32{302, 301} { // stack order differs from file order
+		page = be.AppendUint32(page, uint32(id))
+		page = append(page, 0, 0, 0, 0)
+	}
+	sb.block("PAGE", 60, page)
+
+	bg := make([]byte, 20)
+	be.PutUint32(bg[8:], 2)    // cards
+	be.PutUint32(bg[12:], 200) // next background: itself
+	be.PutUint32(bg[16:], 200)
+	bg = append(bg, encodeLayer([][]byte{
+		part(1, Field, "Title", ""),
+		part(2, Button, "Next", "on mouseUp\ngo next card\nend mouseUp"),
+	}, nil, "Main", "")...)
+	sb.block("BKGD", 200, bg)
+
+	for _, c := range []struct {
+		id     int32
+		name   string
+		parts  [][]byte
+		texts  map[int16]string
+		script string
+	}{
+		{301, "First", nil, map[int16]string{1: "Hello"}, ""},
+		{302, "", [][]byte{part(5, Button, "", "on mouseUp\nif x then\nbeep\nend if\nend mouseUp")}, map[int16]string{-5: "x"}, "on openCard\nend openCard"},
+	} {
+		card := make([]byte, 24)
+		be.PutUint32(card[16:], 60)  // page
+		be.PutUint32(card[20:], 200) // background
+		card = append(card, encodeLayer(c.parts, c.texts, c.name, c.script)...)
+		sb.block("CARD", c.id, card)
+	}
+	sb.block("TAIL", -1, nil)
+	return sb.out
+}
+
+func TestParse(t *testing.T) {
+	s, err := Parse(sampleStack())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if s.Version != 10 || len(s.Backgrounds) != 1 || len(s.Cards) != 2 {
+		t.Fatalf("got version %d, %d backgrounds, %d cards", s.Version, len(s.Backgrounds), len(s.Cards))
+	}
+	if s.Cards[0].ID != 302 || s.Cards[1].Name != "First" {
+		t.Errorf("cards out of stack order: %d, %q", s.Cards[0].ID, s.Cards[1].Name)
+	}
+	if t0 := s.Cards[1].Text[0]; t0.Part == nil || t0.Part.Name != "Title" || t0.Text != "Hello" {
+		t.Errorf("background field text: %+v", t0)
+	}
+	if _, err := Parse([]byte("FasdUAS 1.101.10")); err != ErrNotStack {
+		t.Errorf("not a stack: got %v", err)
+	}
+}
+
+func TestScripts(t *testing.T) {
+	s, err := Parse(sampleStack())
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := `-- stack
+on openStack
+  put 1 into x
+end openStack
+
+-- background button "Next" of background "Main"
+on mouseUp
+  go next card
+end mouseUp
+
+-- card id 302
+on openCard
+end openCard
+
+-- card button id 5 of card id 302
+on mouseUp
+  if x then
+    beep
+  end if
+end mouseUp
+`
+	if got := s.Scripts(); got != want {
+		t.Errorf("got:\n%s\nwant:\n%s", got, want)
+	}
+	wantText := `-- card button id 5 of card id 302
+x
+
+-- background field "Title" of card "First"
+Hello
+`
+	if got := s.Text(); got != wantText {
+		t.Errorf("text: got:\n%s\nwant:\n%s", got, wantText)
+	}
+}
+
+func TestIndent(t *testing.T) {
+	for in, want := range map[string]string{
+		// A single-line if, then else with a block.
+		"on f\nif a then b\nelse\nc\nend if\nend f": "on f\n  if a then b\n  else\n    c\n  end if\nend f",
+		// else if chains, and else with a statement ending the block.
+		"if a then\nb\nelse if c then\nd\nelse e": "if a then\n  b\nelse if c then\n  d\nelse e",
+		// A continued line, and a comment that ends in then.
+		"repeat with i = 1 to 3 -- count then\nput i ¬\ninto x\nend repeat": "repeat with i = 1 to 3 -- count then\n  put i ¬\n    into x\nend repeat",
+		// end with the handler's name closes a block left open.
+		"on f\nif a then\nb\nend f\non g\nend g": "on f\n  if a then\n    b\nend f\non g\nend g",
+		// then inside a string doesn't open a block.
+		`put "if then" into x`: `put "if then" into x`,
+	} {
+		if got := Indent(in); got != want {
+			t.Errorf("Indent(%q):\ngot:\n%s\nwant:\n%s", in, got, want)
+		}
+	}
+}
+
+// FuzzParse feeds Parse damaged stacks: it may fail, but not panic.
+func FuzzParse(f *testing.F) {
+	f.Add(sampleStack())
+	f.Fuzz(func(t *testing.T, data []byte) {
+		if s, err := Parse(data); err == nil {
+			_ = s.Scripts()
+			_ = s.Text()
+		}
+	})
+}
