@@ -143,7 +143,9 @@ func Parse(data []byte) (*Stack, error) {
 	if err != nil {
 		return s, err
 	}
-	enc := mactext.Detect(ps.raw, ps.fonts...)
+	// Only the fonts and kana count: guessing from text alone, a stack's
+	// symbol fonts and decorations, such as "∞∞∞", read as anything.
+	enc := mactext.Detect(ps.raw, append([]*mactext.Encoding{}, ps.fonts...))
 	if enc == mactext.Roman {
 		return s, nil
 	}

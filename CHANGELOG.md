@@ -9,6 +9,7 @@
 - Scripts in AppleScript inside stacks, from HyperCard 2.2 on, are decompiled with HyperCard's terms, which classic scripts now also get.
 - Japanese text decodes with Apple's own Mac Japanese table, which adds circled numbers, Roman numerals, and vertical forms, and no longer decodes byte pairs that Mac Japanese lacks.
 - English text with curly quotes, such as "haven’t", and French and German text are no longer mistaken for Japanese. Of about 50,000 classic scripts, 2,091 print their quotes, dashes, and bullets correctly where they printed half-width katakana.
+- Classic scripts in Chinese, Korean, Turkish, Russian and other Cyrillic languages, Arabic, and Hebrew decode in their own encodings, which scriptview tells from their text. About 1,800 of 50,000 classic scripts now print in their language instead of in garbled Mac Roman.
 - Japanese text with a few strings in a Roman font is still read as Japanese, and the Roman strings read as Mac Roman.
 - An application specifier that holds an empty alias before the one with the name now prints the name, not a placeholder.
 - For a stack with its resource fork, scriptview lists the stack's external commands and functions before its scripts.

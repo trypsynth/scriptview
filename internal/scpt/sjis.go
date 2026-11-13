@@ -22,7 +22,7 @@ func legacyEncoding(texts [][]byte) *mactext.Encoding {
 			return mactext.Roman
 		}
 	}
-	return mactext.Detect(texts)
+	return mactext.Detect(texts, nil)
 }
 
 // legacyText decodes text that classic Mac OS stored in the script system's

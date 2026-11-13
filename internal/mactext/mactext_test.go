@@ -76,13 +76,19 @@ func TestDetect(t *testing.T) {
 		{b("haven\xd5t", "\xd2Build\xd3", "it\xd5s", "\xa9 1994"), nil, Roman},
 		{b("\x82\xa0\x82\xa2\xa1", "\xa2\x82\xa4\x82\xa6\xa3"), nil, Japanese},                                   // with ｡, ｢, and ｣
 		{b("\x82\xa0\x82\xa2 and\xc2\r\x82\xa4\x82\xa6", "if a then\xc2\rb", "if b then\xc2\rc"), nil, Japanese}, // ¬
-		{b("\xb5\xc4\xca\xc7\xd2\xbb"), nil, Roman},
+		{b("\xb5\xc4\xca\xc7\xd2\xbb"), nil, SimpChinese},                                                        // "µƒ Ê« “ª" isn't Western
 		{b("\xb5\xc4\xca\xc7\xd2\xbb"), []*Encoding{SimpChinese}, SimpChinese},
 		{b("\xc0\xcc\xb4\xd9"), []*Encoding{Korean}, Korean},
 		{b("\x91\xef\xe0\xf1\xe8\xe1\xee", "\x8f\xf0\xe8\xe2\xe5\xf2"), []*Encoding{Cyrillic}, Cyrillic}, // Спасибо, Привет
 		{b("caf\x8e"), []*Encoding{Cyrillic}, Roman},
+		// Without fonts, the encoding that fits the text clearly best.
+		{b("Bilgisayar\xddn\xddza konu\xdfmay\xdd ta\xdf\xddy\xddn"), nil, Turkish},                                  // Bilgisayarınıza konuşmayı taşıyın
+		{b("\xc0\xda\xb5\xbf\xc0\xb8\xb7\xce \xbf\xad\xb7\xc1\xb0\xed"), nil, Korean},                                // 자동으로 열려고
+		{b("\xf7\xe5\xec\xa0\xe4\xee\xf2\xf8\xeb\xfa", "\xe0\xe9\xf9\xe5\xf8"), nil, Hebrew},                         // קול המערכת, אישור
+		{b("\x84\xe8\xf1\xef\xeb\xe5\xe9", "\x87\xe2\xf3\xea \xe8 \x8c\xee\xed\xe8\xf2\xee\xf0\xfb"), nil, Cyrillic}, // Дисплей, Звук и Мониторы
+		{b("Re\x8e \xa5\xa5\xa5 p\xb9 \xb0\xb0\xb0\xb0", "na\x95ve \xd2quoted\xd3 \xa9 1999 \x80ber"), nil, Roman},
 	} {
-		if got := Detect(c.texts, c.hints...); got != c.want {
+		if got := Detect(c.texts, c.hints); got != c.want {
 			t.Errorf("Detect(%q, %v) = %s, want %s", c.texts, c.hints, got.Name, c.want.Name)
 		}
 	}
