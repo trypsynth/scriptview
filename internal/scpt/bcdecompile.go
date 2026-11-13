@@ -653,7 +653,11 @@ func (bh *bcHandler) run(lo, hi int, stack []stackVal) ([]int16, []stackVal, err
 			if parts, container, ok := b.sharedContainer(items); ok {
 				// {name, artist} of current track: one container, kept on
 				// the stack with Dup and GCSwap.
-				push(b.node('n', b.node('J', b.cons(parts)), container))
+				kind := byte('J')
+				if name == "MakeList" && !b.src.legacy {
+					kind = 'v' // [name, artist] of current track
+				}
+				push(b.node('n', b.node(kind, b.cons(parts)), container))
 				break
 			}
 			if name == "MakeList" && !b.src.legacy { // AppleScript 1.0 made every list this way
