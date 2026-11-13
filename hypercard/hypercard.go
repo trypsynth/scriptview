@@ -14,6 +14,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/trypsynth/scriptview/classic"
 	"github.com/trypsynth/scriptview/mactext"
@@ -127,8 +128,36 @@ type block struct {
 
 var be = binary.BigEndian
 
-// Parse reads a stack.
+// Parse reads a stack. Its text is Mac Roman, or Mac Japanese when all of
+// it reads as Japanese.
 func Parse(data []byte) (*Stack, error) {
+	ps := &parser{dec: mactext.MacRoman}
+	s, err := ps.parse(data)
+	if err != nil || !mactext.LooksJapanese(ps.raw) {
+		return s, err
+	}
+	ps = &parser{dec: func(b []byte) string {
+		if t, ok := mactext.ShiftJIS(b); ok {
+			return t
+		}
+		return mactext.MacRoman(b)
+	}}
+	return ps.parse(data)
+}
+
+// parser decodes a stack's text with dec, and keeps the raw bytes of every
+// string it decodes in raw.
+type parser struct {
+	dec func([]byte) string
+	raw [][]byte
+}
+
+func (ps *parser) text(b []byte) string {
+	ps.raw = append(ps.raw, b)
+	return ps.dec(b)
+}
+
+func (ps *parser) parse(data []byte) (*Stack, error) {
 	if !IsStack(data) {
 		return nil, ErrNotStack
 	}
@@ -162,7 +191,7 @@ func Parse(data []byte) (*Stack, error) {
 	}
 	s := &Stack{Version: int(be.Uint32(stak[16:]))}
 	if len(stak) > 0x600 {
-		s.Script = cString(stak[0x600:])
+		s.Script = ps.cString(stak[0x600:])
 	}
 
 	// HyperCard 1.x blocks lack a field before the bitmap ID, so the rest
@@ -193,13 +222,13 @@ func Parse(data []byte) (*Stack, error) {
 		if !ok {
 			continue
 		}
-		s.Cards = append(s.Cards, parseCard(b.data, bkgds, shift))
+		s.Cards = append(s.Cards, ps.parseCard(b.data, bkgds, shift))
 	}
 	if len(s.Cards) == 0 {
 		// Without a usable card list, take the cards in file order.
 		for _, b := range order {
 			if b.typ == "CARD" {
-				s.Cards = append(s.Cards, parseCard(b.data, bkgds, shift))
+				s.Cards = append(s.Cards, ps.parseCard(b.data, bkgds, shift))
 			}
 		}
 	}
@@ -274,7 +303,7 @@ type rawText struct {
 // parseLayer reads the parts and what follows them, starting at off with
 // the part count's fields: count(2), next part ID(2), part list size(4),
 // text count(2), text list size(4). A nonzero shift marks HyperCard 1.x.
-func parseLayer(b []byte, off, shift int) layer {
+func (ps *parser) parseLayer(b []byte, off, shift int) layer {
 	var l layer
 	if off+14 > len(b) {
 		return l
@@ -294,10 +323,10 @@ func parseLayer(b []byte, off, shift int) layer {
 			break
 		}
 		part := b[p : p+size]
-		name := cString(part[30:])
+		name := ps.cString(part[30:])
 		script := ""
 		if s := 30 + len(rawCString(part[30:])) + 2; s < len(part) {
-			script = cString(part[s:]) // the name, its NUL, and a pad byte
+			script = ps.cString(part[s:]) // the name, its NUL, and a pad byte
 		}
 		l.parts = append(l.parts, &Part{ID: int(be.Uint16(part[2:])), Kind: PartKind(part[4]), Name: name, Script: script})
 		p += size
@@ -311,7 +340,7 @@ func parseLayer(b []byte, off, shift int) layer {
 				break
 			}
 			raw := rawCString(b[p+2 : textEnd])
-			l.text = append(l.text, rawText{int(int16(be.Uint16(b[p:]))), mactext.MacRoman(raw)})
+			l.text = append(l.text, rawText{int(int16(be.Uint16(b[p:]))), ps.text(raw)})
 			p += 2 + len(raw) + 1
 			continue
 		}
@@ -323,15 +352,15 @@ func parseLayer(b []byte, off, shift int) layer {
 		if p+4+n > len(b) {
 			break
 		}
-		l.text = append(l.text, rawText{id, fieldText(b[p+4 : p+4+n])})
+		l.text = append(l.text, rawText{id, ps.fieldText(b[p+4 : p+4+n])})
 		p += 4 + n + n&1 // padded to an even length
 	}
 	p = textEnd
 	if p < len(b) {
 		name := rawCString(b[p:])
-		l.name = mactext.MacRoman(name)
+		l.name = ps.text(name)
 		if q := p + len(name) + 1; q < len(b) {
-			l.scr = cString(b[q:])
+			l.scr = ps.cString(b[q:])
 		}
 	}
 	return l
@@ -339,7 +368,7 @@ func parseLayer(b []byte, off, shift int) layer {
 
 // fieldText decodes one field's stored text: a 0 byte for plain text, or
 // a style table whose 16-bit length has the high bit set.
-func fieldText(b []byte) string {
+func (ps *parser) fieldText(b []byte) string {
 	if len(b) == 0 {
 		return ""
 	}
@@ -352,12 +381,12 @@ func fieldText(b []byte) string {
 	} else {
 		b = b[1:]
 	}
-	return mactext.MacRoman(bytes.TrimRight(b, "\x00"))
+	return ps.text(bytes.TrimRight(b, "\x00"))
 }
 
-func parseBackground(b []byte, shift int) *Background {
+func (ps *parser) parseBackground(b []byte, shift int) *Background {
 	bg := &Background{ID: int32(be.Uint32(b[8:]))}
-	l := parseLayer(b, 36+shift, shift)
+	l := ps.parseLayer(b, 36+shift, shift)
 	bg.Name, bg.Script, bg.Parts = l.name, l.scr, l.parts
 	for _, t := range l.text {
 		bg.Text = append(bg.Text, Text{Part: findPart(bg.Parts, t.partID), Text: t.text})
@@ -365,12 +394,12 @@ func parseBackground(b []byte, shift int) *Background {
 	return bg
 }
 
-func parseCard(b []byte, bkgds map[int32]*Background, shift int) *Card {
+func (ps *parser) parseCard(b []byte, bkgds map[int32]*Background, shift int) *Card {
 	c := &Card{ID: int32(be.Uint32(b[8:]))}
 	if len(b) >= 40 {
 		c.Background = bkgds[int32(be.Uint32(b[36+shift:]))]
 	}
-	l := parseLayer(b, 40+shift, shift)
+	l := ps.parseLayer(b, 40+shift, shift)
 	c.Name, c.Script, c.Parts = l.name, l.scr, l.parts
 	for _, t := range l.text {
 		// A negative ID is one of the card's own fields, a positive one a
@@ -411,8 +440,8 @@ func rawCString(b []byte) []byte {
 	return b
 }
 
-// cString decodes a NUL-terminated Mac Roman string, with HyperCard's
-// carriage returns as line breaks.
-func cString(b []byte) string {
-	return string(bytes.ReplaceAll([]byte(mactext.MacRoman(rawCString(b))), []byte("\r"), []byte("\n")))
+// cString decodes a NUL-terminated string, with HyperCard's carriage
+// returns as line breaks.
+func (ps *parser) cString(b []byte) string {
+	return strings.ReplaceAll(ps.text(rawCString(b)), "\r", "\n")
 }
