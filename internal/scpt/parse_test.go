@@ -3,6 +3,7 @@ package scpt
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"unicode/utf16"
@@ -58,13 +59,6 @@ func TestMagicRejected(t *testing.T) {
 			t.Errorf("expected ErrNotSCPT for %q, got %v", bad[:min(len(bad), 20)], err)
 		}
 	}
-}
-
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
 }
 
 // --- String literal tests ---
@@ -291,12 +285,7 @@ func TestBestEffortSourceContainsIntegers(t *testing.T) {
 // --- helpers ---
 
 func containsString(ss []string, want string) bool {
-	for _, s := range ss {
-		if s == want {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(ss, want)
 }
 
 func containsIdent(ss []string, want string) bool {
@@ -304,12 +293,7 @@ func containsIdent(ss []string, want string) bool {
 }
 
 func containsInt(ints []int, want int) bool {
-	for _, v := range ints {
-		if v == want {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(ints, want)
 }
 
 func TestJunkAfterTrailer(t *testing.T) {

@@ -335,7 +335,7 @@ func (dc *decompState) interleavedEnd(raw string) string {
 // used as identifiers.
 var reservedWords = func() map[string]bool {
 	m := map[string]bool{}
-	for _, w := range strings.Fields(`about above after against and app application around as at back
+	for w := range strings.FieldsSeq(`about above after against and app application around as at back
 		before beginning behind below beneath beside between but by considering contain contains
 		continue copy div does eighth else end equal equals error every exit false fifth first for
 		fourth from front get given global if ignoring in into is it its last local me middle mod my
@@ -1174,7 +1174,7 @@ func (dc *decompState) unwrapBreak(id int16) int16 {
 
 // unwrap skips 'l' wrappers (parentheses, the, continuations) around id.
 func (dc *decompState) unwrap(id int16) int16 {
-	for i := 0; i < 16; i++ {
+	for range 16 {
 		n, ok := dc.nodes[id]
 		if !ok || n.typ != 'l' {
 			break

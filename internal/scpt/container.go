@@ -72,7 +72,7 @@ func resources(fork []byte, typ string) map[int16][]byte {
 		}
 		count := int(int16(be.Uint16(e[4:]))) + 1
 		refsOff := int(be.Uint16(e[6:]))
-		for j := 0; j < count; j++ {
+		for j := range count {
 			r := refsOff + j*12
 			if r+12 > len(typeList) {
 				break
@@ -174,7 +174,7 @@ func decodeBinHex(text []byte) ([]byte, bool) {
 	for i := range value {
 		value[i] = -1
 	}
-	for i := 0; i < len(binHexAlphabet); i++ {
+	for i := range len(binHexAlphabet) {
 		value[binHexAlphabet[i]] = int8(i)
 	}
 	var packed []byte

@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"encoding/binary"
 	"fmt"
+	"maps"
 	"slices"
 	"strconv"
 	"strings"
@@ -399,9 +400,7 @@ var classicTSV string
 var classicDicts = func() map[string]*dict {
 	classic, _ := loadDicts(classicTSV)
 	out := make(map[string]*dict, len(dicts))
-	for scope, d := range dicts {
-		out[scope] = d
-	}
+	maps.Copy(out, dicts)
 	for scope, c := range classic {
 		base := out[scope]
 		merged := newDict()
@@ -410,9 +409,7 @@ var classicDicts = func() map[string]*dict {
 			{merged.events, c.events}, {merged.params, c.params}, {merged.plurals, c.plurals},
 			{merged.qenums, c.qenums},
 		} {
-			for code, name := range pair[1] {
-				pair[0][code] = name
-			}
+			maps.Copy(pair[0], pair[1])
 		}
 		if scope == "" {
 			// Some scripting additions capitalized standard terms, such as
@@ -432,9 +429,8 @@ var classicDicts = func() map[string]*dict {
 				{merged.events, base.events}, {merged.params, base.params}, {merged.plurals, base.plurals},
 				{merged.qenums, base.qenums},
 			} {
-				for code, name := range pair[1] {
-					pair[0][code] = name // the current name wins
-				}
+				// the current name wins
+				maps.Copy(pair[0], pair[1])
 			}
 		}
 		out[scope] = merged
@@ -467,7 +463,7 @@ var scopeAliases = map[string]string{
 func loadDicts(tsv string) (map[string]*dict, map[string]string) {
 	out := map[string]*dict{}
 	bundles := map[string]string{}
-	for _, line := range strings.Split(tsv, "\n") {
+	for line := range strings.SplitSeq(tsv, "\n") {
 		if line == "" || line[0] == '#' {
 			continue
 		}

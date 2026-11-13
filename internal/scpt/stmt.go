@@ -241,11 +241,12 @@ func (dc *decompState) stmt(id int16, depth int) []string {
 		return line("global " + strings.Join(dc.argChain(child(n, 0)), ", "))
 
 	case 'x': // use: [name, target, labeled params]
-		head := "use "
+		var head strings.Builder
+		head.WriteString("use ")
 		if nm := child0(n); nm < 0 && dc.resolvable(nm) {
-			head += dc.name(nm) + " : "
+			head.WriteString(dc.name(nm) + " : ")
 		}
-		head += dc.expr(child(n, 1))
+		head.WriteString(dc.expr(child(n, 1)))
 		for _, cell := range dc.cells(child(n, 2)) {
 			label := useParams[dc.osCode[cell[0]]]
 			if label == "" {
@@ -253,14 +254,14 @@ func (dc *decompState) stmt(id int16, depth int) []string {
 			}
 			switch dc.boolLit(cell[1]) {
 			case "true":
-				head += " with " + label
+				head.WriteString(" with " + label)
 			case "false":
-				head += " without " + label
+				head.WriteString(" without " + label)
 			default:
-				head += " " + label + " " + dc.operand(cell[1])
+				head.WriteString(" " + label + " " + dc.operand(cell[1]))
 			}
 		}
-		return line(head)
+		return line(head.String())
 
 	case 'q': // local: [name chain]
 		return line("local " + strings.Join(dc.argChain(child(n, 0)), ", "))

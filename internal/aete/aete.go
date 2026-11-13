@@ -32,14 +32,14 @@ func Resource(d []byte, typ string, id int16) (out []byte, err error) {
 	m := d[mapOff:]
 	typeList := m[be.Uint16(m[24:]):]
 	nTypes := int(int16(be.Uint16(typeList))) + 1
-	for i := 0; i < nTypes; i++ {
+	for i := range nTypes {
 		e := typeList[2+i*8:]
 		if string(e[:4]) != typ {
 			continue
 		}
 		count := int(int16(be.Uint16(e[4:]))) + 1
 		refs := typeList[be.Uint16(e[6:]):]
-		for j := 0; j < count; j++ {
+		for j := range count {
 			r := refs[j*12:]
 			if int16(be.Uint16(r)) != id {
 				continue

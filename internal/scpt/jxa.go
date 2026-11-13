@@ -156,7 +156,7 @@ func readBplist(b []byte) (any, error) {
 				return nil, errors.New("bplist: truncated dict")
 			}
 			out := make(map[string]any, n)
-			for k := 0; k < n; k++ {
+			for k := range n {
 				key, err := decode(refs(k), depth+1)
 				if err != nil {
 					return nil, err

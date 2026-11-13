@@ -287,7 +287,7 @@ func (bh *bcHandler) isCurrentApp(id int16) bool {
 // through it, where Script Editor output uses possessive ('s) syntax.
 func (bh *bcHandler) isObjCTarget(id int16) bool {
 	b := bh.b
-	for i := 0; i < 16; i++ {
+	for range 16 {
 		n, ok := b.out.nodes[id]
 		if !ok {
 			return false

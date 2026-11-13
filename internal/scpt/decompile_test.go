@@ -48,7 +48,7 @@ var openSpace = regexp.MustCompile(`([{\[]) +`)
 func normalize(s string) string {
 	s = openSpace.ReplaceAllString(s, "$1")
 	var out []string
-	for _, line := range strings.Split(s, "\n") {
+	for line := range strings.SplitSeq(s, "\n") {
 		if line = strings.TrimRight(line, " \t"); line != "" {
 			out = append(out, line)
 		}

@@ -2,6 +2,7 @@ package scpt
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 )
 
@@ -81,10 +82,10 @@ func (b *bcBuilder) ref() int16 {
 // cons builds a cons chain of ids (for blocks, lists, parameter lists).
 func (b *bcBuilder) cons(ids []int16) int16 {
 	tail := b.ref() // terminator
-	for i := len(ids) - 1; i >= 0; i-- {
+	for _, id := range slices.Backward(ids) {
 		cell := b.nextID
 		b.nextID++
-		b.out.paramMap[cell] = []int16{ids[i], tail}
+		b.out.paramMap[cell] = []int16{id, tail}
 		tail = cell
 	}
 	if len(ids) == 0 {
@@ -96,10 +97,10 @@ func (b *bcBuilder) cons(ids []int16) int16 {
 // cells builds a chain of [key, value, next] cells.
 func (b *bcBuilder) cells(keys, values []int16) int16 {
 	tail := b.ref()
-	for i := len(keys) - 1; i >= 0; i-- {
+	for i, key := range slices.Backward(keys) {
 		cell := b.nextID
 		b.nextID++
-		b.out.paramMap[cell] = []int16{keys[i], values[i], tail}
+		b.out.paramMap[cell] = []int16{key, values[i], tail}
 		tail = cell
 	}
 	return tail
@@ -570,7 +571,7 @@ func (bh *bcHandler) run(lo, hi int, stack []stackVal) ([]int16, []stackVal, err
 			var call int16
 			var err error
 			fake := instr{off: in.off, name: map[string]string{"Continue": "MessageSend", "PositionalContinue": "PositionalMessageSend"}[name], args: in.args}
-			stack = append(stack[:len(stack):len(stack)], stack...)[:len(stack)]
+			stack = append(slices.Clip(stack), stack...)[:len(stack)]
 			if name == "Continue" {
 				call, err = bh.messageSend(fake, &stack)
 			} else {
@@ -915,14 +916,14 @@ func isReference(n nodeRec) bool {
 // holds the statements after it.
 func (bh *bcHandler) usingTermsBlocks(stmts []int16) []int16 {
 	b := bh.b
-	for k := len(stmts) - 1; k >= 0; k-- {
-		w := b.out.nodes[child0(b.out.nodes[stmts[k]])]
+	for k, stmt := range slices.Backward(stmts) {
+		w := b.out.nodes[child0(b.out.nodes[stmt])]
 		if w.typ != 'w' || len(w.children) != 2 || w.children[0] != 0 {
 			continue
 		}
 		body := append([]int16(nil), stmts[k+1:]...)
 		w.children[0] = b.node('k', b.cons(body))
-		b.out.nodes[child0(b.out.nodes[stmts[k]])] = w
+		b.out.nodes[child0(b.out.nodes[stmt])] = w
 		stmts = stmts[:k+1]
 	}
 	return stmts
