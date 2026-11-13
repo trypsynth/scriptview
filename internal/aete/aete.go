@@ -8,6 +8,8 @@ import (
 	"maps"
 	"slices"
 	"strings"
+
+	"github.com/trypsynth/scriptview/mactext"
 )
 
 // Term is one dictionary entry. Kind is v (command), a (command parameter,
@@ -61,8 +63,8 @@ func Parse(d []byte, scope string) (terms []Term, err error) {
 	}()
 	p := 0
 	u16 := func() int { v := int(binary.BigEndian.Uint16(d[p:])); p += 2; return v }
-	c4 := func() string { v := MacRoman(d[p : p+4]); p += 4; return v }
-	ps := func() string { n := int(d[p]); v := MacRoman(d[p+1 : p+1+n]); p += 1 + n; return v }
+	c4 := func() string { v := mactext.MacRoman(d[p : p+4]); p += 4; return v }
+	ps := func() string { n := int(d[p]); v := mactext.MacRoman(d[p+1 : p+1+n]); p += 1 + n; return v }
 	align := func() { p += p & 1 }
 
 	u16() // version
@@ -226,19 +228,4 @@ func Parse(d []byte, scope string) (terms []Term, err error) {
 		}
 	}
 	return terms, nil
-}
-
-var macRomanHigh = []rune("ÄÅÇÉÑÖÜáàâäãåçéèêëíìîïñóòôöõúùûü†°¢£§•¶ß®©™´¨≠ÆØ∞±≤≥¥µ∂∑∏π∫ªºΩæø¿¡¬√ƒ≈∆«»… ÀÃÕŒœ–—“”‘’÷◊ÿŸ⁄€‹›ﬁﬂ‡·‚„‰ÂÊÁËÈÍÎÏÌÓÔÒÚÛÙıˆ˜¯˘˙˚¸˝˛ˇ")
-
-// MacRoman decodes Mac OS Roman text.
-func MacRoman(b []byte) string {
-	out := make([]rune, len(b))
-	for i, c := range b {
-		if c < 0x80 {
-			out[i] = rune(c)
-		} else {
-			out[i] = macRomanHigh[c-0x80]
-		}
-	}
-	return string(out)
 }

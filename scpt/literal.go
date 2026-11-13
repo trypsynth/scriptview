@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/trypsynth/scriptview/mactext"
 )
 
 // formatReal prints a real the way AppleScript does: always with a decimal
@@ -90,7 +92,7 @@ func aliasPath(rec []byte) (string, bool) {
 	folder := binary.BigEndian.Uint16(a[8:]) == 1
 	hfs, _ := aliasTag(a, aliasTagHFSPath)
 	posix, _ := aliasTag(a, aliasTagPOSIXPath)
-	path := macRoman(hfs)
+	path := mactext.MacRoman(hfs)
 	if len(posix) > 0 {
 		path = "Macintosh HD:" + strings.ReplaceAll(strings.TrimPrefix(string(posix), "/"), "/", ":")
 	}

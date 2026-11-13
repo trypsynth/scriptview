@@ -18,19 +18,3 @@ func isDisplayable(s string) bool {
 	}
 	return true
 }
-
-// macRomanHigh maps bytes 0x80–0xFF of Mac OS Roman to Unicode.
-var macRomanHigh = []rune("ÄÅÇÉÑÖÜáàâäãåçéèêëíìîïñóòôöõúùûü†°¢£§•¶ß®©™´¨≠ÆØ∞±≤≥¥µ∂∑∏π∫ªºΩæø¿¡¬√ƒ≈∆«»…\u00a0ÀÃÕŒœ–—“”‘’÷◊ÿŸ⁄€‹›ﬁﬂ‡·‚„‰ÂÊÁËÈÍÎÏÌÓÔ\uf8ffÒÚÛÙıˆ˜¯˘˙˚¸˝˛ˇ")
-
-// macRoman decodes Mac OS Roman bytes (used by identifiers and comments).
-func macRoman(b []byte) string {
-	out := make([]rune, len(b))
-	for i, c := range b {
-		if c < 0x80 {
-			out[i] = rune(c)
-		} else {
-			out[i] = macRomanHigh[c-0x80]
-		}
-	}
-	return string(out)
-}

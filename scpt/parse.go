@@ -7,6 +7,8 @@ import (
 	"strings"
 	"unicode/utf16"
 	"unicode/utf8"
+
+	"github.com/trypsynth/scriptview/mactext"
 )
 
 // File holds the parsed contents of a .scpt file.
@@ -186,7 +188,7 @@ func (b *builder) osType(ref int16, kind byte, data []byte) {
 			b.dc.osEnum[ref] = fourCC(data[:4])
 		}
 	case kind == osKindEvent && len(data) >= 8:
-		m, code = b.dc.evCode, macRoman(data[:8])
+		m, code = b.dc.evCode, mactext.MacRoman(data[:8])
 	default:
 		return
 	}
@@ -581,7 +583,7 @@ func aliasAppName(blob []byte) (string, bool) {
 	if l == 0 || l > 63 || fn+1+l > len(blob) {
 		return "", false
 	}
-	name := macRoman(blob[fn+1 : fn+1+l])
+	name := mactext.MacRoman(blob[fn+1 : fn+1+l])
 	// The Pascal name is Mac Roman and cut to 31 bytes; the extended data
 	// has the full name in UTF-16: a character count, then the characters.
 	if u, ok := aliasTag(blob[i+4:], aliasTagUnicodeName); ok && len(u) >= 2 {

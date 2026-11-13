@@ -5,9 +5,10 @@ import (
 	"encoding/binary"
 	"fmt"
 	"maps"
-	"slices"
 	"strconv"
 	"strings"
+
+	"github.com/trypsynth/scriptview/mactext"
 )
 
 // coreDict holds AppleScript's own value classes, which take precedence over
@@ -545,7 +546,7 @@ func (d *dict) lookup(code string, kind termKind) string {
 func rawCode(code string) string {
 	if hex, ok := strings.CutPrefix(code, "0x"); ok && len(hex) == 8 {
 		if v, err := strconv.ParseUint(hex, 16, 32); err == nil {
-			return macRoman(binary.BigEndian.AppendUint32(nil, uint32(v)))
+			return mactext.MacRoman(binary.BigEndian.AppendUint32(nil, uint32(v)))
 		}
 	}
 	return code
@@ -555,42 +556,25 @@ func rawCode(code string) string {
 // the 0xXXXXXXXX form that sdef files use for binary codes.
 func fourCC(b []byte) string {
 	if isFourCC(b) {
-		return macRoman(b)
+		return mactext.MacRoman(b)
 	}
 	return fmt.Sprintf("0x%08x", binary.BigEndian.Uint32(b))
 }
 
-// isFourCC reports whether b is made of printable Mac Roman / ASCII bytes.
 // normalizeCode spells each four-byte part of a dictionary code the way
 // fourCC spells codes read from scripts, so codes with control bytes (such
 // as "ks$\x00", return key) match.
 func normalizeCode(code string) string {
 	parts := strings.Split(code, "/")
 	for i, p := range parts {
-		if b, ok := macRomanBytes(p); ok && len(b) == 4 {
+		if b, ok := mactext.EncodeMacRoman(p); ok && len(b) == 4 {
 			parts[i] = fourCC(b)
 		}
 	}
 	return strings.Join(parts, "/")
 }
 
-// macRomanBytes encodes s as Mac Roman.
-func macRomanBytes(s string) ([]byte, bool) {
-	var out []byte
-	for _, r := range s {
-		if r < 0x80 {
-			out = append(out, byte(r))
-			continue
-		}
-		i := slices.Index(macRomanHigh, r)
-		if i < 0 {
-			return nil, false
-		}
-		out = append(out, byte(0x80+i))
-	}
-	return out, true
-}
-
+// isFourCC reports whether b is made of printable Mac Roman or ASCII bytes.
 func isFourCC(b []byte) bool {
 	for _, c := range b {
 		if c < 0x20 || c == 0x7f {

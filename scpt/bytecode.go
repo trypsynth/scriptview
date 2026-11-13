@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"math"
 	"strings"
+
+	"github.com/trypsynth/scriptview/mactext"
 )
 
 // Every compiled script, run-only or not, carries bytecode for a small
@@ -111,7 +113,7 @@ func (dc *decompState) decodeValue(ref int16, depth int) fasValue {
 		case o.kind == osKindConstant && len(o.data) == 8:
 			return fasCode{kind: osKindConstant, enum: fourCC(o.data[:4]), code: fourCC(o.data[4:])}
 		case o.kind == osKindEvent && len(o.data) >= 8:
-			return fasCode{kind: osKindEvent, code: macRoman(o.data[:8])}
+			return fasCode{kind: osKindEvent, code: mactext.MacRoman(o.data[:8])}
 		}
 	case objString:
 		return fasText(dc.comments[ref])
