@@ -835,7 +835,7 @@ func (dc *decompState) expr(id int16) string {
 			dc.inMy = false
 			container := dc.expr(n.children[1])
 			dc.inMy = inMy
-			if c, ok := dc.nodes[n.children[1]]; ok && (c.typ == 'c' || binOps[c.typ].tok != "" || dc.isOfRef(n.children[1]) && c.flags&flagPossessive == 0 && dc.isTargetedCall(n.children[0])) {
+			if c, ok := dc.nodes[n.children[1]]; ok && (c.typ == 'c' || binOps[c.typ].tok != "" || dc.isCommand(n.children[1]) || dc.isOfRef(n.children[1]) && c.flags&flagPossessive == 0 && dc.isTargetedCall(n.children[0])) {
 				container = "(" + container + ")" // (a & b)'s length, (class "X" of y)'s f()
 			} else if ok && !inMy && c.typ != 'l' && dc.endsInInterleavedCall(n.children[1]) {
 				container = "(" + container + ")" // (x's foo:y)'s bar
