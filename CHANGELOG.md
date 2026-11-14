@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.4.0
 
 - Added HyperCard stacks, from HyperCard 1.x, 2.x, and IIGS. scriptview prints every script in a stack, indented the way HyperCard's script editor shows it and labeled with its object, and `scriptview text` prints the text of the stack's fields.
 - HyperCard indentation matches 12 listings of scripts written out by HyperCard: continued lines stay at their statement's level, and `else` cascades, `then` on its own line, and `else repeat` indent as HyperCard does.
