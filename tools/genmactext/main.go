@@ -110,6 +110,10 @@ func convert(src []byte) ([]byte, int, error) {
 			if err != nil {
 				return nil, 0, fmt.Errorf("%q: %v", f[1], err)
 			}
+			if r >= 0x80 && r <= 0x9F {
+				text.Reset() // a C1 control: Apple's mark for an undefined byte
+				break
+			}
 			if r >= 0xF860 && r <= 0xF87F || r >= 0x202A && r <= 0x202E {
 				continue
 			}
