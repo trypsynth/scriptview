@@ -42,6 +42,10 @@ A compiled script doesn't list its fonts, so scriptview weighs every encoding ag
 
 Greek and Thai don't take part: Greek reads the symbols in Western scripts, such as π, as letters, and Thai's letters fill most of the high bytes. Arabic and Hebrew have right-to-left copies of ASCII punctuation, which count as symbols.
 
+In a stack's styled field text, each style run has its own font, and scriptview decodes each run in its font's encoding: a run in Osaka reads as Japanese even in an English stack. A run in a Roman font, in a stack that isn't Roman, reads as Mac Roman only when the stack's encoding fails on it, or puts wide characters inside an ASCII word, as in "Fr仕屍ic". Fonts with low IDs can hold any script, because a utility may have renumbered them.
+
+In Japanese text, a half-width katakana letter alone beside an ASCII letter or digit reads as Mac Roman: "ｩ1993" is "©1993", "Navigatorｪ" is "Navigator™", and "canﾕt" is "can’t". Japanese has no one-letter words in half-width katakana, while Japanese authors often typed these symbols in a Roman font, or in a script, which has no fonts.
+
 A string that doesn't decode in the chosen encoding reads as Mac Roman. A stack often mixes the two: text in a Roman font beside Japanese text. Without a font hint, Japanese still needs nine in ten strings with high bytes to decode, and in compiled scripts, AppleScript's raw code syntax, such as `«class cfol»`, rules Japanese out: Mac Roman's « pairs with the next byte in Shift JIS.
 
 Of 36,582 stacks from software CDs, scriptview reads 4,438 as Japanese, 24 as Chinese Simplified, 5 as Korean, 2 as Chinese Traditional, and 2 as Cyrillic. Samples of each, and of the stacks that the rules turned away, found no misreadings.

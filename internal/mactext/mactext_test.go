@@ -115,3 +115,11 @@ func TestForFont(t *testing.T) {
 		}
 	}
 }
+
+func TestWideInWord(t *testing.T) {
+	for s, want := range map[string]bool{"Fr仕屍ic": true, "Ger閣etechnik": true, "Menuの削除": false, "1994 年 4 月": false, "漢字": false} {
+		if got := WideInWord(s); got != want {
+			t.Errorf("WideInWord(%q) = %v", s, got)
+		}
+	}
+}

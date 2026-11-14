@@ -119,6 +119,7 @@ type Part struct {
 	Script   string
 	Language string // see Stack.Language
 	Compiled []byte
+	font     int // the ID of its text font, or -1 if unknown
 }
 
 // Text is the text of one field.
@@ -160,6 +161,11 @@ type parser struct {
 	enc   *mactext.Encoding
 	raw   [][]byte
 	fonts []*mactext.Encoding
+	// fontEnc maps the IDs of the stack's fonts to their encodings, for
+	// the fonts whose encoding is known, and styleFont maps the IDs of its
+	// text styles to their fonts, -1 for a field's own font.
+	fontEnc   map[int]*mactext.Encoding
+	styleFont map[int]int
 	layout
 }
 
@@ -213,25 +219,43 @@ func (ps *parser) scriptText(b []byte) string {
 	return strings.Join(out, "\n")
 }
 
-// fontTable returns the encodings of the fonts in an FTBL block: from 24,
-// a 2-byte ID and a NUL-terminated name for each font, padded to an even
-// length.
-func fontTable(b []byte, bo binary.ByteOrder) []*mactext.Encoding {
+// fontTable reads an FTBL block: from 24, a 2-byte ID and a NUL-terminated
+// name for each font, padded to an even length. It keeps the encodings of
+// the non-Roman fonts in ps.fonts, and the encoding of each font whose
+// encoding is known in ps.fontEnc. A font that isn't non-Roman is Roman,
+// apart from IDs 0 and 1, the system and application fonts, which follow
+// the system's script, and IDs from 16384 up, which a utility may have
+// given a font of any script.
+func (ps *parser) fontTable(b []byte) {
 	if len(b) < 24 {
-		return nil
+		return
 	}
-	var encs []*mactext.Encoding
-	n := int(bo.Uint32(b[16:]))
+	n := int(ps.bo.Uint32(b[16:]))
 	for p := 24; n > 0 && p+3 <= len(b); n-- {
-		id := int(int16(bo.Uint16(b[p:])))
+		id := int(int16(ps.bo.Uint16(b[p:])))
 		name := rawCString(b[p+2:])
 		p += 2 + len(name) + 1
 		p += p & 1
-		if e := mactext.ForFont(id, name); e != nil {
-			encs = append(encs, e)
+		switch e := mactext.ForFont(id, name); {
+		case e != nil:
+			ps.fonts = append(ps.fonts, e)
+			ps.fontEnc[id] = e
+		case id >= 2 && id < 16384:
+			ps.fontEnc[id] = mactext.Roman
 		}
 	}
-	return encs
+}
+
+// styleTable reads an STBL block: from 24, 24 bytes for each style, with
+// its ID, 4 bytes, at 0, and its font's ID, 2 bytes, at 12.
+func (ps *parser) styleTable(b []byte) {
+	if len(b) < 24 {
+		return
+	}
+	n := int(ps.bo.Uint32(b[16:]))
+	for p := 24; n > 0 && p+24 <= len(b); n, p = n-1, p+24 {
+		ps.styleFont[int(int32(ps.bo.Uint32(b[p:])))] = int(int16(ps.bo.Uint16(b[p+12:])))
+	}
 }
 
 // fontSymbols maps control characters that the system font draws as
@@ -268,9 +292,13 @@ func (ps *parser) parse(data []byte) (*Stack, error) {
 	if len(order) == 0 || order[0].typ != "STAK" {
 		return nil, ErrNotStack
 	}
+	ps.fontEnc, ps.styleFont = map[int]*mactext.Encoding{}, map[int]int{}
 	for _, b := range order {
-		if b.typ == "FTBL" {
-			ps.fonts = append(ps.fonts, fontTable(b.data, bo)...)
+		switch b.typ {
+		case "FTBL":
+			ps.fontTable(b.data)
+		case "STBL":
+			ps.styleTable(b.data)
 		}
 	}
 	stak := order[0].data
@@ -392,7 +420,9 @@ type rawText struct {
 // parseLayer reads the parts and what follows them, starting at off with
 // the part count's fields: count(2), next part ID(2), part list size(4),
 // text count(2), text list size(4).
-func (ps *parser) parseLayer(b []byte, off int) layer {
+// parseLayer reads a background's or card's parts and field text from off.
+// bg is a card's background's parts, whose fields' text the card holds.
+func (ps *parser) parseLayer(b []byte, off int, bg []*Part) layer {
 	palette := ps.palettes && len(b) >= 18 && ps.bo.Uint16(b[16:])&0x0400 != 0
 	var l layer
 	if off+14 > len(b) {
@@ -416,7 +446,10 @@ func (ps *parser) parseLayer(b []byte, off int) layer {
 		}
 		part := b[p : p+size]
 		name := ps.cString(part[n:])
-		pt := &Part{ID: int(bo.Uint16(part[2:])), Kind: PartKind(part[4]), Name: name}
+		pt := &Part{ID: int(bo.Uint16(part[2:])), Kind: PartKind(part[4]), Name: name, font: -1}
+		if !ps.plainText && len(part) >= 26 {
+			pt.font = int(int16(bo.Uint16(part[24:])))
+		}
 		if ps.palettes {
 			pt.Kind &= 0x0f // IIGS keeps more in the kind byte's high bits
 		}
@@ -449,7 +482,16 @@ func (ps *parser) parseLayer(b []byte, off int) layer {
 		if p+4+n > len(b) {
 			break
 		}
-		l.text = append(l.text, rawText{id, ps.fieldText(b[p+4 : p+4+n])})
+		font := -1
+		switch {
+		case id < 0:
+			font = partFont(l.parts, -id)
+		case bg != nil:
+			font = partFont(bg, id)
+		default:
+			font = partFont(l.parts, id)
+		}
+		l.text = append(l.text, rawText{id, ps.fieldText(b[p+4:p+4+n], font)})
 		p += 4 + n + n&1 // padded to an even length
 	}
 	p = textEnd
@@ -467,26 +509,83 @@ func (ps *parser) parseLayer(b []byte, off int) layer {
 }
 
 // fieldText decodes one field's stored text: a 0 byte for plain text, or
-// a style table whose 16-bit length has the high bit set.
-func (ps *parser) fieldText(b []byte) string {
+// a style table whose 16-bit length has the high bit set, with a 2-byte
+// offset in the text and a 2-byte style ID for each run. Each run decodes
+// in the encoding of its font, or of the field's font, font.
+func (ps *parser) fieldText(b []byte, font int) string {
 	if len(b) == 0 {
 		return ""
 	}
+	type run struct{ start, font int }
+	runs := []run{{0, font}}
 	if b[0]&0x80 != 0 && len(b) >= 2 {
-		n := int(be.Uint16(b) & 0x7fff)
-		if n > len(b) {
-			n = len(b)
+		n := min(int(be.Uint16(b)&0x7fff), len(b))
+		runs = runs[:0]
+		for p := 2; p+4 <= n; p += 4 {
+			f, ok := ps.styleFont[int(be.Uint16(b[p+2:]))]
+			if !ok || f == -1 {
+				f = font
+			}
+			start := int(be.Uint16(b[p:]))
+			if len(runs) > 0 && start <= runs[len(runs)-1].start {
+				continue // a stale run, after an edit
+			}
+			runs = append(runs, run{start, f})
+		}
+		if len(runs) == 0 || runs[0].start > 0 {
+			runs = append([]run{{0, font}}, runs...)
 		}
 		b = b[n:]
 	} else {
 		b = b[1:]
 	}
-	return ps.text(bytes.TrimRight(b, "\x00"))
+	b = bytes.TrimRight(b, "\x00")
+	ps.raw = append(ps.raw, b)
+	var sb strings.Builder
+	for i, r := range runs {
+		end := len(b)
+		if i+1 < len(runs) {
+			end = min(runs[i+1].start, len(b)) // runs can outlast the text
+		}
+		if r.start >= end {
+			continue
+		}
+		sb.WriteString(fontSymbols.Replace(ps.decodeRun(b[r.start:end], r.font)))
+	}
+	return sb.String()
+}
+
+// decodeRun decodes a run of field text in a font. A run in a non-Roman
+// font decodes in its font's encoding. A run in a Roman font, in a stack
+// that isn't Roman, decodes as Mac Roman only when it shows it: it doesn't
+// decode in the stack's encoding, or that reading puts wide characters
+// inside an ASCII word, as in "Fr仕屍ic" for "Frédéric". Fonts with low IDs
+// can hold any script, renumbered by a utility.
+func (ps *parser) decodeRun(b []byte, font int) string {
+	e, ok := ps.fontEnc[font]
+	switch {
+	case !ok:
+		return ps.enc.DecodeOrRoman(b)
+	case e != mactext.Roman || ps.enc == mactext.Roman:
+		return e.DecodeOrRoman(b)
+	}
+	if s, ok := ps.enc.Decode(b); ok && !mactext.WideInWord(s) {
+		return s
+	}
+	return mactext.MacRoman(b)
+}
+
+// partFont returns the text font of the part with the ID, or -1.
+func partFont(parts []*Part, id int) int {
+	if p := findPart(parts, id); p != nil {
+		return p.font
+	}
+	return -1
 }
 
 func (ps *parser) parseBackground(b []byte) *Background {
 	bg := &Background{ID: int32(ps.bo.Uint32(b[8:]))}
-	l := ps.parseLayer(b, ps.bkgdParts)
+	l := ps.parseLayer(b, ps.bkgdParts, nil)
 	bg.Name, bg.Script, bg.Language, bg.Compiled, bg.Parts = l.name, l.scr, l.lang, l.osa, l.parts
 	for _, t := range l.text {
 		bg.Text = append(bg.Text, Text{Part: findPart(bg.Parts, t.partID), Text: t.text})
@@ -499,7 +598,11 @@ func (ps *parser) parseCard(b []byte, bkgds map[int32]*Background) *Card {
 	if len(b) >= 40 {
 		c.Background = bkgds[int32(ps.bo.Uint32(b[36+ps.shift:]))]
 	}
-	l := ps.parseLayer(b, 40+ps.shift)
+	var bgParts []*Part
+	if c.Background != nil {
+		bgParts = c.Background.Parts
+	}
+	l := ps.parseLayer(b, 40+ps.shift, bgParts)
 	c.Name, c.Script, c.Language, c.Compiled, c.Parts = l.name, l.scr, l.lang, l.osa, l.parts
 	for _, t := range l.text {
 		// A negative ID is one of the card's own fields, a positive one a

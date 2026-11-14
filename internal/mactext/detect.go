@@ -96,7 +96,7 @@ func score(e *Encoding, texts [][]byte, hinted bool) int {
 			continue
 		}
 		nonASCII++
-		s, ok := e.Decode(t)
+		s, ok := e.decode(t, false)
 		if !ok {
 			fails++
 			continue
@@ -451,4 +451,26 @@ func (e *Encoding) decodeCodes(b []byte) []coded {
 		out = append(out, coded{r, uint16(c)})
 	}
 	return out
+}
+
+// WideInWord reports whether s has wide characters inside an ASCII word, as
+// Mac Roman text read in a double-byte encoding does: its accented letters
+// pair with the next byte, as in "Fr仕屍ic" for "Frédéric".
+func WideInWord(s string) bool {
+	rs := []rune(s)
+	for i := 0; i < len(rs); {
+		if rs[i] < 0x3000 {
+			i++
+			continue
+		}
+		j := i
+		for j < len(rs) && rs[j] >= 0x3000 {
+			j++
+		}
+		if i > 0 && j < len(rs) && isLetter(rs[i-1]) && isLetter(rs[j]) {
+			return true
+		}
+		i = j
+	}
+	return false
 }

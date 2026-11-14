@@ -100,17 +100,27 @@ func (e *Encoding) load() {
 // Decode decodes b, and reports false if a byte or byte pair has no
 // character in the encoding.
 func (e *Encoding) Decode(b []byte) (string, bool) {
+	return e.decode(b, true)
+}
+
+// decode decodes b. With roman set, it decodes a half-width katakana letter
+// alone beside ASCII as Mac Roman.
+func (e *Encoding) decode(b []byte, roman bool) (string, bool) {
 	if e == Roman {
 		return MacRoman(b), true
 	}
 	e.load()
 	var sb strings.Builder
+	prevASCII, prevKana := false, false
 	for i := 0; i < len(b); i++ {
 		c := b[i]
 		if c < 0x80 {
 			sb.WriteByte(c)
+			prevASCII, prevKana = isAlnum(rune(c)), false
 			continue
 		}
+		wasASCII, wasKana := prevASCII, prevKana
+		prevASCII, prevKana = false, false
 		if e.lead[c] && i+1 < len(b) {
 			if s, ok := e.pairs[uint16(c)<<8|uint16(b[i+1])]; ok {
 				sb.WriteString(s)
@@ -122,10 +132,32 @@ func (e *Encoding) Decode(b []byte) (string, bool) {
 		if s == "" {
 			return "", false
 		}
+		if roman && e == Japanese && isKanaByte(c) {
+			next := byte(0)
+			if i+1 < len(b) {
+				next = b[i+1]
+			}
+			if !wasKana && !isHalfwidth(next) && (wasASCII || isAlnum(rune(next))) {
+				// A half-width katakana letter alone beside ASCII is
+				// Mac Roman, as in "©1993" or "haven’t" in a Roman
+				// font among Japanese text.
+				sb.WriteRune(macRomanHigh[c-0x80])
+				continue
+			}
+		}
+		prevKana = isHalfwidth(c)
 		sb.WriteString(s)
 	}
 	return sb.String(), true
 }
+
+// isKanaByte reports whether c is a half-width katakana letter in Shift
+// JIS, from ｦ to ﾝ.
+func isKanaByte(c byte) bool { return c >= 0xA6 && c <= 0xDD }
+
+// isHalfwidth reports whether c is any half-width katakana character in
+// Shift JIS, the letters with their punctuation and sound marks, as in ﾃﾞ.
+func isHalfwidth(c byte) bool { return c >= 0xA1 && c <= 0xDF }
 
 // DecodeOrRoman decodes b, or decodes it as Mac Roman if it doesn't decode.
 func (e *Encoding) DecodeOrRoman(b []byte) string {

@@ -102,11 +102,17 @@ A field's text lives with the card it's on, not with the field. Each entry in a 
 
 - The part's ID, 2 bytes, signed. A negative ID is one of the card's own parts. A positive ID is a part of the card's background: the text that a background field shows on this card.
 - The length of what follows, 2 bytes.
-- The text. It starts with a 0 byte for plain text. For styled text, it starts with a style table whose 2-byte length has the high bit set: the length without that bit includes the 2 bytes themselves, and each 4-byte run gives an offset in the text and a style ID from the `STBL` block.
+- The text. It starts with a 0 byte for plain text. For styled text, it starts with a style table whose 2-byte length has the high bit set: the length without that bit includes the 2 bytes themselves, and each 4-byte run gives an offset in the text and a style ID from the `STBL` block. The style table can keep stale runs after an edit, which start past the end of the text or before the run they follow.
 
 Entries are padded to an even length. A background's own field text list holds the text of background fields that show the same text on every card.
 
 Buttons have entries too. A card part's entry is the button's text. A background button's entry on a card isn't text: it's `1` when the button is highlighted on that card, for buttons that don't share their highlight across cards.
+
+### Fonts and styles
+
+A part record holds its text font's ID, 2 bytes, at 24. The `STBL` block lists the text styles: from offset 16, their number, 4 bytes, and from 24, 24 bytes for each style, with its ID, 4 bytes, at 0, and its font's ID, 2 bytes, at 12, or -1 for the field's own font. The `FTBL` block names the fonts.
+
+scriptview decodes each run of field text in its font's encoding, so a run in Osaka reads as Japanese in an English stack. See [Text encodings](../text-encodings.md).
 
 ## Scripts in other languages
 
