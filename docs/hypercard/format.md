@@ -18,7 +18,11 @@ A stack file is a chain of blocks with nothing between them. Each block starts w
 - 4 bytes: the block's ID, a signed number. Blocks refer to each other by type and ID.
 - 4 bytes: unused in HyperCard 2.x. HyperCard 1.x puts a field here that 2.x moved later, which shifts the rest of a background's or card's header. See [HyperCard 1.x](#hypercard-1x).
 
-The first block is always `STAK`, and the last is `TAIL`. The 29 stacks hold the following types. scriptview reads only `STAK`, `LIST`, `PAGE`, `BKGD`, and `CARD`. The roles of the others come from other readers of the format, such as stackimport, not from scriptview's own reading.
+The first block is always `STAK`, and the last is `TAIL`. Each block starts at a multiple of 32 bytes, in every format, and the blocks follow each other with no gaps. In 7 stacks of the test set, all with 17 cards, a `MAST` block's size has bit 30 set, as `0x40000400`, so scriptview ignores the top two bits of a size.
+
+Some stacks are damaged partway through, by a bad copy or a truncated download: a block's size runs past the end of the file, or a run of zeros or text sits where a block should start. scriptview then looks for the next block at each multiple of 32 bytes, and takes one only if it has a known type and its size fits. Past damage, a block with the same type and ID as one before it is left out. With this and the mask on sizes, the card counts of 23 more stacks in the test set match their headers. Most of the damaged stacks that still don't match are truncated, and have lost their last cards.
+
+The 29 stacks hold the following types. scriptview reads only `STAK`, `LIST`, `PAGE`, `BKGD`, and `CARD`. The roles of the others come from other readers of the format, such as stackimport, not from scriptview's own reading.
 
 - `STAK`: the stack itself, with its settings and script.
 - `MAST`: an index from block IDs to file offsets.

@@ -7,6 +7,8 @@
 - `-o` writes each result to a file in a folder, in the same layout as the input.
 - Added SuperCard projects and standalones, from SuperCard 1.0 to 4.5. scriptview prints every script in a project, labeled with its object and indented, including protected scripts, and `scriptview text` prints the text of its fields. Folders and disk images include projects, and `-o` writes a project's scripts to a `.supertalk` file.
 - `-e` decodes a classic file's text in an encoding that you name, such as `-e korean`, when scriptview's guess is wrong. `scriptview encodings` lists the names.
+- Fixed large run-only scripts, whose rebuilt syntax tree has more than about 32,000 parts. They printed garbled code, or ran for hours. Of about 50,000 classic scripts, 133 now print correctly, each in about a tenth of a second.
+- Damaged stacks print what's left of them: scriptview reads on past a damaged block, and past a block with a flag in its size. 61 of about 39,000 stacks print more of their scripts and cards.
 
 ## 0.4.0
 

@@ -45,15 +45,15 @@ Each file must print in under 15 seconds, with no crash and no error. With the c
 
 - All 38,879 stacks print their scripts in 1 minute 20 seconds, and their field text in 57 seconds.
 - All 876 projects print their scripts in 7 seconds, and their field text in 9.
-- 51,157 of the 51,161 classic scripts print. The other 4 are run-only scripts of 570 to 700 KB, which decompile from their bytecode too slowly: one takes 20 seconds, and three take more than 15 seconds. One of the three was still running after 5 minutes. 0.4.0 is just as slow on them.
+- All 51,161 classic scripts print, in about 3 minutes when run 8 at a time, each with its own 15-second limit.
 
-The sweep over the classic scripts runs each file on its own, with a time limit. A walk of the folder instead stops at the first of the slow scripts.
+The sweep over the classic scripts used to find 4 run-only scripts, of 570 to 700 KB, that took 20 seconds or ran for hours. The syntax tree that scriptview rebuilds from a run-only script's bytecode had 16-bit node IDs, like the trees in files, and these scripts need more than 32,767. Their IDs wrapped around, and the tree tangled. With 32-bit IDs, each prints in a tenth of a second.
 
 ## Stacks
 
 A stack repeats some of its structure, and real stacks give a few references:
 
-- The number of cards in a stack's header matches the cards that scriptview finds in 28,604 of the 28,683 HyperCard 2.x stacks without private access. The other 79 haven't been looked into yet. In HyperCard IIGS stacks, it matches in 721 of the 724. The other three are a truncated file and two private-access stacks.
+- The number of cards in a stack's header matches the cards that scriptview finds in 28,627 of the 28,683 HyperCard 2.x stacks without private access. In 9 of the other 56, the file is whole and holds fewer cards than its header says. The other 47 are damaged or truncated, and have lost cards. Before scriptview read on past damage, 79 didn't match. In HyperCard IIGS stacks, it matches in 721 of the 724. The other three are a truncated file and two private-access stacks.
 - 12 stacks came with listings of their scripts that tools such as Script Stripper wrote out, with HyperCard's indentation. scriptview's indentation matches 7,444 of the 7,453 lines. One more stack came with a listing, but its listing isn't indented, so it isn't used.
 - Of 11 stacks with private access, which scrambles part of the header, 10 print their scripts, and the other has none.
 - 77 stacks hold 376 scripts in AppleScript. All of them decompile.
@@ -91,6 +91,8 @@ Before a change is committed, scriptview runs on the corpora with the change and
 - Adding SuperCard's field text: the scripts of 5 projects changed, all in object IDs above 65,535, which scriptview had cut to 16 bits. Field text had first counted toward the guess at the encoding, and it changed the encoding of 5 more projects for the worse. So the guess uses only scripts and names.
 - Bounding the resource fork reader: every stack and project prints the same as before.
 - Checking disk signatures more closely: 9 classic scripts that have `H+` or `BD` at offset 1024 by chance, which scriptview had taken for disk images since it started reading disk images, print the same as in 0.4.0 again.
+- Widening the IDs of rebuilt syntax trees: 133 run-only classic scripts changed, all of them large enough to have run out of 16-bit IDs. Their old output had 282 damage markers, and the new output has none. No GitHub script changed, in either `decompile` or `bytecode`.
+- Reading past damaged blocks: 61 stacks changed, all of them damaged. Their output has every script line it had before, and more, and their field text only gained text and better labels.
 
 ## Fuzzing
 
@@ -109,10 +111,8 @@ go test ./internal/hfs -run '^$' -fuzz FuzzOpen -fuzztime 5m -fuzzminimizetime 3
 
 Without `-fuzzminimizetime`, the fuzzer can spend minutes making each new input smaller, and look stuck.
 
-## Known problems and gaps
+## Known gaps
 
-- Three run-only classic scripts don't finish decompiling, and stop a walk of any folder that has one.
-- 79 HyperCard 2.x stacks have a different number of cards than their headers say.
 - Real compressed `.dmg` images haven't been tested.
 - scriptview doesn't read the tokenized scripts of SuperCard 1 standalones.
 - 28 projects in the corpus were saved by several versions of SuperCard. Comparing each version's output would check the rules for each format, but it hasn't been done.
