@@ -399,3 +399,21 @@ func TestUnmatched(t *testing.T) {
 		t.Errorf("objects %+v", objs)
 	}
 }
+
+// FuzzParse feeds Parse damaged projects: it may fail, but not panic. The
+// project's length is set to the data's, so that more of the damaged
+// projects get past the header.
+func FuzzParse(f *testing.F) {
+	for _, v := range [][2]uint16{{1, 0}, {1, 1}, {2, 1}} {
+		f.Add(sample(v[0], v[1]).bytes())
+	}
+	f.Fuzz(func(t *testing.T, data []byte) {
+		if len(data) >= 8 {
+			bo.PutUint32(data[4:], uint32(len(data)))
+		}
+		if p, err := Parse(data); err == nil {
+			_ = p.Scripts()
+			_ = p.Text()
+		}
+	})
+}
