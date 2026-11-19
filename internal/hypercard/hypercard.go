@@ -139,6 +139,16 @@ var be = binary.BigEndian
 // Parse reads a stack. Its text is Mac Roman, unless its fonts and text
 // show another encoding, such as Mac Japanese: see [mactext.Detect].
 func Parse(data []byte) (*Stack, error) {
+	return ParseWith(data, nil)
+}
+
+// ParseWith reads a stack like Parse. A non-nil enc decodes all of the
+// stack's text, ignoring its fonts.
+func ParseWith(data []byte, enc *mactext.Encoding) (*Stack, error) {
+	if enc != nil {
+		ps := &parser{enc: enc, forced: true}
+		return ps.parse(data)
+	}
 	ps := &parser{enc: mactext.Roman}
 	s, err := ps.parse(data)
 	if err != nil {
@@ -146,7 +156,7 @@ func Parse(data []byte) (*Stack, error) {
 	}
 	// Only the fonts and kana count: guessing from text alone, a stack's
 	// symbol fonts and decorations, such as "∞∞∞", read as anything.
-	enc := mactext.Detect(ps.raw, append([]*mactext.Encoding{}, ps.fonts...))
+	enc = mactext.Detect(ps.raw, append([]*mactext.Encoding{}, ps.fonts...))
 	if enc == mactext.Roman {
 		return s, nil
 	}
@@ -158,9 +168,10 @@ func Parse(data []byte) (*Stack, error) {
 // string it decodes in raw, and the encodings of the fonts in its font
 // table in fonts.
 type parser struct {
-	enc   *mactext.Encoding
-	raw   [][]byte
-	fonts []*mactext.Encoding
+	enc    *mactext.Encoding
+	forced bool // enc decodes everything, whatever the fonts
+	raw    [][]byte
+	fonts  []*mactext.Encoding
 	// fontEnc maps the IDs of the stack's fonts to their encodings, for
 	// the fonts whose encoding is known, and styleFont maps the IDs of its
 	// text styles to their fonts, -1 for a field's own font.
@@ -564,7 +575,7 @@ func (ps *parser) fieldText(b []byte, font int) string {
 func (ps *parser) decodeRun(b []byte, font int) string {
 	e, ok := ps.fontEnc[font]
 	switch {
-	case !ok:
+	case !ok || ps.forced:
 		return ps.enc.DecodeOrRoman(b)
 	case e != mactext.Roman || ps.enc == mactext.Roman:
 		return e.DecodeOrRoman(b)

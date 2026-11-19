@@ -123,3 +123,11 @@ func TestWideInWord(t *testing.T) {
 		}
 	}
 }
+
+func TestByName(t *testing.T) {
+	for in, want := range map[string]*Encoding{"japanese": Japanese, "Mac Japanese": Japanese, "chinese-traditional": TradChinese, "MacCyrillic": Cyrillic, "Central European": CentralEuropean, "klingon": nil} {
+		if got := ByName(in); got != want {
+			t.Errorf("ByName(%q) = %v", in, got)
+		}
+	}
+}

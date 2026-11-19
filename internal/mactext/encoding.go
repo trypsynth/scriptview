@@ -166,3 +166,43 @@ func (e *Encoding) DecodeOrRoman(b []byte) string {
 	}
 	return MacRoman(b)
 }
+
+// All lists every encoding, by the short name that ByName takes.
+var All = []struct {
+	Short string
+	*Encoding
+}{
+	{"roman", Roman},
+	{"japanese", Japanese},
+	{"chinese-simplified", SimpChinese},
+	{"chinese-traditional", TradChinese},
+	{"korean", Korean},
+	{"arabic", Arabic},
+	{"farsi", Farsi},
+	{"hebrew", Hebrew},
+	{"cyrillic", Cyrillic},
+	{"greek", Greek},
+	{"thai", Thai},
+	{"central-european", CentralEuropean},
+	{"turkish", Turkish},
+	{"icelandic", Icelandic},
+	{"croatian", Croatian},
+	{"romanian", Romanian},
+}
+
+// ByName returns the encoding with a short name, such as "japanese", or a
+// full one, such as "Mac Japanese", ignoring case, spaces, and hyphens.
+// It returns nil for a name it doesn't know.
+func ByName(name string) *Encoding {
+	norm := func(s string) string {
+		s = strings.ToLower(strings.NewReplacer(" ", "", "-", "", "_", "").Replace(s))
+		return strings.TrimPrefix(s, "mac")
+	}
+	n := norm(name)
+	for _, e := range All {
+		if norm(e.Short) == n || norm(e.Name) == n {
+			return e.Encoding
+		}
+	}
+	return nil
+}

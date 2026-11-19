@@ -47,6 +47,29 @@ type Options struct {
 	// Host is the application that runs the script, whose terms the script
 	// uses without a tell block: "HyperCard" for a script in a stack.
 	Host string
+	// Encoding decodes the text that classic Mac OS stored in the script
+	// system's encoding, instead of the encoding that the text suggests.
+	Encoding *mactext.Encoding
+}
+
+// IsCompiled reports whether data looks like a compiled script: a
+// compiled AppleScript, perhaps in a resource fork or a MacBinary,
+// AppleSingle, or BinHex file, or a JavaScript for Automation script.
+// Unlike Parse, it rejects plain text.
+func IsCompiled(data []byte) bool {
+	if bytes.HasPrefix(data, JXAMagic) {
+		return true
+	}
+	if bytes.HasPrefix(data, []byte("#!")) {
+		if i := bytes.IndexAny(data, "\n\r"); i >= 0 {
+			data = data[i+1:]
+		}
+	}
+	if fasdHeaderLen(data) > 0 {
+		return true
+	}
+	s, ok := unwrapScript(data)
+	return ok && fasdHeaderLen(s) > 0
 }
 
 // ParseWith parses a script like Parse, with options for a script that
@@ -99,6 +122,7 @@ func ParseWith(data []byte, opts Options) (*File, error) {
 		b.dc.legacy, b.dc.beta = version < "1.01", version < "0.98"
 		b.dc.classic = classic || b.dc.legacy
 		b.dc.host = opts.Host
+		b.dc.enc = opts.Encoding
 		return b
 	}
 	b := newVersioned()
@@ -262,7 +286,9 @@ func parseRecords(body []byte, b *builder) error {
 	if err != nil {
 		return err
 	}
-	b.dc.enc = legacyEncoding(legacyTexts(objs))
+	if b.dc.enc == nil {
+		b.dc.enc = legacyEncoding(legacyTexts(objs))
+	}
 	if b.dc.beta {
 		objs = translateBeta(objs)
 	}
