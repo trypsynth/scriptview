@@ -1,5 +1,5 @@
 // Package supercard reads SuperCard projects: the scripts of their windows,
-// cards, backgrounds, objects, and menus.
+// cards, backgrounds, objects, and menus, and the text of their fields.
 //
 // A project keeps everything in its data fork, as a table of blocks: a
 // 1024-byte header, a table of block offsets indexed by block ID, and the
@@ -56,9 +56,19 @@ type Layer struct {
 	Script     string
 	Background *Layer // a card's background
 	Objects    []*Object
+	// Texts holds a card's text in its background's fields, in the order
+	// of the fields.
+	Texts []*FieldText
 	// Unmatched holds scripts of objects on the layer that scriptview
 	// couldn't match to their objects.
 	Unmatched []string
+	bgText    map[int]string // a card's text in background fields, by ID
+}
+
+// FieldText is a card's text in one of its background's fields.
+type FieldText struct {
+	Field *Object
+	Text  string
 }
 
 // Kind says what an object is.
@@ -87,6 +97,10 @@ type Object struct {
 	Kind   Kind
 	Name   string
 	Script string
+	// Text is a card field's text. A background field holds the text it
+	// had on the card that was showing when the project was saved, which
+	// can be newer than that card's own copy.
+	Text string
 }
 
 // Menu is a menu of the project's menu bar.
@@ -259,9 +273,9 @@ func (ps *parser) parse() *Project {
 		switch {
 		case ps.seen[id]:
 		case b.kind == kindCard:
-			p.Unlisted = append(p.Unlisted, &Unlisted{"card", ps.layer(b.data, ps.layout.card)})
+			p.Unlisted = append(p.Unlisted, &Unlisted{"card", ps.layer(b.data, ps.layout.card, true)})
 		case b.kind == kindBackground:
-			p.Unlisted = append(p.Unlisted, &Unlisted{"background", ps.layer(b.data, ps.layout.background)})
+			p.Unlisted = append(p.Unlisted, &Unlisted{"background", ps.layer(b.data, ps.layout.background, false)})
 		}
 	}
 	return p
@@ -303,18 +317,19 @@ func (ps *parser) window(b []byte) *Window {
 				continue
 			}
 			ps.seen[int(be.Uint32(lb.data[e:]))] = true
-			card := ps.layer(cb.data, ps.layout.card)
+			card := ps.layer(cb.data, ps.layout.card, true)
 			card.ID = int(be.Uint32(lb.data[e+8:]))
 			bgID := int(be.Uint32(lb.data[e+4:]))
 			bg := bgs[bgID]
 			if bb, ok := ps.blocks[bgID]; bg == nil && ok && bb.kind == kindBackground {
 				ps.seen[bgID] = true
-				bg = ps.layer(bb.data, ps.layout.background)
+				bg = ps.layer(bb.data, ps.layout.background, false)
 				bg.ID = int(be.Uint32(lb.data[e+12:]))
 				bgs[bgID] = bg
 				w.Backgrounds = append(w.Backgrounds, bg)
 			}
 			card.Background = bg
+			card.bgFields()
 			w.Cards = append(w.Cards, card)
 		}
 	}
@@ -322,8 +337,10 @@ func (ps *parser) window(b []byte) *Window {
 }
 
 // layer reads a card or background block: its script, then the length of
-// its object list and the list, then records that end with its name.
-func (ps *parser) layer(b []byte, at int) *Layer {
+// its object list and the list, then records that end with its name. A
+// card's first record after its objects is its text in its background's
+// fields.
+func (ps *parser) layer(b []byte, at int, card bool) *Layer {
 	l := &Layer{}
 	l.Script, at = ps.script(b, at)
 	if at+4 > len(b) {
@@ -334,8 +351,45 @@ func (ps *parser) layer(b []byte, at int) *Layer {
 		return l
 	}
 	ps.objects(l, b[at+4:end], 0)
+	if r, ok := record(b, end); ok && card && next(end, len(r)) < len(b) {
+		l.bgText = ps.bgTexts(r)
+	}
 	l.Name = ps.text(lastRecord(b, end))
 	return l
+}
+
+// bgTexts reads a card's record of its text in background fields: for each
+// field, its ID and the length of its data in 4 bytes each, then the data.
+func (ps *parser) bgTexts(r []byte) map[int]string {
+	out := map[int]string{}
+	for at := 0; at < len(r); {
+		if at+8 > len(r) {
+			return nil
+		}
+		id, n := int(be.Uint32(r[at:])), int(be.Uint32(r[at+4:]))
+		if n > len(r)-at-8 {
+			return nil
+		}
+		if t, ok := ps.fieldText(r[at+8 : at+8+n]); ok {
+			out[id] = t
+		}
+		at += 8 + n
+	}
+	return out
+}
+
+// bgFields matches a card's text in background fields to the fields. Text
+// for a field that the background no longer has is left out.
+func (l *Layer) bgFields() {
+	if l.Background == nil {
+		return
+	}
+	for _, o := range l.Background.Objects {
+		if t, ok := l.bgText[o.ID]; ok && o.Kind == Field {
+			l.Texts = append(l.Texts, &FieldText{o, t})
+		}
+	}
+	l.bgText = nil
 }
 
 // lastRecord returns the last of the records from b[at:], which is a
@@ -410,9 +464,14 @@ func (ps *parser) objects(l *Layer, b []byte, depth int) {
 	}
 	// Match the records to the objects. Names and scripts are easy to tell
 	// apart from other records, so for each object, try the most extra
-	// records first, and fewer until the rest of the records fit.
+	// records first, and fewer until the rest of the records fit. If they
+	// don't, the objects keep their IDs, which a card's text in background
+	// fields needs.
 	extras := matchRecords(objs, recs)
 	if extras == nil {
+		for _, o := range objs {
+			l.Objects = append(l.Objects, o.Object)
+		}
 		for _, r := range recs {
 			if isScript(r) {
 				if s := ps.scriptRecord(r); strings.TrimSpace(s) != "" {
@@ -427,6 +486,9 @@ func (ps *parser) objects(l *Layer, b []byte, depth int) {
 		var data []byte
 		if o.data {
 			data = recs[j]
+			if o.Kind == Field {
+				o.Text, _ = ps.fieldText(data)
+			}
 			j++
 		}
 		if o.name {
@@ -734,4 +796,23 @@ func sortInts(a []int) {
 			a[j], a[j-1] = a[j-1], a[j]
 		}
 	}
+}
+
+// fieldText decodes a field's data: the number of style runs in 2 bytes,
+// 20 bytes for each run, then the text, then 14 bytes of the field's
+// default style. Field text is often in a font with its own symbols, which
+// throws off the guess at the encoding, so it is left out of the guess.
+func (ps *parser) fieldText(d []byte) (string, bool) {
+	if len(d) < 16 {
+		return "", false
+	}
+	start, end := 2+20*int(be.Uint16(d)), len(d)-14
+	if start > end {
+		return "", false
+	}
+	if ps.enc == nil {
+		return "", true
+	}
+	t := bytes.TrimRight(d[start:end], "\x00")
+	return strings.ReplaceAll(ps.enc.DecodeOrRoman(t), "\r", "\n"), true
 }

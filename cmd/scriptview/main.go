@@ -34,7 +34,7 @@ Commands:
   tree        print the raw syntax node graph (for format debugging)
   disasm      print the compiled bytecode as annotated assembly
   bytecode    decompile from the bytecode alone (as for run-only scripts)
-  text        print the text of a stack's fields
+  text        print the text of a stack's or project's fields
   encodings   list the text encodings that --encoding takes
   version     print the version
   help        print this help
@@ -431,7 +431,7 @@ func runClassic(opts options, file classic.File, path string, explicit bool) (ou
 		return "", "", fmt.Errorf("%s is empty, and has no resource fork or ._ file with a script in it", path)
 	}
 	if opts.cmd == "text" {
-		return "", "", notFor(explicit, "text works only on HyperCard stacks")
+		return "", "", notFor(explicit, "text works only on HyperCard stacks and SuperCard projects")
 	}
 	f, err := scpt.ParseWith(data, scpt.Options{Encoding: opts.enc})
 	if err != nil {
@@ -507,18 +507,20 @@ func projectFile(f classic.File) (classic.File, bool) {
 	return f, false
 }
 
-// runProject runs the command on a SuperCard project: its scripts.
+// runProject runs the command on a SuperCard project: its scripts, or with
+// the text command, the text of its fields.
 func runProject(opts options, f classic.File, explicit bool) (out, ext string, err error) {
 	switch opts.cmd {
-	case "decompile":
-	case "text":
-		return "", "", notFor(explicit, "text works only on HyperCard stacks")
+	case "decompile", "text":
 	default:
 		return "", "", notFor(explicit, opts.cmd+" works only on compiled AppleScript files")
 	}
 	p, err := supercard.ParseWith(f.Data, opts.enc)
 	if err != nil {
 		return "", "", err
+	}
+	if opts.cmd == "text" {
+		return p.Text(), ".text.txt", nil
 	}
 	return p.Scripts(), ".supertalk", nil
 }

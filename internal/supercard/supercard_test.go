@@ -100,8 +100,27 @@ func (b *builder) objects(objs []object) []byte {
 	return bo.AppendUint16(append(recs, ents...), uint16(len(objs)))
 }
 
-// layer adds a card or background block.
-func (b *builder) layer(id, kind int, name, scr string, objs []object) {
+// field encodes a field's data: its text with one style run, or none.
+func field(text string, styled bool) []byte {
+	d := []byte{0, 0}
+	if styled {
+		d = append([]byte{0, 1}, make([]byte, 20)...)
+		bo.PutUint16(d[8:], 12) // the run's height
+	}
+	t, _ := mactext.EncodeMacRoman(strings.ReplaceAll(text, "\n", "\r"))
+	d = append(d, t...)
+	return append(d, 0, 0, 0xFF, 0xFF, 0, 3, 0, 12, 0, 1, 0, 0, 0, 0)
+}
+
+// bgText is a card's text in a background field.
+type bgText struct {
+	id   int
+	text string
+}
+
+// layer adds a card or background block. A card has its text in its
+// background's fields.
+func (b *builder) layer(id, kind int, name, scr string, objs []object, texts ...bgText) {
 	off := b.l.card
 	if kind == kindBackground {
 		off = b.l.background
@@ -109,7 +128,14 @@ func (b *builder) layer(id, kind int, name, scr string, objs []object) {
 	d := append(head(kind, off), rec(script(scr))...)
 	d = append(d, rec(b.objects(objs))...)
 	if kind == kindCard {
-		d = append(d, rec(nil)...) // the text of the background's fields
+		var r []byte
+		for _, t := range texts {
+			f := field(t.text, false)
+			r = bo.AppendUint32(r, uint32(t.id))
+			r = bo.AppendUint32(r, uint32(len(f)))
+			r = append(r, f...)
+		}
+		d = append(d, rec(r)...)
 	}
 	b.blocks[id] = append(d, rec([]byte(name))...)
 }
@@ -182,25 +208,29 @@ func (b *builder) bytes() []byte {
 }
 
 // sample builds a project with a window, a background, two cards, and a
-// menu, and a group on the first card.
+// menu, and a group on the first card. The background's field "Title"
+// holds text that no card has, and its field "Body" the first card's. The
+// second card has text for a field that the background no longer has.
 func sample(major, minor uint16) *builder {
 	b := newBuilder(major, minor)
 	b.blocks[0] = append(head(kindProject, b.l.project), rec(script("on openProject\nbeep\nend openProject"))...)
 	b.window(5, 6, "Main", "on openWindow\nput 1 into x\nend openWindow", [][4]int{{8, 7, 101, 100}, {9, 7, 102, 100}})
 	b.layer(7, kindBackground, "", "", []object{
 		{typ: 200, id: 1, name: "Next", script: "on mouseUp\ngo next card\nend mouseUp"},
+		{typ: 300, id: 70000, name: "Title", data: field("Old title", false)},
+		{typ: 301, id: 11, name: "Body", data: field("Hi there", true)},
 	})
 	group := newBuilder(major, minor)
 	group.handle = 0x00130000
 	b.layer(8, kindCard, "Home", "on openCard\nif x then\nbeep\nend if\nend openCard", []object{
-		{typ: 300, id: 2, data: []byte("\x00\x00Hello\x00"), name: "Notes", props: major == 2},
+		{typ: 300, id: 2, data: field("Hello\nWorld…", true), name: "Notes", props: major == 2},
 		{typ: 105, id: 3, data: []byte{1, 2, 3}},
 		{typ: 108, id: 4, name: "Group", data: group.objects([]object{
 			{typ: 200, id: 5, script: "on mouseUp\nanswer \"in a group\"\nend mouseUp"},
 		})},
 		{typ: 201, id: 6, script: "on mouseUp\nend mouseUp"},
-	})
-	b.layer(9, kindCard, "", "", nil)
+	}, bgText{11, "Hi there"}, bgText{70000, "Welcome"})
+	b.layer(9, kindCard, "", "", nil, bgText{99, "Gone"}, bgText{70000, "Second"})
 	b.menu(10, "File", "", [][2]string{{"Open…", "on itemSelect\nopen file\nend itemSelect"}, {"-", ""}})
 	return b
 }
@@ -242,6 +272,23 @@ on itemSelect
 end itemSelect
 `
 
+const sampleText = `-- background field "Title" of background id 100 of window "Main"
+Old title
+
+-- background field "Title" of card "Home" of window "Main"
+Welcome
+
+-- background field "Body" of card "Home" of window "Main"
+Hi there
+
+-- card field "Notes" of card "Home" of window "Main"
+Hello
+World…
+
+-- background field "Title" of card id 102 of window "Main"
+Second
+`
+
 func TestScripts(t *testing.T) {
 	for _, v := range [][2]uint16{{1, 0}, {1, 1}, {2, 1}} {
 		data := sample(v[0], v[1]).bytes()
@@ -254,6 +301,9 @@ func TestScripts(t *testing.T) {
 		}
 		if got := p.Scripts(); got != sampleScripts {
 			t.Errorf("%d.%d: got\n%s\nwant\n%s", v[0], v[1], got, sampleScripts)
+		}
+		if got := p.Text(); got != sampleText {
+			t.Errorf("%d.%d: text: got\n%s\nwant\n%s", v[0], v[1], got, sampleText)
 		}
 		if w := p.Windows[0]; len(w.Cards) != 2 || w.Cards[1].ID != 102 || w.Cards[1].Background != w.Backgrounds[0] {
 			t.Errorf("%d.%d: cards %+v", v[0], v[1], w.Cards)
@@ -343,5 +393,9 @@ func TestUnmatched(t *testing.T) {
 	want := "-- script of an object of card id 101 of window \"W\" (scriptview couldn't tell which)\non mouseUp\n  beep\nend mouseUp\n"
 	if s := got.Scripts(); s != want {
 		t.Errorf("got\n%s\nwant\n%s", s, want)
+	}
+	// The object keeps its ID, for a card's text in background fields.
+	if objs := got.Windows[0].Cards[0].Objects; len(objs) != 1 || objs[0].ID != 1 || objs[0].Kind != Button {
+		t.Errorf("objects %+v", objs)
 	}
 }
