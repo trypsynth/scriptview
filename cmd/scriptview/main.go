@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -11,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/trypsynth/scriptview/internal/classic"
+	"github.com/trypsynth/scriptview/internal/hfs"
 	"github.com/trypsynth/scriptview/internal/hypercard"
 	"github.com/trypsynth/scriptview/internal/mactext"
 	"github.com/trypsynth/scriptview/internal/scpt"
@@ -21,8 +23,9 @@ const helpText = `Usage: scriptview [command] [options] <file or folder>...
 A file can be a compiled AppleScript (.scpt), a script bundle (.scptd),
 an applet (.app), or a HyperCard stack. With no command, scriptview prints
 the file's source: the decompiled AppleScript, or every script in the
-stack. Given a folder, it finds every script and stack inside, and prints
-each one after a line with its path.
+stack. Given a folder or a classic Mac disk image (HFS or HFS+, such as a
+.dsk, .img, .toast, or .iso file), it finds every script and stack inside,
+and prints each one after a line with its path.
 
 Commands:
   decompile   print the reconstructed AppleScript source
@@ -159,6 +162,17 @@ func run(opts options, paths []string) int {
 			}
 			continue
 		}
+		if vols, closer, err := openImage(path); vols != nil || err != nil {
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "scriptview: %s: %v\n", path, err)
+				status = max(status, 1)
+				continue
+			}
+			several = true
+			status = max(status, walkImage(opts, path, filepath.Base(path), vols, 0))
+			closer.Close()
+			continue
+		}
 		out, ext, err := runFile(opts, path, true)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "scriptview: %v\n", err)
@@ -200,6 +214,17 @@ func walk(opts options, root string) int {
 		if !d.Type().IsRegular() || strings.HasPrefix(name, "._") || name == ".DS_Store" {
 			return nil
 		}
+		rel, _ := filepath.Rel(root, path)
+		rel = filepath.Join(filepath.Base(root), rel)
+		if vols, closer, err := openImage(path); vols != nil {
+			status = max(status, walkImage(opts, path, rel, vols, 0))
+			closer.Close()
+			return nil
+		} else if err != nil {
+			fmt.Fprintf(os.Stderr, "scriptview: %s: %v\n", path, err)
+			status = 1
+			return nil
+		}
 		if fi, err := d.Info(); err != nil || fi.Size() > maxSize {
 			return nil
 		}
@@ -214,8 +239,7 @@ func walk(opts options, root string) int {
 				return nil
 			}
 		}
-		rel, _ := filepath.Rel(root, path)
-		if err := emit(opts, path, filepath.Join(filepath.Base(root), rel), out, ext, true); err != nil {
+		if err := emit(opts, path, rel, out, ext, true); err != nil {
 			fmt.Fprintf(os.Stderr, "scriptview: %v\n", err)
 			status = 1
 		}
@@ -228,9 +252,115 @@ func walk(opts options, root string) int {
 	return status
 }
 
-// maxSize is the largest file that a folder's walk reads. Scripts and
+// maxSize is the largest file or fork that a walk reads. Scripts and
 // stacks are far smaller.
 const maxSize = 64 << 20
+
+// openImage opens path as a disk image, or returns no volumes if it isn't
+// one.
+func openImage(path string) ([]*hfs.Volume, io.Closer, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, nil, nil // runFile reports it
+	}
+	fi, err := f.Stat()
+	if err != nil || !fi.Mode().IsRegular() {
+		f.Close()
+		return nil, nil, nil
+	}
+	vols, err := hfs.Open(f, fi.Size())
+	if err != nil {
+		f.Close()
+		if errors.Is(err, hfs.ErrNotImage) {
+			return nil, nil, nil
+		}
+		return nil, nil, err
+	}
+	return vols, f, nil
+}
+
+// maxDepth is how deep a walk opens images inside images.
+const maxDepth = 3
+
+// walkImage runs the command on every script and stack in a disk image's
+// volumes. path names the image in headers, and rel in the output folder.
+func walkImage(opts options, path, rel string, vols []*hfs.Volume, depth int) int {
+	status := 0
+	for _, v := range vols {
+		for _, f := range v.Files(opts.enc) {
+			if f.DataSize() > maxSize || f.RsrcSize() > maxSize {
+				continue
+			}
+			// Mac names can hold a slash, which the Finder shows as a
+			// colon in a path.
+			shown := []string{v.Name}
+			frel := []string{rel, fileName(v.Name)}
+			for _, n := range f.Path {
+				shown = append(shown, strings.ReplaceAll(n, "/", ":"))
+				frel = append(frel, fileName(n))
+			}
+			fpath := path + "/" + strings.Join(shown, "/")
+			data, err := v.ReadData(f)
+			if err == nil {
+				var rsrc []byte
+				rsrc, err = v.ReadRsrc(f)
+				if err == nil {
+					status = max(status, runInImage(opts, classic.File{Name: f.Path[len(f.Path)-1], Type: f.Type, Creator: f.Creator, Data: data, Rsrc: rsrc}, fpath, filepath.Join(frel...), depth))
+					continue
+				}
+			}
+			fmt.Fprintf(os.Stderr, "scriptview: %s: %v\n", fpath, err)
+			status = 1
+		}
+	}
+	return status
+}
+
+// fileName makes a Mac file name one that every system takes: Mac names
+// can hold characters that Windows doesn't allow, and end in spaces or
+// dots, which Windows drops.
+func fileName(n string) string {
+	n = strings.Map(func(r rune) rune {
+		if r < 0x20 || strings.ContainsRune(`/\:*?"<>|`, r) {
+			return '_'
+		}
+		return r
+	}, n)
+	if t := strings.TrimRight(n, " ."); t != n {
+		n = t + strings.Repeat("_", len(n)-len(t))
+	}
+	if n == "" {
+		return "_"
+	}
+	return n
+}
+
+// runInImage runs the command on a file from a disk image, opening it in
+// turn if it's an image itself.
+func runInImage(opts options, f classic.File, path, rel string, depth int) int {
+	if depth < maxDepth {
+		if vols, err := hfs.Open(bytes.NewReader(f.Data), int64(len(f.Data))); err == nil {
+			return walkImage(opts, path, rel, vols, depth+1)
+		}
+	}
+	out, ext, err := runClassic(opts, f, path, false)
+	if errors.Is(err, errSkip) {
+		return 0
+	}
+	status := 0
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "scriptview: %s: %v\n", path, err)
+		status = 1
+		if out == "" {
+			return status
+		}
+	}
+	if err := emit(opts, path, rel, out, ext, true); err != nil {
+		fmt.Fprintf(os.Stderr, "scriptview: %v\n", err)
+		status = 1
+	}
+	return status
+}
 
 // emit prints a result, or writes it to the output folder as rel plus
 // ext. With header set, a printed result follows a line with its path.
@@ -266,6 +396,11 @@ func runFile(opts options, path string, explicit bool) (out, ext string, err err
 	if err != nil {
 		return "", "", err
 	}
+	return runClassic(opts, file, path, explicit)
+}
+
+// runClassic runs the command on a file's forks, like runFile.
+func runClassic(opts options, file classic.File, path string, explicit bool) (out, ext string, err error) {
 	if stack, ok := stackFile(file); ok {
 		return runStack(opts, stack, explicit)
 	}

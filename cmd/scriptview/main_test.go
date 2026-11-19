@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/trypsynth/scriptview/internal/hfs/hfstest"
 	"github.com/trypsynth/scriptview/internal/mactext"
 )
 
@@ -87,5 +88,54 @@ func TestWalk(t *testing.T) {
 	src, _ := os.ReadFile(filepath.Join(out, want[0]))
 	if !strings.Contains(string(src), "tell application") {
 		t.Errorf("output:\n%s", src)
+	}
+}
+
+// TestImage decompiles the scripts on a disk image, given itself and
+// found in a folder, and on an image inside it.
+func TestImage(t *testing.T) {
+	script, err := os.ReadFile("../../testdata/scpt/closeWindows.scpt")
+	if err != nil {
+		t.Fatal(err)
+	}
+	inner := hfstest.Build(true, []hfstest.File{{Name: "Inner", Type: "osas", Data: script}})
+	img := hfstest.Build(false, []hfstest.File{
+		{Folder: "Scripts", Name: "Close/Open", Type: "osas", Data: script},
+		{Name: "ReadMe", Type: "TEXT", Data: []byte("hello")},
+		{Name: "Nested.img", Type: "dImg", Data: inner},
+	})
+	in := t.TempDir()
+	if err := os.WriteFile(filepath.Join(in, "disk.dsk"), img, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	for _, path := range []string{filepath.Join(in, "disk.dsk"), in} {
+		out := t.TempDir()
+		if s := run(options{cmd: "decompile", outDir: out}, []string{path}); s != 0 {
+			t.Fatalf("%s: status %d", path, s)
+		}
+		var got []string
+		filepath.WalkDir(out, func(p string, d os.DirEntry, err error) error {
+			if err == nil && !d.IsDir() {
+				rel, _ := filepath.Rel(out, p)
+				got = append(got, filepath.ToSlash(rel))
+			}
+			return nil
+		})
+		prefix := "disk.dsk/Disk/"
+		if path == in {
+			prefix = filepath.Base(in) + "/" + prefix
+		}
+		want := []string{prefix + "Nested.img/Disk/Inner.applescript", prefix + "Scripts/Close_Open.applescript"}
+		if !slices.Equal(got, want) {
+			t.Errorf("%s: got %q, want %q", path, got, want)
+		}
+	}
+}
+
+func TestFileName(t *testing.T) {
+	for in, want := range map[string]string{"Home": "Home", "HyperCard ": "HyperCard_", "a/b:c?": "a_b_c_", "": "_", "Read Me…": "Read Me…"} {
+		if got := fileName(in); got != want {
+			t.Errorf("fileName(%q) = %q, want %q", in, got, want)
+		}
 	}
 }

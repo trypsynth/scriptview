@@ -31,3 +31,4 @@ About these notes:
 ## Both
 
 - [Text encodings](text-encodings.md): the encodings of classic Mac OS, and how scriptview tells which one a file uses.
+- [Disk images](disk-images.md): the HFS and HFS+ volumes of classic Mac disks, and the files that wrap them.

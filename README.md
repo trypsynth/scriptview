@@ -33,11 +33,13 @@ Other commands:
 - `text`: the text of a HyperCard stack's fields.
 - `encodings`: the text encodings that `--encoding` takes.
 
-### Folders
+### Folders and disk images
 
 Give scriptview a folder, and it finds every script and stack inside, at any depth, whatever the files are named. It prints each one after a line with its path, such as `==> Old Disk/Scripts/Backup <==`. Other files are passed over. You can give it several files and folders at once.
 
-To keep the results, add `-o` and a folder. scriptview writes one file for each script or stack, in the same layout as the input: `Old Disk/Scripts/Backup.scpt` becomes `Backup.applescript`, and a stack's scripts go in a `.hypertalk` file.
+A classic Mac disk image works the same way: scriptview reads HFS and HFS+ volumes, the formats of Mac floppies, hard disks, and CDs, so you can read the scripts and stacks on an old disk without a Mac or an emulator. It takes bare images (`.dsk`, `.hda`, and most `.img` and `.toast` files), CDs and hard disks with a partition map, including Mac and PC hybrid `.iso` files, Disk Copy 4.2 images, and any of these in a MacBinary file. It finds files' resource forks on the image, and opens images that it finds inside an image or a folder.
+
+To keep the results, add `-o` and a folder. scriptview writes one file for each script or stack, in the same layout as the input: `Old Disk/Scripts/Backup.scpt` becomes `Backup.applescript`, and a stack's scripts go in a `.hypertalk` file. Characters that Windows doesn't allow in file names, such as `:`, become `_`.
 
 ```sh
 scriptview -o decompiled "Old Disk"

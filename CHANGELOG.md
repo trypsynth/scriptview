@@ -3,6 +3,7 @@
 ## Unreleased
 
 - scriptview takes folders: it finds every script and stack inside and prints each one after a line with its path. It also takes several files and folders at once.
+- scriptview reads classic Mac disk images: HFS and HFS+ volumes, bare or with a partition map, as on CDs and hard disks, and Disk Copy 4.2 and MacBinary images. It finds every script and stack on them, with their resource forks.
 - `-o` writes each result to a file in a folder, in the same layout as the input.
 - `-e` decodes a classic file's text in an encoding that you name, such as `-e korean`, when scriptview's guess is wrong. `scriptview encodings` lists the names.
 
