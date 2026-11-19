@@ -22,6 +22,11 @@ import (
 // ErrNotImage is returned for data that holds no HFS or HFS+ volume.
 var ErrNotImage = errors.New("not an HFS or HFS+ disk image")
 
+// ErrNoVolume is returned for a disk with a partition map but no HFS or
+// HFS+ volume that can be read, such as a damaged or incomplete copy of a
+// CD, or a disk whose volumes are APFS.
+var ErrNoVolume = errors.New("no readable HFS or HFS+ volume in the disk's partition map")
+
 var be = binary.BigEndian
 
 // A Volume is one HFS or HFS+ volume.

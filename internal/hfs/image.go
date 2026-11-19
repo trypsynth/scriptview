@@ -1,14 +1,17 @@
 package hfs
 
 import (
+	"encoding/binary"
 	"io"
 	"strings"
 )
 
 // Open finds the HFS and HFS+ volumes in a disk image of the given size:
 // a bare volume, a disk with an Apple partition map, such as a CD or a
-// hard disk, or either inside a Disk Copy 4.2 or MacBinary file. It
-// returns ErrNotImage if it finds none.
+// hard disk, or a GUID partition table, inside a Disk Copy 4.2 or
+// MacBinary file or a .dmg image (UDIF), or none. It returns ErrNotImage
+// if it finds none. A Disk Copy 6 image needs its resource fork: see
+// OpenWithResources.
 func Open(r io.ReaderAt, size int64) ([]*Volume, error) {
 	return open(r, size, 0)
 }
@@ -20,6 +23,17 @@ func open(r io.ReaderAt, size int64, depth int) ([]*Volume, error) {
 	head := make([]byte, 1536)
 	if _, err := r.ReadAt(head, 0); err != nil {
 		return nil, ErrNotImage
+	}
+	// A .dmg image (UDIF) ends with a 512-byte trailer. It comes first:
+	// the image's data can start with its disk's first sectors,
+	// uncompressed, which look like a bare volume or a partition map.
+	koly := make([]byte, 512)
+	if _, err := r.ReadAt(koly, size-512); err == nil && string(koly[:4]) == "koly" {
+		d, err := udif(r, size, koly)
+		if err != nil {
+			return nil, err
+		}
+		return open(d, d.size, depth+1)
 	}
 	switch string(head[1024:1026]) {
 	case "BD":
@@ -35,10 +49,19 @@ func open(r io.ReaderAt, size int64, depth int) ([]*Volume, error) {
 		}
 		return []*Volume{v}, nil
 	}
-	if string(head[:2]) == "ER" || string(head[512:514]) == "PM" {
+	if string(head[512:514]) == "PM" || string(head[:2]) == "ER" && string(head[512:520]) != "EFI PART" {
 		if vs := partitions(r, size, head, depth); len(vs) > 0 {
 			return vs, nil
 		}
+		if string(head[512:514]) == "PM" {
+			return nil, ErrNoVolume
+		}
+	}
+	if string(head[512:520]) == "EFI PART" {
+		if vs := gptPartitions(r, size, head[512:], depth); len(vs) > 0 {
+			return vs, nil
+		}
+		return nil, ErrNoVolume
 	}
 	// Disk Copy 4.2: a 64-byte name, the data's size at 64, and 0x0100 at
 	// 82, then the disk from 84.
@@ -55,6 +78,35 @@ func open(r io.ReaderAt, size int64, depth int) ([]*Volume, error) {
 		}
 	}
 	return nil, ErrNotImage
+}
+
+// gptPartitions opens the HFS+ partitions in a GUID partition table, as
+// on Intel Macs' disks and .dmg images: the header at 512 gives the
+// entries' first sector at 72, their number at 80, and their size at 84,
+// all little-endian. Each entry has its first and last sectors at 32 and
+// 40. scriptview opens any partition that holds an HFS or HFS+ volume.
+func gptPartitions(r io.ReaderAt, size int64, hdr []byte, depth int) []*Volume {
+	le := binary.LittleEndian
+	at, n, es := int64(le.Uint64(hdr[72:]))*512, int(le.Uint32(hdr[80:])), int64(le.Uint32(hdr[84:]))
+	if es < 128 || es > 4096 || n > 256 {
+		return nil
+	}
+	var vols []*Volume
+	for i := range n {
+		e := make([]byte, 48)
+		if _, err := r.ReadAt(e, at+int64(i)*es); err != nil {
+			break
+		}
+		first, last := int64(le.Uint64(e[32:]))*512, (int64(le.Uint64(e[40:]))+1)*512
+		if first <= 0 || first >= size || last <= first {
+			continue
+		}
+		last = min(last, size)
+		if vs, err := open(io.NewSectionReader(r, first, last-first), last-first, depth+1); err == nil {
+			vols = append(vols, vs...)
+		}
+	}
+	return vols
 }
 
 // partitions opens the HFS and HFS+ partitions in an Apple partition map:
