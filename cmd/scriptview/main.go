@@ -16,15 +16,17 @@ import (
 	"github.com/trypsynth/scriptview/internal/hypercard"
 	"github.com/trypsynth/scriptview/internal/mactext"
 	"github.com/trypsynth/scriptview/internal/scpt"
+	"github.com/trypsynth/scriptview/internal/supercard"
 )
 
 const helpText = `Usage: scriptview [command] [options] <file or folder>...
 
 A file can be a compiled AppleScript (.scpt), a script bundle (.scptd),
-an applet (.app), or a HyperCard stack. With no command, scriptview prints
-the file's source: the decompiled AppleScript, or every script in the
-stack. Given a folder or a classic Mac disk image (HFS or HFS+, such as a
-.dsk, .img, .toast, or .iso file), it finds every script and stack inside,
+an applet (.app), a HyperCard stack, or a SuperCard project or
+standalone. With no command, scriptview prints the file's source: the
+decompiled AppleScript, or every script in the stack or project. Given a
+folder or a classic Mac disk image (HFS or HFS+, such as a .dsk, .img,
+.toast, or .iso file), it finds every script, stack, and project inside,
 and prints each one after a line with its path.
 
 Commands:
@@ -413,6 +415,9 @@ func runClassic(opts options, file classic.File, path string, explicit bool) (ou
 	if stack, ok := stackFile(file); ok {
 		return runStack(opts, stack, explicit)
 	}
+	if proj, ok := projectFile(file); ok {
+		return runProject(opts, proj, explicit)
+	}
 	// A classic Mac script keeps its compiled data in the resource fork and
 	// leaves the data fork empty.
 	data := file.Data
@@ -488,6 +493,34 @@ func stackFile(f classic.File) (classic.File, bool) {
 		return inner, true
 	}
 	return f, false
+}
+
+// projectFile returns f as a SuperCard project or standalone, unwrapping
+// MacBinary, BinHex, and AppleSingle files, or false if it isn't one.
+func projectFile(f classic.File) (classic.File, bool) {
+	if supercard.IsProject(f.Data) {
+		return f, true
+	}
+	if inner, ok := classic.Unwrap(f.Data); ok && supercard.IsProject(inner.Data) {
+		return inner, true
+	}
+	return f, false
+}
+
+// runProject runs the command on a SuperCard project: its scripts.
+func runProject(opts options, f classic.File, explicit bool) (out, ext string, err error) {
+	switch opts.cmd {
+	case "decompile":
+	case "text":
+		return "", "", notFor(explicit, "text works only on HyperCard stacks")
+	default:
+		return "", "", notFor(explicit, opts.cmd+" works only on compiled AppleScript files")
+	}
+	p, err := supercard.ParseWith(f.Data, opts.enc)
+	if err != nil {
+		return "", "", err
+	}
+	return p.Scripts(), ".supertalk", nil
 }
 
 // runStack runs the command on a HyperCard stack: its scripts, or with

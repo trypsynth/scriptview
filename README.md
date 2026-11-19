@@ -1,6 +1,6 @@
 # scriptview
 
-scriptview shows you the source code of compiled AppleScript files (`.scpt`) and the scripts in HyperCard stacks. It runs on macOS, Linux, and Windows, so you can read them without a Mac.
+scriptview shows you the source code of compiled AppleScript files (`.scpt`) and the scripts in HyperCard stacks and SuperCard projects. It runs on macOS, Linux, and Windows, so you can read them without a Mac.
 
 On a Mac you can do this with `osadecompile`. scriptview tries to print exactly what `osadecompile` prints, line for line.
 
@@ -35,11 +35,11 @@ Other commands:
 
 ### Folders and disk images
 
-Give scriptview a folder, and it finds every script and stack inside, at any depth, whatever the files are named. It prints each one after a line with its path, such as `==> Old Disk/Scripts/Backup <==`. Other files are passed over. You can give it several files and folders at once.
+Give scriptview a folder, and it finds every script, stack, and project inside, at any depth, whatever the files are named. It prints each one after a line with its path, such as `==> Old Disk/Scripts/Backup <==`. Other files are passed over. You can give it several files and folders at once.
 
-A classic Mac disk image works the same way: scriptview reads HFS and HFS+ volumes, the formats of Mac floppies, hard disks, and CDs, so you can read the scripts and stacks on an old disk without a Mac or an emulator. It takes bare images (`.dsk`, `.hda`, and `.toast` files), CDs and hard disks with a partition map, including Mac and PC hybrid `.iso` files, Disk Copy 4.2 and 6 images (`.img` and `.smi`), `.dmg` images with HFS+ volumes, and any of these in a MacBinary file. A Disk Copy 6 image needs its resource fork, as on a Mac or in a MacBinary file. It finds files' resource forks on the image, and opens images that it finds inside an image or a folder.
+A classic Mac disk image works the same way: scriptview reads HFS and HFS+ volumes, the formats of Mac floppies, hard disks, and CDs, so you can read the scripts, stacks, and projects on an old disk without a Mac or an emulator. It takes bare images (`.dsk`, `.hda`, and `.toast` files), CDs and hard disks with a partition map, including Mac and PC hybrid `.iso` files, Disk Copy 4.2 and 6 images (`.img` and `.smi`), `.dmg` images with HFS+ volumes, and any of these in a MacBinary file. A Disk Copy 6 image needs its resource fork, as on a Mac or in a MacBinary file. It finds files' resource forks on the image, and opens images that it finds inside an image or a folder.
 
-To keep the results, add `-o` and a folder. scriptview writes one file for each script or stack, in the same layout as the input: `Old Disk/Scripts/Backup.scpt` becomes `Backup.applescript`, and a stack's scripts go in a `.hypertalk` file. Characters that Windows doesn't allow in file names, such as `:`, become `_`.
+To keep the results, add `-o` and a folder. scriptview writes one file for each script, stack, or project, in the same layout as the input: `Old Disk/Scripts/Backup.scpt` becomes `Backup.applescript`, a stack's scripts go in a `.hypertalk` file, and a project's in a `.supertalk` file. Characters that Windows doesn't allow in file names, such as `:`, become `_`.
 
 ```sh
 scriptview -o decompiled "Old Disk"
@@ -72,6 +72,14 @@ From HyperCard 2.2 on, a script can be in AppleScript. scriptview decompiles tho
 A stack can be a plain file, or inside a MacBinary, BinHex, or AppleSingle file. scriptview reads Japanese, Chinese, Korean, and Cyrillic stacks, stacks from HyperCard IIGS, the Apple IIGS version, and the scripts of password-protected ones.
 
 scriptview was tested on 38,879 stacks without a failure. Its indentation matches 99.9% of the lines in 12 listings of scripts that HyperCard wrote out.
+
+## SuperCard projects
+
+SuperCard was a rival to HyperCard, with color, several windows, and its own menus. Give scriptview a SuperCard project, from SuperCard 1.0 to 4.5, and it prints every script in it: the project's, each window's, background's, and card's, each graphic's, button's, and field's, and each menu's and menu item's. As with stacks, a comment names each object, such as `-- card button "OK" of card "Home" of window "Main"`, and the scripts are indented the way HyperCard indents HyperTalk.
+
+It also reads standalone applications built with SuperCard, which carry their project in their data fork, and scripts that their author protected. Standalones from SuperCard 1 can store their scripts tokenized, without their source text. scriptview doesn't read those yet, and prints a comment in place of each one.
+
+scriptview was tested on 876 projects and standalones. A byte-by-byte scan of them finds 49,294 distinct scripts, and scriptview prints all but 97 of them. It names the object of 97.6% of the objects' scripts. The rest print under a comment that names their card or background but not their object.
 
 ## How well it works
 
