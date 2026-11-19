@@ -18,7 +18,7 @@ Bytes `0x00` to `0x7F` are ASCII in every encoding. Japanese fonts draw `0x5C` a
 
 ## Detection
 
-A file's text is Mac Roman unless there's evidence for another encoding. The evidence comes from two places.
+A file's text is Mac Roman unless there's evidence for another encoding. When the evidence misleads, `scriptview -e` names the encoding instead, and decodes all of the file's text in it. The evidence comes from two places.
 
 First, a stack's font table. A font's ID tells its script system: IDs from 16384 to 32767 belong to the non-Roman scripts, 512 IDs to a script, starting with Japanese at 16384. Osaka, the Japanese system font, is 16384. Utilities that resolved font ID conflicts also put Roman fonts in that range, so scriptview trusts an ID only together with its name: a known name, such as Osaka or Beijing, or a name that isn't ASCII and decodes in the script's encoding, such as 細明朝体. A font hint makes its encoding a candidate. It doesn't decide alone, because a stack can list a font that none of its text uses.
 

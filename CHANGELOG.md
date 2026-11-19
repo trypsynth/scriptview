@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- scriptview takes folders: it finds every script and stack inside and prints each one after a line with its path. It also takes several files and folders at once.
+- `-o` writes each result to a file in a folder, in the same layout as the input.
+- `-e` decodes a classic file's text in an encoding that you name, such as `-e korean`, when scriptview's guess is wrong. `scriptview encodings` lists the names.
+
 ## 0.4.0
 
 - Added HyperCard stacks, from HyperCard 1.x, 2.x, and IIGS. scriptview prints every script in a stack, indented the way HyperCard's script editor shows it and labeled with its object, and `scriptview text` prints the text of the stack's fields.

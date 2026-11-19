@@ -31,6 +31,29 @@ Other commands:
 - `disasm`: the bytecode as annotated assembly.
 - `tree`: the raw syntax tree, for debugging.
 - `text`: the text of a HyperCard stack's fields.
+- `encodings`: the text encodings that `--encoding` takes.
+
+### Folders
+
+Give scriptview a folder, and it finds every script and stack inside, at any depth, whatever the files are named. It prints each one after a line with its path, such as `==> Old Disk/Scripts/Backup <==`. Other files are passed over. You can give it several files and folders at once.
+
+To keep the results, add `-o` and a folder. scriptview writes one file for each script or stack, in the same layout as the input: `Old Disk/Scripts/Backup.scpt` becomes `Backup.applescript`, and a stack's scripts go in a `.hypertalk` file.
+
+```sh
+scriptview -o decompiled "Old Disk"
+```
+
+### Text encodings
+
+scriptview works out which encoding a classic Mac OS file's text uses, such as Mac Roman or Mac Japanese. When it guesses wrong, name the encoding with `-e`:
+
+```sh
+scriptview -e korean MyScript.scpt
+```
+
+`scriptview encodings` lists the names. With `-e`, all of the file's text decodes in that encoding, including a stack's text in other fonts. See [Text encodings](docs/text-encodings.md).
+
+### Other files
 
 scriptview also reads JavaScript for Automation (JXA) scripts and `.scpt` files that hold plain text.
 
@@ -46,7 +69,7 @@ From HyperCard 2.2 on, a script can be in AppleScript. scriptview decompiles tho
 
 A stack can be a plain file, or inside a MacBinary, BinHex, or AppleSingle file. scriptview reads Japanese, Chinese, Korean, and Cyrillic stacks, stacks from HyperCard IIGS, the Apple IIGS version, and the scripts of password-protected ones.
 
-scriptview was tested on 4,651 stacks without a failure. Its indentation matches 99.9% of the lines in 12 listings of scripts that HyperCard wrote out.
+scriptview was tested on 38,879 stacks without a failure. Its indentation matches 99.9% of the lines in 12 listings of scripts that HyperCard wrote out.
 
 ## How well it works
 
