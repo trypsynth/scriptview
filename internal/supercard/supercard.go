@@ -365,7 +365,7 @@ type obj struct {
 // 2 bytes.
 //
 // An object's record has its type at 0 (graphics from 100, buttons from
-// 200, and fields from 300), its ID at 8, and from 58, its name, data,
+// 200, and fields from 300), its ID at 6, and from 58, its name, data,
 // and script handles. The data is a field's text, a graphic's drawing, or
 // the like. Each handle that isn't 0 has a record after the fixed ones, in
 // the order data, name, script. From SuperCard 3 on, an object can have
@@ -388,7 +388,7 @@ func (ps *parser) objects(l *Layer, b []byte, depth int) {
 		if t < 100 || t >= 400 {
 			return
 		}
-		o := obj{Object: &Object{ID: int(be.Uint16(r[8:])), Kind: Kind(t / 100)}, group: t == 108}
+		o := obj{Object: &Object{ID: int(be.Uint32(r[6:])), Kind: Kind(t / 100)}, group: t == 108}
 		o.name, o.data, o.script = be.Uint32(r[58:]) != 0, be.Uint32(r[62:]) != 0, be.Uint32(r[66:]) != 0
 		if size == 98 {
 			o.extra = extraHandles(r)

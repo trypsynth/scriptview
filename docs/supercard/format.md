@@ -83,7 +83,7 @@ A card's or a background's block has its script, then a record with its object l
 The object list has a fixed record for each object, then the records that the objects point to, then the number of objects in 2 bytes. The fixed records are 82 bytes in format 1.0, 84 in 1.1, and 98 in format 2. In each:
 
 - 0, 2 bytes: the type. Graphics are 100 to 108, buttons 200 to 223, and fields 300 to 303. Type 108 is a group.
-- 8, 2 bytes: the object's ID.
+- 6, 4 bytes: the object's ID.
 - 58, 62, and 66, 4 bytes each: handles to the object's name, its data, and its script. The data is a field's text, a graphic's drawing, a polygon's points, or a group's objects.
 
 The handles are memory addresses from when the file was saved, so their values mean nothing, but a handle that isn't 0 says that the object has that record. The records come in object order, and for each object in the order data, name, script. In format 1, this accounts for every record of all but a few cards: 114 of the scripts in format 1 files don't match up.

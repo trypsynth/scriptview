@@ -72,7 +72,7 @@ func (b *builder) objects(objs []object) []byte {
 	for _, o := range objs {
 		r := make([]byte, b.l.object)
 		bo.PutUint16(r, uint16(o.typ))
-		bo.PutUint16(r[8:], uint16(o.id))
+		bo.PutUint32(r[6:], uint32(o.id))
 		put := func(at int, ok bool) {
 			if ok {
 				b.handle += 4
