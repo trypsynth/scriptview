@@ -89,7 +89,10 @@ type Resource struct {
 }
 
 // ResourceList returns every resource in a resource fork, in the order of
-// the fork's map. It returns what it can read of a damaged fork.
+// the fork's map. It returns what it can read of a damaged fork. Each type
+// has its own references, so a type's list stops at a reference that
+// another has read: otherwise a damaged fork could list each of its
+// resources thousands of times over.
 func ResourceList(fork []byte) []Resource {
 	be := binary.BigEndian
 	if len(fork) < 16 {
@@ -107,6 +110,7 @@ func ResourceList(fork []byte) []Resource {
 	typeList := m[typeListOff:]
 	nTypes := int(int16(be.Uint16(typeList))) + 1
 	var out []Resource
+	seen := map[int]bool{}
 	for i := 0; i < nTypes && 2+i*8+8 <= len(typeList); i++ {
 		e := typeList[2+i*8:]
 		typ := string(e[:4])
@@ -114,9 +118,10 @@ func ResourceList(fork []byte) []Resource {
 		refsOff := int(be.Uint16(e[6:]))
 		for j := range count {
 			r := refsOff + j*12
-			if r+12 > len(typeList) {
+			if r+12 > len(typeList) || seen[r] {
 				break
 			}
+			seen[r] = true
 			ref := typeList[r:]
 			off := dataOff + int(be.Uint32(ref[4:])&0xffffff)
 			if off+4 > len(fork) {

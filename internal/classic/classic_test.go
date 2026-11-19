@@ -112,3 +112,48 @@ func TestResourceList(t *testing.T) {
 		t.Errorf("got %+v", res)
 	}
 }
+
+// TestSharedRefs reads a damaged fork whose types all claim the same
+// references: each resource is listed once.
+func TestSharedRefs(t *testing.T) {
+	be := binary.BigEndian
+	const types = 1000
+	fork := make([]byte, 256+28+2+8*types+12)
+	be.PutUint32(fork, 16)      // the data
+	be.PutUint32(fork[4:], 256) // the map
+	be.PutUint32(fork[16:], 4)
+	copy(fork[20:], "data")
+	m := fork[256:]
+	be.PutUint16(m[24:], 28) // the type list
+	tl := m[28:]
+	be.PutUint16(tl, types-1)
+	refs := 2 + 8*types
+	for i := range types {
+		e := tl[2+8*i:]
+		copy(e, "TEXT")
+		be.PutUint16(e[4:], 0x7FFF) // 32,768 resources
+		be.PutUint16(e[6:], uint16(refs))
+	}
+	be.PutUint16(tl[refs+2:], 0xFFFF) // no name
+	if got := ResourceList(fork); len(got) != 1 || string(got[0].Data) != "data" {
+		t.Errorf("got %d resources", len(got))
+	}
+}
+
+// FuzzUnwrap feeds Unwrap and the resource fork reader damaged files:
+// they may fail, but not panic.
+func FuzzUnwrap(f *testing.F) {
+	for _, name := range []string{"handlers2.appledouble", "handlers2.bin", "handlers2.hqx", "handlers2.rsrc"} {
+		data, err := os.ReadFile(filepath.Join("..", "..", "testdata", "classic", name))
+		if err != nil {
+			f.Fatal(err)
+		}
+		f.Add(data)
+	}
+	f.Fuzz(func(t *testing.T, data []byte) {
+		if file, ok := Unwrap(data); ok {
+			data = file.Rsrc
+		}
+		_ = ResourceList(data)
+	})
+}
