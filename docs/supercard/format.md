@@ -78,7 +78,7 @@ Each window points to a card list that exists in all but 8 of 5,440 windows. A c
 
 ## Cards and backgrounds
 
-A card's or a background's block has its script, then a record with its object list, then more records: for a card, the text of its background's fields on that card, and then for both, its user properties in format 2, and its name last.
+A card's or a background's block has its script, then a record with its object list, then more records: for a card, its text in its background's fields, and then for both, its user properties in format 2, and its name last.
 
 The object list has a fixed record for each object, then the records that the objects point to, then the number of objects in 2 bytes. The fixed records are 82 bytes in format 1.0, 84 in 1.1, and 98 in format 2. In each:
 
@@ -91,6 +91,21 @@ The handles are memory addresses from when the file was saved, so their values m
 In format 2, an object can have more records, such as its user properties, whose handle is usually at 86, and sometimes at 72, 78, or 94. Not every value at those offsets is a handle, so scriptview tells them apart by trial: a script record is easy to recognize, by its NUL and the size and rectangle of the editor state after it, and a name has no NUL. For each object, it tries the most extra records first, and fewer until every script lands on a script handle and the records run out at the last object. This matches the records to their objects in all but 2,223 of the 92,670 objects with scripts. For the rest, scriptview prints the scripts under the card or background, without naming their object.
 
 A group's data is an object list of its own, laid out the same way, and its objects are on the group's card or background.
+
+## Field text
+
+A field's data, in every format, is TextEdit's styled text:
+
+- 0, 2 bytes: the number of style runs.
+- 2: 20 bytes for each run, as in a `styl` resource: the offset where the run starts in 4 bytes, then its line height, ascent, font, style, size, and color.
+- Then the text, in the Mac's system encoding with carriage returns between lines. It has no length of its own and no NUL at the end.
+- Then 14 bytes of the field's default style.
+
+A card field's data is its text. A card keeps its text in its background's fields in the first record after its object list. For each field, the record has the field's ID in 4 bytes, the length of its data in 4 bytes, and the data, with no padding between fields. A card can still have text for a field that has since been deleted from its background. scriptview leaves that text out.
+
+A background field has data of its own too. It is the text the field had on the card that was showing when the project was saved, and it's usually the same as that card's copy. When it isn't, it looks to be the newer of the two: in one project with a single card, the background's copy of a date field is a week later than the card's. Nothing in the background says which card it came from, so scriptview prints it under the background when it matches no card's text.
+
+Field text often uses fonts with symbols of their own, so scriptview guesses the project's encoding from its scripts and names alone, and decodes field text in the same encoding.
 
 ## Menus
 

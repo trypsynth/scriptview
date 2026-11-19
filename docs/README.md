@@ -30,7 +30,7 @@ About these notes:
 
 ## SuperCard
 
-- [Project format](supercard/format.md): the blocks of a project file, where the scripts and names are, card lists, groups, protected scripts, and standalone applications.
+- [Project format](supercard/format.md): the blocks of a project file, where the scripts, names, and field text are, card lists, groups, protected scripts, and standalone applications.
 
 ## All of them
 

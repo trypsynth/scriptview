@@ -30,7 +30,7 @@ Other commands:
 - `bytecode`: the source code, rebuilt from the bytecode only.
 - `disasm`: the bytecode as annotated assembly.
 - `tree`: the raw syntax tree, for debugging.
-- `text`: the text of a HyperCard stack's fields.
+- `text`: the text of a HyperCard stack's or a SuperCard project's fields.
 - `encodings`: the text encodings that `--encoding` takes.
 
 ### Folders and disk images
@@ -79,6 +79,8 @@ SuperCard was a rival to HyperCard, with color, several windows, and its own men
 
 It also reads standalone applications built with SuperCard, which carry their project in their data fork, and scripts that their author protected. Standalones from SuperCard 1 can store their scripts tokenized, without their source text. scriptview doesn't read those yet, and prints a comment in place of each one.
 
+`scriptview text` prints the text in the project's fields instead: each card's own fields, and its text in its background's fields. A background field also keeps the text it showed on the card that was open when the project was saved, which can be newer than that card's copy. scriptview prints that text under the background when no card has it.
+
 scriptview was tested on 876 projects and standalones. A byte-by-byte scan of them finds 49,294 distinct scripts, and scriptview prints all but 97 of them. It names the object of 97.6% of the objects' scripts. The rest print under a comment that names their card or background but not their object.
 
 ## How well it works
@@ -121,6 +123,8 @@ The code is in `internal`:
 - `scpt` reads compiled AppleScript and JavaScript for Automation scripts.
 - `classic` reads the files of classic Mac OS: resource forks, and the AppleSingle, AppleDouble, MacBinary, and BinHex wrappers that carry them on other systems.
 - `hypercard` reads HyperCard stacks: their scripts, buttons, fields, and field text.
+- `supercard` reads SuperCard projects: their scripts and field text.
+- `hfs` reads classic Mac disk images and the HFS and HFS+ volumes on them.
 - `mactext` decodes the classic Mac text encodings, such as Mac Roman and Mac Japanese, and tells which one a file uses.
 
 Inside `scpt`:
@@ -132,7 +136,7 @@ Inside `scpt`:
 
 ## Notes
 
-The [docs](docs/README.md) folder is a reference for the formats. For AppleScript: the file layout, the syntax tree, every opcode of the bytecode, terminology, how often each structure occurs in real scripts, and the rules of `osadecompile`'s printer. For HyperCard: the blocks of a stack file, and where the scripts and field text are.
+The [docs](docs/README.md) folder is a reference for the formats. For AppleScript: the file layout, the syntax tree, every opcode of the bytecode, terminology, how often each structure occurs in real scripts, and the rules of `osadecompile`'s printer. For HyperCard and SuperCard: the blocks of a stack or project file, and where the scripts and field text are.
 
 ## Tests
 
