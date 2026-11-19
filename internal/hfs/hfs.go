@@ -266,7 +266,7 @@ func openHFSPlus(r io.ReaderAt, size int64) (*Volume, error) {
 		return nil, err
 	}
 	block := int64(be.Uint32(vh[40:]))
-	if block < 512 || block&(block-1) != 0 {
+	if !validBlock(block) {
 		return nil, fmt.Errorf("hfs: block size %d", block)
 	}
 	v := &Volume{Plus: true, r: r, size: size, block: block, overflow: map[forkKey][]extent{}}

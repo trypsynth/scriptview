@@ -271,7 +271,7 @@ func Build(plus bool, files []File) []byte {
 	}
 	if plus {
 		vh := vol[1024:1536]
-		copy(vh, "H+")
+		copy(vh, "H+\x00\x04")
 		binary.BigEndian.PutUint32(vh[40:], bs)
 		for _, fk := range []struct {
 			at   int

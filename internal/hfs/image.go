@@ -35,14 +35,17 @@ func open(r io.ReaderAt, size int64, depth int) ([]*Volume, error) {
 		}
 		return open(d, d.size, depth+1)
 	}
-	switch string(head[1024:1026]) {
-	case "BD":
+	// A signature is two bytes, which other files can have by chance, so
+	// the volume header's block size and version must make sense too.
+	vh := head[1024:]
+	switch {
+	case string(vh[:2]) == "BD" && be.Uint32(vh[0x14:]) != 0 && be.Uint32(vh[0x14:])%512 == 0:
 		v, err := openHFS(r, size)
 		if err != nil {
 			return nil, err
 		}
 		return []*Volume{v}, nil
-	case "H+", "HX":
+	case (string(vh[:2]) == "H+" || string(vh[:2]) == "HX") && (be.Uint16(vh[2:]) == 4 || be.Uint16(vh[2:]) == 5) && validBlock(int64(be.Uint32(vh[40:]))):
 		v, err := openHFSPlus(r, size)
 		if err != nil {
 			return nil, err
@@ -146,4 +149,10 @@ func partitions(r io.ReaderAt, size int64, head []byte, depth int) []*Volume {
 		}
 	}
 	return vols
+}
+
+// validBlock reports whether n is an HFS+ block size: a power of two, at
+// least 512.
+func validBlock(n int64) bool {
+	return n >= 512 && n&(n-1) == 0
 }

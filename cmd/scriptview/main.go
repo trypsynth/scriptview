@@ -273,6 +273,11 @@ func openImage(path string) ([]*hfs.Volume, io.Closer, error) {
 		f.Close()
 		return nil, nil, nil
 	}
+	head := make([]byte, 16)
+	if n, _ := f.ReadAt(head, 0); notImage(head[:n]) {
+		f.Close()
+		return nil, nil, nil
+	}
 	vols, err := hfs.Open(f, fi.Size())
 	if err != nil {
 		f.Close()
@@ -340,10 +345,19 @@ func fileName(n string) string {
 	return n
 }
 
+// notImage reports whether a file that starts with head is a compiled
+// script or a stack, which can have a disk's signature by chance.
+func notImage(head []byte) bool {
+	return bytes.HasPrefix(head, []byte("FasdUAS")) || bytes.HasPrefix(head, scpt.JXAMagic) || hypercard.IsStack(head)
+}
+
 // memImage opens a file that's in memory as a disk image, or returns nil
 // if it isn't one. A Disk Copy 6 image needs its resource fork, which a
 // MacBinary file can hold.
 func memImage(f classic.File) []*hfs.Volume {
+	if notImage(f.Data) {
+		return nil
+	}
 	if vols, err := hfs.OpenWithResources(bytes.NewReader(f.Data), int64(len(f.Data)), f.Rsrc); err == nil {
 		return vols
 	}

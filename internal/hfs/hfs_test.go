@@ -5,6 +5,7 @@ import (
 	"compress/zlib"
 	"encoding/base64"
 	"encoding/binary"
+	"errors"
 	"slices"
 	"strings"
 	"testing"
@@ -318,4 +319,17 @@ func FuzzNDIF(f *testing.F) {
 			}
 		}
 	})
+}
+
+// TestStraySignature opens files that have a volume's signature at 1024 by
+// chance, as compiled scripts can: they aren't images.
+func TestStraySignature(t *testing.T) {
+	for _, sig := range []string{"H+\x00\x00", "HX\x00\x00", "BD\x00\x00"} {
+		data := make([]byte, 4096)
+		copy(data, "FasdUAS 1.101.10")
+		copy(data[1024:], sig)
+		if _, err := Open(bytes.NewReader(data), int64(len(data))); !errors.Is(err, ErrNotImage) {
+			t.Errorf("%q: %v", sig[:2], err)
+		}
+	}
 }
