@@ -273,6 +273,13 @@ func (ps *parser) styleTable(b []byte) {
 // symbols, as in "press ⌘-H" in a field.
 var fontSymbols = strings.NewReplacer("\x11", "⌘", "\x12", "✓", "\x13", "◆", "\x14", "\uf8ff")
 
+// blockTypes are the types of block that HyperCard writes, which mark
+// where blocks start again past a damaged one.
+var blockTypes = map[string]bool{
+	"STAK": true, "MAST": true, "LIST": true, "PAGE": true, "BKGD": true, "CARD": true, "BMAP": true,
+	"STBL": true, "FTBL": true, "PRNT": true, "PRST": true, "PRFT": true, "FREE": true, "TAIL": true,
+}
+
 func (ps *parser) parse(data []byte) (*Stack, error) {
 	if !IsStack(data) {
 		return nil, ErrNotStack
@@ -284,17 +291,30 @@ func (ps *parser) parse(data []byte) (*Stack, error) {
 	bo := ps.bo
 	blocks := map[string]map[int32]block{}
 	var order []block
+	damaged := false
 	for p := 0; p+12 <= len(data); {
-		size := int(bo.Uint32(data[p:]))
-		if size < 12 || p+size > len(data) {
-			break
+		// Some stacks set bit 30 of a MAST block's size, so the top bits
+		// are masked off.
+		size := int(bo.Uint32(data[p:]) & 0x3FFFFFFF)
+		typ := string(data[p+4 : p+8])
+		if size < 12 || p+size > len(data) || damaged && !blockTypes[typ] {
+			if p == 0 {
+				break
+			}
+			// Past a damaged block, look for the next one: blocks start
+			// at multiples of 32 bytes.
+			damaged = true
+			p = (p + 32) &^ 31
+			continue
 		}
-		b := block{typ: string(data[p+4 : p+8]), id: int32(bo.Uint32(data[p+8:])), data: data[p : p+size]}
+		b := block{typ: typ, id: int32(bo.Uint32(data[p+8:])), data: data[p : p+size]}
 		if blocks[b.typ] == nil {
 			blocks[b.typ] = map[int32]block{}
 		}
-		blocks[b.typ][b.id] = b
-		order = append(order, b)
+		if _, ok := blocks[b.typ][b.id]; !ok || !damaged {
+			blocks[b.typ][b.id] = b
+			order = append(order, b)
+		}
 		p += size
 		if b.typ == "TAIL" {
 			break

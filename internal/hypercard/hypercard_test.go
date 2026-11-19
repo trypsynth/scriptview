@@ -1,8 +1,10 @@
 package hypercard
 
 import (
+	"bytes"
 	"encoding/binary"
 	"os"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -10,13 +12,16 @@ import (
 // stackBuilder writes a small HyperCard 2.x stack.
 type stackBuilder struct{ out []byte }
 
+// block adds a block, padded to a multiple of 32 bytes as HyperCard pads
+// them.
 func (sb *stackBuilder) block(typ string, id int32, body []byte) {
-	size := 16 + len(body)
+	size := (16 + len(body) + 31) &^ 31
 	h := binary.BigEndian.AppendUint32(nil, uint32(size))
 	h = append(h, typ...)
 	h = binary.BigEndian.AppendUint32(h, uint32(id))
 	h = append(h, 0, 0, 0, 0)
 	sb.out = append(append(sb.out, h...), body...)
+	sb.out = append(sb.out, make([]byte, size-16-len(body))...)
 }
 
 // part encodes a part record: size, ID, kind, flags, rectangle, style
@@ -151,6 +156,31 @@ func TestParse(t *testing.T) {
 	}
 	if _, err := Parse([]byte("FasdUAS 1.101.10")); err != ErrNotStack {
 		t.Errorf("not a stack: got %v", err)
+	}
+}
+
+// TestDamaged reads stacks with damage between blocks, and with a flag in
+// the top bits of a block's size: they read like the whole stack.
+func TestDamaged(t *testing.T) {
+	be := binary.BigEndian
+	good := sampleStack()
+	want, err := Parse(good)
+	if err != nil {
+		t.Fatal(err)
+	}
+	stak := int(be.Uint32(good))
+	list := stak + int(be.Uint32(good[stak:]))
+	damaged := slices.Concat(good[:list], bytes.Repeat([]byte{0xFF}, 96), good[list:])
+	flagged := slices.Clone(good)
+	be.PutUint32(flagged[stak:], be.Uint32(flagged[stak:])|0x40000000)
+	for name, data := range map[string][]byte{"damaged": damaged, "flagged": flagged} {
+		got, err := Parse(data)
+		if err != nil {
+			t.Fatalf("%s: %v", name, err)
+		}
+		if got.Scripts() != want.Scripts() || got.Text() != want.Text() || len(got.Cards) != 2 {
+			t.Errorf("%s: got %d cards, scripts\n%s", name, len(got.Cards), got.Scripts())
+		}
 	}
 }
 
