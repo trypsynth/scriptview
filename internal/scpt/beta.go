@@ -153,21 +153,21 @@ func translateBeta(objs []*object) []*object {
 		}
 	}
 
-	maxRef := int16(0)
+	maxRef := nodeID(0)
 	for _, o := range objs {
 		if o.ref > maxRef {
 			maxRef = o.ref
 		}
 	}
-	renum := map[int16]int16{}
+	renum := map[nodeID]nodeID{}
 	next := maxRef
-	newRef := func() int16 {
+	newRef := func() nodeID {
 		if next < 0x7ffe {
 			next++
 		}
 		return next
 	}
-	minRef := int16(0)
+	minRef := nodeID(0)
 	for _, o := range objs {
 		if o.ref < minRef {
 			minRef = o.ref
@@ -180,7 +180,7 @@ func translateBeta(objs []*object) []*object {
 			}
 		}
 	}
-	byRef := map[int16]*object{}
+	byRef := map[nodeID]*object{}
 	for _, o := range objs {
 		if r, ok := renum[o.ref]; ok {
 			o.ref = r
@@ -195,7 +195,7 @@ func translateBeta(objs []*object) []*object {
 		}
 	}
 
-	add := func(o *object) int16 {
+	add := func(o *object) nodeID {
 		if isContainer(o.typ) {
 			o.ref = newRef()
 		} else if minRef > -0x7ffe {
@@ -206,20 +206,20 @@ func translateBeta(objs []*object) []*object {
 		byRef[o.ref] = o
 		return o.ref
 	}
-	isNil := func(ref int16) bool {
+	isNil := func(ref nodeID) bool {
 		o := byRef[ref]
 		return o == nil || (o.typ == objSymbol && len(o.data) == 0) || (o.typ == objList && len(o.refs) == 0)
 	}
-	varNode := func(ref int16) int16 {
+	varNode := func(ref nodeID) nodeID {
 		if o := byRef[ref]; o != nil && o.typ == objUserID {
-			return add(&object{typ: objCmdBlock, kind: 'o', refs: []int16{ref}})
+			return add(&object{typ: objCmdBlock, kind: 'o', refs: []nodeID{ref}})
 		}
 		return ref
 	}
 
 	// Statements are the items of blocks, the bodies of compound statements
 	// and the comment lines; everything else under an 's' is an expression.
-	stmtLine := map[int16]bool{}
+	stmtLine := map[nodeID]bool{}
 	for _, o := range objs {
 		if o.typ == objCmdBlock && o.kind == 's' && (o.flags <= 5 || isNil(child0refs(o.refs))) {
 			stmtLine[o.ref] = true
@@ -276,14 +276,14 @@ func translateBeta(objs []*object) []*object {
 			if len(o.refs) < 2 {
 				continue
 			}
-			args := int16(0)
+			args := nodeID(0)
 			if len(o.refs) > 2 && !isNil(o.refs[2]) {
 				args = varNode(o.refs[2])
 			} else if len(o.refs) > 3 && !isNil(o.refs[3]) {
 				args = o.refs[3]
 			}
-			sig := add(&object{typ: objCmdBlock, kind: 'I', refs: []int16{o.refs[0], args, 0}})
-			o.refs = []int16{sig, o.refs[1]}
+			sig := add(&object{typ: objCmdBlock, kind: 'I', refs: []nodeID{o.refs[0], args, 0}})
+			o.refs = []nodeID{sig, o.refs[1]}
 		case 'Q': // try: [body, error variable, error parameters, handler]
 			if len(o.refs) < 4 {
 				continue
@@ -300,8 +300,8 @@ func translateBeta(objs []*object) []*object {
 			if h := byRef[handler]; h == nil || h.typ != objCmdBlock || (betaNodeKind(h.kind) == 'm' && isNil(child0refs(h.refs))) {
 				handler = 0 // an empty `on error` clause stores a nil literal
 			}
-			clause := add(&object{typ: objCmdBlock, kind: 'R', refs: []int16{0, msg, params}})
-			o.refs = []int16{o.refs[0], clause, handler}
+			clause := add(&object{typ: objCmdBlock, kind: 'R', refs: []nodeID{0, msg, params}})
+			o.refs = []nodeID{o.refs[0], clause, handler}
 		case 'h': // script object: the name is a string
 			if len(o.refs) > 0 {
 				if s := byRef[o.refs[0]]; s != nil && s.typ == objString && len(s.data) >= 2 {
@@ -338,14 +338,14 @@ func translateBeta(objs []*object) []*object {
 					c.flags |= flagParens
 				}
 			} else if c.kind == 'n' {
-				o.refs[i] = add(&object{typ: objCmdBlock, kind: 'l', flags: flagParens, refs: []int16{o.refs[i], 0}})
+				o.refs[i] = add(&object{typ: objCmdBlock, kind: 'l', flags: flagParens, refs: []nodeID{o.refs[i], 0}})
 			}
 		}
 	}
 	return objs
 }
 
-func child0refs(refs []int16) int16 {
+func child0refs(refs []nodeID) nodeID {
 	if len(refs) == 0 {
 		return 0
 	}
@@ -364,33 +364,33 @@ func isContainer(typ byte) bool {
 // specNode expands a precompiled reference, a typed vector of kind 21 to 31
 // whose first item is the container, into the node kind and children of an
 // equivalent reference. Values inside it get literal nodes.
-func specNode(ref int16, byRef map[int16]*object, add func(*object) int16, depth int) (byte, []int16, bool) {
+func specNode(ref nodeID, byRef map[nodeID]*object, add func(*object) nodeID, depth int) (byte, []nodeID, bool) {
 	v := byRef[ref]
 	if v == nil || (v.typ != objValueBlock && v.typ != objValueBlock2) || len(v.refs) == 0 || depth > 32 {
 		return 0, nil, false
 	}
-	lit := func(r int16) int16 {
+	lit := func(r nodeID) nodeID {
 		if w := byRef[r]; w != nil && w.typ == objCmdBlock {
 			return r
 		}
 		if k, refs, ok := specNode(r, byRef, add, depth+1); ok {
 			return add(&object{typ: objCmdBlock, kind: k, refs: refs})
 		}
-		return add(&object{typ: objCmdBlock, kind: 'm', refs: []int16{r}})
+		return add(&object{typ: objCmdBlock, kind: 'm', refs: []nodeID{r}})
 	}
 	it := v.refs[1:]
-	var part int16
+	var part nodeID
 	switch {
 	case v.kind == 21 && len(it) == 1: // property
-		part = add(&object{typ: objCmdBlock, kind: '1', refs: []int16{it[0]}})
+		part = add(&object{typ: objCmdBlock, kind: '1', refs: []nodeID{it[0]}})
 	case v.kind == 22 && len(it) == 1, v.kind == 23 && len(it) == 1: // every, some
-		part = add(&object{typ: objCmdBlock, kind: '2' + byte(v.kind-22), refs: []int16{it[0]}})
+		part = add(&object{typ: objCmdBlock, kind: '2' + byte(v.kind-22), refs: []nodeID{it[0]}})
 	case v.kind == 24 && len(it) == 2: // index
-		part = add(&object{typ: objCmdBlock, kind: '4', refs: []int16{it[0], lit(it[1])}})
+		part = add(&object{typ: objCmdBlock, kind: '4', refs: []nodeID{it[0], lit(it[1])}})
 	case v.kind == 27 && len(it) == 3: // range
-		part = add(&object{typ: objCmdBlock, kind: '7', refs: []int16{it[0], lit(it[1]), lit(it[2])}})
+		part = add(&object{typ: objCmdBlock, kind: '7', refs: []nodeID{it[0], lit(it[1]), lit(it[2])}})
 	case v.kind == 28 && len(it) == 1, v.kind == 29 && len(it) == 1: // before, after
-		part = add(&object{typ: objCmdBlock, kind: '8' + byte(v.kind-28), refs: []int16{it[0]}})
+		part = add(&object{typ: objCmdBlock, kind: '8' + byte(v.kind-28), refs: []nodeID{it[0]}})
 	case v.kind == 30 && len(it) == 0, v.kind == 31 && len(it) == 0: // beginning, end
 		part = add(&object{typ: objCmdBlock, kind: ':' + byte(v.kind-30)})
 	default:
@@ -401,5 +401,5 @@ func specNode(ref int16, byRef map[int16]*object, add func(*object) int16, depth
 		p := byRef[part]
 		return p.kind, p.refs, true
 	}
-	return 'n', []int16{part, lit(v.refs[0])}, true
+	return 'n', []nodeID{part, lit(v.refs[0])}, true
 }

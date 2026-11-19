@@ -115,9 +115,9 @@ const (
 
 // aliasTag returns one tagged item of an alias record's extended data, which
 // starts at offset 150.
-func aliasTag(rec []byte, tag int16) ([]byte, bool) {
+func aliasTag(rec []byte, tag nodeID) ([]byte, bool) {
 	for p := 150; p+4 <= len(rec); {
-		t := int16(binary.BigEndian.Uint16(rec[p:]))
+		t := nodeID(int16(binary.BigEndian.Uint16(rec[p:])))
 		n := int(binary.BigEndian.Uint16(rec[p+2:]))
 		if t == -1 || p+4+n > len(rec) {
 			break

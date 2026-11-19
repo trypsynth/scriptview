@@ -6,16 +6,16 @@ import (
 )
 
 // name resolves a negative ref to an identifier, command, or term name.
-func (dc *decompState) name(ref int16) string {
+func (dc *decompState) name(ref nodeID) string {
 	return dc.nameAs(ref, kindValue)
 }
 
 // className resolves ref in class position (every X, X 1, …).
-func (dc *decompState) className(ref int16) string {
+func (dc *decompState) className(ref nodeID) string {
 	return dc.nameAs(ref, kindClass)
 }
 
-func (dc *decompState) nameAs(ref int16, kind termKind) string {
+func (dc *decompState) nameAs(ref nodeID, kind termKind) string {
 	if dc.wrapType[ref] == wrapAppTerm {
 		// A term compiled against a specific application's dictionary.
 		if w := dc.wraps[ref]; len(w) == 2 {
@@ -88,7 +88,7 @@ func kindOrder(kind termKind) []func(*dict) map[string]string {
 }
 
 // resolvable reports whether ref names anything.
-func (dc *decompState) resolvable(ref int16) bool {
+func (dc *decompState) resolvable(ref nodeID) bool {
 	if dc.wrapType[ref] == wrapAppTerm {
 		return true
 	}
@@ -170,7 +170,7 @@ func (dc *decompState) isTermWord(name string) bool {
 
 // isBuiltin reports whether ref is a command defined by a dictionary rather
 // than a user handler.
-func (dc *decompState) isBuiltin(ref int16) bool {
+func (dc *decompState) isBuiltin(ref nodeID) bool {
 	_, user := dc.refName[ref]
 	_, ev := dc.evCode[ref]
 	return ev && !user
@@ -240,7 +240,7 @@ func (dc *decompState) term(code string, kind termKind) string {
 }
 
 // pluralOf returns the plural form of the class behind ref.
-func (dc *decompState) pluralOf(ref int16) string {
+func (dc *decompState) pluralOf(ref nodeID) string {
 	if code, ok := dc.osCode[ref]; ok {
 		for _, d := range dc.inScope() {
 			if d == nil {
@@ -280,7 +280,7 @@ func (dc *decompState) eventName(code string) string {
 }
 
 // paramLabel names a command's keyword parameter.
-func (dc *decompState) paramLabel(event string, ref int16) string {
+func (dc *decompState) paramLabel(event string, ref nodeID) string {
 	code, ok := dc.osCode[ref]
 	if !ok {
 		return dc.name(ref)
@@ -310,7 +310,7 @@ const (
 // wrappedText returns the string behind a literal payload ref: a 0x0e wrapper
 // whose child is the 0x11 text record. The legacy scanner does not record
 // wrappers, but the text record always directly follows its wrapper.
-func (dc *decompState) wrappedText(id int16) (string, bool) {
+func (dc *decompState) wrappedText(id nodeID) (string, bool) {
 	if w, ok := dc.wraps[id]; ok && len(w) > 0 {
 		t, ok := dc.textByID[w[0]]
 		return t, ok
@@ -321,7 +321,7 @@ func (dc *decompState) wrappedText(id int16) (string, bool) {
 
 // appOf returns the application name targeted by expression id, if it is an
 // application specifier.
-func (dc *decompState) appOf(id int16) string {
+func (dc *decompState) appOf(id nodeID) string {
 	if dc.helperDepth > maxNesting {
 		return "" // damaged file: cyclic references
 	}

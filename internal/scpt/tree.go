@@ -12,7 +12,7 @@ func Tree(f *File) string {
 	if dc == nil {
 		return "(no bytecode: this file holds plain source text)\n"
 	}
-	referenced := make(map[int16]bool)
+	referenced := make(map[nodeID]bool)
 	for _, n := range dc.nodes {
 		for _, ch := range n.children {
 			referenced[ch] = true
@@ -24,9 +24,9 @@ func Tree(f *File) string {
 		}
 	}
 	var sb strings.Builder
-	seen := make(map[int16]bool)
-	var walk func(id int16, depth int)
-	walk = func(id int16, depth int) {
+	seen := make(map[nodeID]bool)
+	var walk func(id nodeID, depth int)
+	walk = func(id nodeID, depth int) {
 		ind := strings.Repeat("  ", depth)
 		if id <= 0 {
 			fmt.Fprintf(&sb, "%s%d %s\n", ind, id, dc.describeRef(id))
@@ -73,7 +73,7 @@ func Tree(f *File) string {
 	return sb.String()
 }
 
-func (dc *decompState) describeRef(id int16) string {
+func (dc *decompState) describeRef(id nodeID) string {
 	if name, ok := dc.refName[id]; ok {
 		return "name=" + name
 	}

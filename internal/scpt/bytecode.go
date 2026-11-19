@@ -56,17 +56,17 @@ type fasApp string
 type fasDesc descRec
 
 // value decodes the object behind ref.
-func (dc *decompState) value(ref int16) fasValue {
+func (dc *decompState) value(ref nodeID) fasValue {
 	return dc.valueDepth(ref, 0)
 }
 
-func (dc *decompState) valueDepth(ref int16, depth int) fasValue {
+func (dc *decompState) valueDepth(ref nodeID, depth int) fasValue {
 	// Objects are shared (and may be cyclic), so decode each only once.
 	if v, ok := dc.valueCache[ref]; ok {
 		return v
 	}
 	if dc.valueCache == nil {
-		dc.valueCache = map[int16]fasValue{}
+		dc.valueCache = map[nodeID]fasValue{}
 	}
 	dc.valueCache[ref] = nil // cycle guard
 	v := dc.decodeValue(ref, depth)
@@ -74,7 +74,7 @@ func (dc *decompState) valueDepth(ref int16, depth int) fasValue {
 	return v
 }
 
-func (dc *decompState) decodeValue(ref int16, depth int) fasValue {
+func (dc *decompState) decodeValue(ref nodeID, depth int) fasValue {
 	o, ok := dc.objects[ref]
 	if !ok || depth > 256 {
 		return nil

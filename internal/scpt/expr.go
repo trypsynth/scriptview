@@ -16,7 +16,7 @@ func (dc *decompState) litExpr(n nodeRec) string {
 
 // litRef resolves the payload ref of a literal: a negative ref names an
 // integer or term; a positive one points at a text, real, date, or app record.
-func (dc *decompState) litRef(ch int16) string {
+func (dc *decompState) litRef(ch nodeID) string {
 	if o, ok := dc.objects[ch]; ok && o.typ == objList && len(o.refs) == 0 {
 		return "{}" // an empty list cell, as AppleScript 1.0 stored {}
 	}
@@ -82,7 +82,7 @@ func (dc *decompState) callExpr(n nodeRec) string {
 			dc.scopes = append(dc.scopes, app)
 			defer func() { dc.scopes = dc.scopes[:len(dc.scopes)-1] }()
 		}
-		n.children = append([]int16{w[0]}, n.children[1:]...)
+		n.children = append([]nodeID{w[0]}, n.children[1:]...)
 	}
 	name := dc.name(n.children[0])
 	if !dc.isBuiltin(n.children[0]) {
@@ -217,7 +217,7 @@ func (dc *decompState) commandParts(n nodeRec) (string, string) {
 }
 
 // isIntLiteral reports whether id is an integer literal.
-func (dc *decompState) isIntLiteral(id int16) bool {
+func (dc *decompState) isIntLiteral(id nodeID) bool {
 	n, ok := dc.nodes[id]
 	if !ok || n.typ != 'm' {
 		return false
@@ -228,7 +228,7 @@ func (dc *decompState) isIntLiteral(id int16) bool {
 
 // hasArgs reports whether command node id takes any arguments, which would
 // run on into the parameters that follow it.
-func (dc *decompState) hasArgs(id int16) bool {
+func (dc *decompState) hasArgs(id nodeID) bool {
 	n := dc.nodes[id]
 	if n.typ == 'e' {
 		return true
@@ -238,14 +238,14 @@ func (dc *decompState) hasArgs(id int16) bool {
 
 // isTargetedCall reports whether id is a handler call, which binds to the
 // nearest `'s` target.
-func (dc *decompState) isTargetedCall(id int16) bool {
+func (dc *decompState) isTargetedCall(id nodeID) bool {
 	n, ok := dc.nodes[dc.unwrap(id)]
 	return ok && n.typ == 'I' && !dc.isBuiltin(child0(n))
 }
 
 // isBareOfRef reports whether id is `x of y`, or a coercion of one, with no
 // parentheses: inside `offset of … in …` its `of` would bind to the command.
-func (dc *decompState) isBareOfRef(id int16) bool {
+func (dc *decompState) isBareOfRef(id nodeID) bool {
 	v, ok := dc.nodes[id]
 	if ok && v.typ == 'c' {
 		v, ok = dc.nodes[child0(v)]
@@ -267,7 +267,7 @@ func (dc *decompState) interleaved(n nodeRec) (string, bool) {
 		return "", false
 	}
 	segs := strings.Split(strings.TrimSuffix(raw, "_"), "_")
-	var args []int16
+	var args []nodeID
 	ref := child(n, 1)
 	for steps := 0; ref > 0 && steps < 1000; steps++ {
 		cell, ok := dc.paramMap[ref]
@@ -413,9 +413,9 @@ func (dc *decompState) callArgs(n nodeRec, isCall bool) string {
 
 // cells walks a chain of 3-slot [key, value, next] cells (records, labeled
 // parameters) and returns each cell.
-func (dc *decompState) cells(ref int16) [][]int16 {
-	var out [][]int16
-	seen := make(map[int16]bool)
+func (dc *decompState) cells(ref nodeID) [][]nodeID {
+	var out [][]nodeID
+	seen := make(map[nodeID]bool)
 	for ref > 0 && !seen[ref] {
 		seen[ref] = true
 		cell, ok := dc.paramMap[ref]
@@ -429,7 +429,7 @@ func (dc *decompState) cells(ref int16) [][]int16 {
 }
 
 // boolLit returns "true"/"false" if id is a boolean literal, else "".
-func (dc *decompState) boolLit(id int16) string {
+func (dc *decompState) boolLit(id nodeID) string {
 	n, ok := dc.nodes[id]
 	if !ok || n.typ != 'm' || len(n.children) == 0 {
 		return ""
@@ -483,7 +483,7 @@ func andList(items []string) string {
 
 // isCommand reports whether id is a builtin command invocation, which needs
 // parentheses when nested inside another expression.
-func (dc *decompState) isCommand(id int16) bool {
+func (dc *decompState) isCommand(id nodeID) bool {
 	n, ok := dc.nodes[id]
 	if ok && n.typ == 'e' {
 		return true
@@ -492,7 +492,7 @@ func (dc *decompState) isCommand(id int16) bool {
 }
 
 // operand renders id as an expression, parenthesizing builtin commands.
-func (dc *decompState) operand(id int16) string {
+func (dc *decompState) operand(id nodeID) string {
 	if dc.isCommand(id) {
 		return "(" + dc.expr(id) + ")"
 	}
@@ -501,9 +501,9 @@ func (dc *decompState) operand(id int16) string {
 
 // joinItems renders a cons chain as a comma-separated list, keeping `¬`
 // breaks the source placed before a comma.
-func (dc *decompState) joinItems(ref int16) string {
+func (dc *decompState) joinItems(ref nodeID) string {
 	var sb strings.Builder
-	seen := make(map[int16]bool)
+	seen := make(map[nodeID]bool)
 	for i := 0; ref > 0 && !seen[ref]; i++ {
 		seen[ref] = true
 		cell, ok := dc.paramMap[ref]
@@ -524,9 +524,9 @@ func (dc *decompState) joinItems(ref int16) string {
 }
 
 // argChain walks a paramMap linked list collecting argument expressions.
-func (dc *decompState) argChain(ref int16) []string {
+func (dc *decompState) argChain(ref nodeID) []string {
 	var args []string
-	seen := make(map[int16]bool)
+	seen := make(map[nodeID]bool)
 	for ref > 0 && !seen[ref] {
 		seen[ref] = true
 		entry, ok := dc.paramMap[ref]
@@ -622,12 +622,12 @@ const (
 )
 
 // expr returns an inline expression string (no indent, no newline).
-func (dc *decompState) expr(id int16) string {
+func (dc *decompState) expr(id nodeID) string {
 	if dc.nesting > maxNesting || dc.active[id] {
 		return "«…»" // damaged file: cyclic references
 	}
 	if dc.active == nil {
-		dc.active = map[int16]bool{}
+		dc.active = map[nodeID]bool{}
 	}
 	dc.active[id] = true
 	dc.nesting++
@@ -1059,7 +1059,7 @@ func (dc *decompState) expr(id int16) string {
 	case 'K': // record literal: children[0] is a chain of [key, value, next] cells
 		var fields []string
 		ref := child(n, 0)
-		seen := make(map[int16]bool)
+		seen := make(map[nodeID]bool)
 		for ref > 0 && !seen[ref] {
 			seen[ref] = true
 			cell, ok := dc.paramMap[ref]
@@ -1078,7 +1078,7 @@ func (dc *decompState) expr(id int16) string {
 
 // sub renders child id, parenthesizing it if it is an operator binding
 // looser than minPrec. Explicit source parentheses ('l') are kept as-is.
-func (dc *decompState) sub(id int16, minPrec int) string {
+func (dc *decompState) sub(id nodeID, minPrec int) string {
 	if dc.isCommand(id) {
 		return "(" + dc.expr(id) + ")"
 	}
@@ -1092,7 +1092,7 @@ func (dc *decompState) sub(id int16, minPrec int) string {
 }
 
 // prec returns the binding precedence of the expression rooted at id.
-func (dc *decompState) prec(id int16) int {
+func (dc *decompState) prec(id nodeID) int {
 	if dc.helperDepth > maxNesting {
 		return precAtom // damaged file: cyclic references
 	}
@@ -1129,7 +1129,7 @@ func (dc *decompState) prec(id int16) int {
 
 // targetCall marks id, if it is a user handler call, as having an explicit
 // target so that it renders with interleaved syntax.
-func (dc *decompState) targetCall(id int16) {
+func (dc *decompState) targetCall(id nodeID) {
 	n, ok := dc.nodes[id]
 	for steps := 0; ok && n.typ == 'l' && steps < 64; steps++ {
 		id = firstPositive(n)
@@ -1137,14 +1137,14 @@ func (dc *decompState) targetCall(id int16) {
 	}
 	if ok && n.typ == 'I' {
 		if dc.targeted == nil {
-			dc.targeted = map[int16]bool{}
+			dc.targeted = map[nodeID]bool{}
 		}
 		dc.targeted[id] = true
 	}
 }
 
 // isOfRef reports whether id is a bare `x of y` reference (not my/its/'s).
-func (dc *decompState) isOfRef(id int16) bool {
+func (dc *decompState) isOfRef(id nodeID) bool {
 	n, ok := dc.nodes[id]
 	if !ok || n.typ != 'n' || n.flags&flagThe != 0 || dc.isMyCall(id) {
 		return false
@@ -1157,7 +1157,7 @@ func (dc *decompState) isOfRef(id int16) bool {
 
 // isArithRef reports whether id is a reference that Script Editor puts in
 // parentheses inside arithmetic: `(x of y) + 1`, `(x's y) + 1`, `(item v) - 2`.
-func (dc *decompState) isArithRef(id int16) bool {
+func (dc *decompState) isArithRef(id nodeID) bool {
 	if n, ok := dc.nodes[id]; ok && n.typ == '4' {
 		return true
 	}
@@ -1165,7 +1165,7 @@ func (dc *decompState) isArithRef(id int16) bool {
 }
 
 // unwrapBreak skips a wrapper that only records a `¬` break before id.
-func (dc *decompState) unwrapBreak(id int16) int16 {
+func (dc *decompState) unwrapBreak(id nodeID) nodeID {
 	if n, ok := dc.nodes[id]; ok && n.typ == 'l' && n.flags&(flagParens|flagThe) == 0 && n.flags&flagContinuation != 0 {
 		return firstPositive(n)
 	}
@@ -1173,7 +1173,7 @@ func (dc *decompState) unwrapBreak(id int16) int16 {
 }
 
 // unwrap skips 'l' wrappers (parentheses, the, continuations) around id.
-func (dc *decompState) unwrap(id int16) int16 {
+func (dc *decompState) unwrap(id nodeID) nodeID {
 	for range 16 {
 		n, ok := dc.nodes[id]
 		if !ok || n.typ != 'l' {
@@ -1186,7 +1186,7 @@ func (dc *decompState) unwrap(id int16) int16 {
 
 // endsInInterleavedCall reports whether id renders as a targeted interleaved
 // call (x's foo:y), which needs parentheses before another 's.
-func (dc *decompState) endsInInterleavedCall(id int16) bool {
+func (dc *decompState) endsInInterleavedCall(id nodeID) bool {
 	if dc.helperDepth > maxNesting {
 		return false // damaged file: cyclic references
 	}
@@ -1211,7 +1211,7 @@ func (dc *decompState) isParenExpr(n nodeRec) bool {
 
 // isInterleavedCall reports whether id (possibly parenthesized) is a user
 // handler call that renders with interleaved syntax.
-func (dc *decompState) isInterleavedCall(id int16) bool {
+func (dc *decompState) isInterleavedCall(id nodeID) bool {
 	n, ok := dc.nodes[id]
 	for steps := 0; ok && n.typ == 'l' && steps < 64; steps++ {
 		id = firstPositive(n)
@@ -1225,7 +1225,7 @@ func (dc *decompState) isInterleavedCall(id int16) bool {
 }
 
 // isMyCall reports whether id is `my handler(…)`.
-func (dc *decompState) isMyCall(id int16) bool {
+func (dc *decompState) isMyCall(id nodeID) bool {
 	n, ok := dc.nodes[id]
 	if !ok || n.typ != 'n' {
 		return false
@@ -1236,7 +1236,7 @@ func (dc *decompState) isMyCall(id int16) bool {
 
 // rangeBound renders one end of a range of class: text my i thru -1, but
 // text (my f(x)) thru -1.
-func (dc *decompState) rangeBound(id, class int16) string {
+func (dc *decompState) rangeBound(id, class nodeID) string {
 	if b, ok := dc.nodes[id]; ok && b.typ == '4' && b.flags == 0 && len(b.children) == 2 {
 		if code, ok := dc.osCode[b.children[0]]; ok && code == dc.osCode[class] {
 			id = b.children[1] // text 1 thru -5, stored as text 1 thru (text -5)
@@ -1260,13 +1260,13 @@ func (dc *decompState) rangeBound(id, class int16) string {
 
 // isLabeledCall reports whether id calls one of the script's own handlers
 // with labeled parameters: mk of x by y.
-func (dc *decompState) isLabeledCall(id int16) bool {
+func (dc *decompState) isLabeledCall(id nodeID) bool {
 	n, ok := dc.nodes[id]
 	return ok && n.typ == 'I' && len(n.children) > 2 && !dc.isBuiltin(n.children[0]) && child(n, 2) != 0
 }
 
 // isAppLiteral reports whether id is an application specifier literal.
-func (dc *decompState) isAppLiteral(id int16) bool {
+func (dc *decompState) isAppLiteral(id nodeID) bool {
 	n, ok := dc.nodes[id]
 	if !ok || n.typ != 'm' {
 		return false
@@ -1277,7 +1277,7 @@ func (dc *decompState) isAppLiteral(id int16) bool {
 
 // mentionsLabel reports whether expression id uses a variable named like
 // one of the current command's parameter labels.
-func (dc *decompState) mentionsLabel(id int16, depth int) bool {
+func (dc *decompState) mentionsLabel(id nodeID, depth int) bool {
 	n, ok := dc.nodes[id]
 	if !ok || depth > 64 {
 		return false

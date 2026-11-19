@@ -19,11 +19,11 @@ import (
 type bcBuilder struct {
 	// useTargets maps a use statement's target (as fasString prints it) to
 	// its node, so `use name : …` can pick up its name.
-	useTargets map[string]int16
+	useTargets map[string]nodeID
 	src        *decompState // the parsed file (for literal values)
 	out        *decompState // the synthetic tree being built
-	nextID     int16
-	nextRef    int16
+	nextID     nodeID
+	nextRef    nodeID
 	// scopes holds the name tables of the script objects enclosing the
 	// code being decompiled, outermost first.
 	scopes [][]string
@@ -40,33 +40,33 @@ type bcBuilder struct {
 
 func newBCBuilder(src *decompState) *bcBuilder {
 	out := &decompState{
-		nodes:     map[int16]nodeRec{},
-		refName:   map[int16]string{},
-		intByRef:  map[int16]int{},
-		textByID:  map[int16]string{},
-		paramMap:  map[int16][]int16{},
-		wraps:     map[int16][]int16{},
-		wrapType:  map[int16]byte{},
-		appByID:   map[int16]string{},
-		evCode:    map[int16]string{},
-		realByID:  map[int16]float64{},
-		descByID:  map[int16]descRec{},
-		comments:  map[int16]string{},
-		osCode:    map[int16]string{},
-		osEnum:    map[int16]string{},
-		piped:     map[int16]bool{},
+		nodes:     map[nodeID]nodeRec{},
+		refName:   map[nodeID]string{},
+		intByRef:  map[nodeID]int{},
+		textByID:  map[nodeID]string{},
+		paramMap:  map[nodeID][]nodeID{},
+		wraps:     map[nodeID][]nodeID{},
+		wrapType:  map[nodeID]byte{},
+		appByID:   map[nodeID]string{},
+		evCode:    map[nodeID]string{},
+		realByID:  map[nodeID]float64{},
+		descByID:  map[nodeID]descRec{},
+		comments:  map[nodeID]string{},
+		osCode:    map[nodeID]string{},
+		osEnum:    map[nodeID]string{},
+		piped:     map[nodeID]bool{},
 		canonical: src.canonical,
 		// Run-only output must compile back to the same values.
 		fromBytecode: true,
 		classic:      src.classic,
 		host:         src.host,
-		propertyRefs: map[int16]bool{},
+		propertyRefs: map[nodeID]bool{},
 	}
 	return &bcBuilder{src: src, out: out, nextID: 1, nextRef: -1}
 }
 
 // node adds a synthetic syntax node.
-func (b *bcBuilder) node(typ byte, children ...int16) int16 {
+func (b *bcBuilder) node(typ byte, children ...nodeID) nodeID {
 	id := b.nextID
 	b.nextID++
 	b.out.nodes[id] = nodeRec{typ: typ, children: children}
@@ -74,19 +74,19 @@ func (b *bcBuilder) node(typ byte, children ...int16) int16 {
 }
 
 // ref allocates a synthetic negative reference.
-func (b *bcBuilder) ref() int16 {
+func (b *bcBuilder) ref() nodeID {
 	r := b.nextRef
 	b.nextRef--
 	return r
 }
 
 // cons builds a cons chain of ids (for blocks, lists, parameter lists).
-func (b *bcBuilder) cons(ids []int16) int16 {
+func (b *bcBuilder) cons(ids []nodeID) nodeID {
 	tail := b.ref() // terminator
 	for _, id := range slices.Backward(ids) {
 		cell := b.nextID
 		b.nextID++
-		b.out.paramMap[cell] = []int16{id, tail}
+		b.out.paramMap[cell] = []nodeID{id, tail}
 		tail = cell
 	}
 	if len(ids) == 0 {
@@ -96,26 +96,26 @@ func (b *bcBuilder) cons(ids []int16) int16 {
 }
 
 // cells builds a chain of [key, value, next] cells.
-func (b *bcBuilder) cells(keys, values []int16) int16 {
+func (b *bcBuilder) cells(keys, values []nodeID) nodeID {
 	tail := b.ref()
 	for i, key := range slices.Backward(keys) {
 		cell := b.nextID
 		b.nextID++
-		b.out.paramMap[cell] = []int16{key, values[i], tail}
+		b.out.paramMap[cell] = []nodeID{key, values[i], tail}
 		tail = cell
 	}
 	return tail
 }
 
 // nameRef returns a reference naming an identifier.
-func (b *bcBuilder) nameRef(name string) int16 {
+func (b *bcBuilder) nameRef(name string) nodeID {
 	r := b.ref()
 	b.out.refName[r] = name
 	return r
 }
 
 // termRef returns a reference for a term code.
-func (b *bcBuilder) termRef(c fasCode) int16 {
+func (b *bcBuilder) termRef(c fasCode) nodeID {
 	r := b.ref()
 	switch c.kind {
 	case osKindEvent:
@@ -131,7 +131,7 @@ func (b *bcBuilder) termRef(c fasCode) int16 {
 
 // keyRef returns a reference for a literal used as a name: a term or an
 // identifier (record keys, parameter labels, handler names).
-func (b *bcBuilder) keyRef(v fasValue) int16 {
+func (b *bcBuilder) keyRef(v fasValue) nodeID {
 	switch x := v.(type) {
 	case fasCode:
 		return b.termRef(x)
@@ -159,7 +159,7 @@ func constantList(x *fasBlock) ([]fasValue, bool) {
 }
 
 // literal builds an expression node for a literal value.
-func (b *bcBuilder) literal(v fasValue) int16 {
+func (b *bcBuilder) literal(v fasValue) nodeID {
 	switch x := v.(type) {
 	case int:
 		r := b.ref()
@@ -182,7 +182,7 @@ func (b *bcBuilder) literal(v fasValue) int16 {
 		b.out.textByID[textID] = string(x)
 		wrap := b.nextID
 		b.nextID++
-		b.out.wraps[wrap] = []int16{textID}
+		b.out.wraps[wrap] = []nodeID{textID}
 		b.out.wrapType[wrap] = wrapText
 		return b.node('m', wrap)
 	case fasCode:
@@ -203,14 +203,14 @@ func (b *bcBuilder) literal(v fasValue) int16 {
 	case string:
 		return b.node('o', b.nameRef(x))
 	case []fasValue:
-		items := make([]int16, len(x))
+		items := make([]nodeID, len(x))
 		for i, it := range x {
 			items[i] = b.literal(it)
 		}
 		return b.node('J', b.cons(items))
 	case fasBinding:
 		// A record literal the compiler stored as a value.
-		var keys, values []int16
+		var keys, values []nodeID
 		for i := range x.keys {
 			keys = append(keys, b.keyRef(x.keys[i]))
 			values = append(values, b.literal(x.values[i]))
@@ -257,7 +257,7 @@ func (bh *bcHandler) blankTail(j int) bool {
 
 // stackVal is an operand-stack entry: an expression node, or a marker.
 type stackVal struct {
-	id        int16
+	id        nodeID
 	undefined bool // PushUndefined
 	it        bool // PushIt: no explicit target/direct parameter
 	assigned  bool // already stored by a set statement (Pop*/SetData peek)
@@ -276,7 +276,7 @@ func (bh *bcHandler) lit(i int) fasValue {
 
 // varRef returns a name reference for variable i, which is a term when the
 // variable's name spells one.
-func (bh *bcHandler) varRef(i int) int16 {
+func (bh *bcHandler) varRef(i int) nodeID {
 	if c, ok := bh.h.varTerms[i]; ok {
 		return bh.b.termRef(c)
 	}
@@ -302,12 +302,12 @@ func (e errUnsupported) Error() string {
 
 // sharedContainer reports whether list items are properties of one and the
 // same container node, as `{a, b} of x` compiles, and returns the parts.
-func (b *bcBuilder) sharedContainer(items []int16) ([]int16, int16, bool) {
+func (b *bcBuilder) sharedContainer(items []nodeID) ([]nodeID, nodeID, bool) {
 	if len(items) < 2 {
 		return nil, 0, false
 	}
-	var parts []int16
-	container := int16(0)
+	var parts []nodeID
+	container := nodeID(0)
 	for _, id := range items {
 		n := b.out.nodes[id]
 		if n.typ != 'n' || n.flags != 0 || len(n.children) != 2 || container != 0 && n.children[1] != container {
@@ -321,7 +321,7 @@ func (b *bcBuilder) sharedContainer(items []int16) ([]int16, int16, bool) {
 
 // stmtValue returns the expression for a value used as a statement: an
 // evaluated reference is an explicit get (`get every mailbox of …`).
-func (b *bcBuilder) stmtValue(v stackVal) int16 {
+func (b *bcBuilder) stmtValue(v stackVal) nodeID {
 	if n := b.out.nodes[v.id]; v.gotten && isReference(n) && !(n.typ == 'n' && n.flags&flagAltSyntax != 0) {
 		return b.node('e', v.id)
 	}
@@ -329,7 +329,7 @@ func (b *bcBuilder) stmtValue(v stackVal) int16 {
 }
 
 // stmts decompiles instructions [lo, hi) into statement nodes.
-func (bh *bcHandler) stmts(lo, hi int) ([]int16, error) {
+func (bh *bcHandler) stmts(lo, hi int) ([]nodeID, error) {
 	out, stack, err := bh.run(lo, hi, nil)
 	if err != nil {
 		return out, err
@@ -352,10 +352,10 @@ func (bh *bcHandler) stmts(lo, hi int) ([]int16, error) {
 
 // run simulates instructions [lo, hi) starting from stack, returning the
 // statements completed and the final stack.
-func (bh *bcHandler) run(lo, hi int, stack []stackVal) ([]int16, []stackVal, error) {
-	var out []int16
+func (bh *bcHandler) run(lo, hi int, stack []stackVal) ([]nodeID, []stackVal, error) {
+	var out []nodeID
 	b := bh.b
-	push := func(id int16) { stack = append(stack, stackVal{id: id, count: -1}) }
+	push := func(id nodeID) { stack = append(stack, stackVal{id: id, count: -1}) }
 	pop := func(in instr) (stackVal, error) {
 		if len(stack) == 0 {
 			return stackVal{}, errUnsupported{in, "stack underflow"}
@@ -364,7 +364,7 @@ func (bh *bcHandler) run(lo, hi int, stack []stackVal) ([]int16, []stackVal, err
 		stack = stack[:len(stack)-1]
 		return v, nil
 	}
-	emit := func(stmt int16) {
+	emit := func(stmt nodeID) {
 		out = append(out, b.node('l', stmt))
 	}
 	pc := bh.index[lo]
@@ -506,7 +506,7 @@ func (bh *bcHandler) run(lo, hi int, stack []stackVal) ([]int16, []stackVal, err
 			if err != nil {
 				return out, stack, err
 			}
-			var inner []int16
+			var inner []nodeID
 			blk, _ := bh.lit(in.args[0]).(*fasBlock)
 			// The object's code sees this handler's variables one level up.
 			b.scopes = append(b.scopes, bh.h.vars)
@@ -569,7 +569,7 @@ func (bh *bcHandler) run(lo, hi int, stack []stackVal) ([]int16, []stackVal, err
 			for len(stack) > 0 && (stack[len(stack)-1].it || stack[len(stack)-1].next) {
 				stack = stack[:len(stack)-1]
 			}
-			var call int16
+			var call nodeID
 			var err error
 			fake := instr{off: in.off, name: map[string]string{"Continue": "MessageSend", "PositionalContinue": "PositionalMessageSend"}[name], args: in.args}
 			stack = append(slices.Clip(stack), stack...)[:len(stack)]
@@ -657,7 +657,7 @@ func (bh *bcHandler) run(lo, hi int, stack []stackVal) ([]int16, []stackVal, err
 			if err != nil || n.count < 0 || n.count > len(stack) {
 				return out, stack, errUnsupported{in, "list size"}
 			}
-			items := make([]int16, n.count)
+			items := make([]nodeID, n.count)
 			for i := n.count - 1; i >= 0; i-- {
 				v, _ := pop(in)
 				items[i] = v.id
@@ -682,8 +682,8 @@ func (bh *bcHandler) run(lo, hi int, stack []stackVal) ([]int16, []stackVal, err
 			if err != nil || n.count < 0 || n.count > len(stack) || n.count%2 != 0 {
 				return out, stack, errUnsupported{in, "record size"}
 			}
-			keys := make([]int16, n.count/2)
-			values := make([]int16, n.count/2)
+			keys := make([]nodeID, n.count/2)
+			values := make([]nodeID, n.count/2)
 			for i := n.count/2 - 1; i >= 0; i-- {
 				v, _ := pop(in)
 				k, _ := pop(in)
@@ -704,7 +704,7 @@ func (bh *bcHandler) run(lo, hi int, stack []stackVal) ([]int16, []stackVal, err
 				return out, stack, err
 			}
 			stack = append(stack, stackVal{id: v.id, assigned: true, count: -1})
-			var target int16
+			var target nodeID
 			if strings.HasPrefix(name, "PopGlobal") {
 				target = b.literal(bh.lit(in.args[len(in.args)-1]))
 			} else {
@@ -861,7 +861,7 @@ func (bh *bcHandler) run(lo, hi int, stack []stackVal) ([]int16, []stackVal, err
 }
 
 // expr decompiles [lo, hi) as a single expression.
-func (bh *bcHandler) expr(lo, hi int) (int16, error) {
+func (bh *bcHandler) expr(lo, hi int) (nodeID, error) {
 	stmts, err := bh.stmts(lo, hi)
 	if err != nil {
 		return 0, err
@@ -874,7 +874,7 @@ func (bh *bcHandler) expr(lo, hi int) (int16, error) {
 
 // stripBoolCoerce removes the `as boolean` the compiler appends to the right
 // operand of and/or.
-func stripBoolCoerce(b *bcBuilder, id int16) int16 {
+func stripBoolCoerce(b *bcBuilder, id nodeID) nodeID {
 	n := b.out.nodes[id]
 	if n.typ == 'c' && len(n.children) == 2 {
 		if cls := b.out.nodes[n.children[1]]; b.out.osCode[child0(cls)] == "bool" {
@@ -886,7 +886,7 @@ func stripBoolCoerce(b *bcBuilder, id int16) int16 {
 
 // keyOf turns a pushed literal node into a name reference (record keys,
 // parameter labels).
-func (bh *bcHandler) keyOf(id int16) int16 {
+func (bh *bcHandler) keyOf(id nodeID) nodeID {
 	n := bh.b.out.nodes[id]
 	if (n.typ == '1' || n.typ == 'm' || n.typ == 'o') && len(n.children) == 1 && n.children[0] < 0 {
 		return n.children[0]
@@ -915,14 +915,14 @@ func isReference(n nodeRec) bool {
 // through an explicit get.
 // usingTermsBlocks turns each `using terms from` marker into a block that
 // holds the statements after it.
-func (bh *bcHandler) usingTermsBlocks(stmts []int16) []int16 {
+func (bh *bcHandler) usingTermsBlocks(stmts []nodeID) []nodeID {
 	b := bh.b
 	for k, stmt := range slices.Backward(stmts) {
 		w := b.out.nodes[child0(b.out.nodes[stmt])]
 		if w.typ != 'w' || len(w.children) != 2 || w.children[0] != 0 {
 			continue
 		}
-		body := append([]int16(nil), stmts[k+1:]...)
+		body := append([]nodeID(nil), stmts[k+1:]...)
 		w.children[0] = b.node('k', b.cons(body))
 		b.out.nodes[child0(b.out.nodes[stmt])] = w
 		stmts = stmts[:k+1]
@@ -932,11 +932,11 @@ func (bh *bcHandler) usingTermsBlocks(stmts []int16) []int16 {
 
 // isValue reports whether statement stmt is the value x on its own,
 // possibly under an explicit get.
-func (bh *bcHandler) isValue(stmt, x int16) bool {
+func (bh *bcHandler) isValue(stmt, x nodeID) bool {
 	return child0(bh.b.out.nodes[stmt]) == x || bh.stmtValue(stmt) == x
 }
 
-func (bh *bcHandler) stmtValue(stmt int16) int16 {
+func (bh *bcHandler) stmtValue(stmt nodeID) nodeID {
 	v := child0(bh.b.out.nodes[stmt])
 	if n := bh.b.out.nodes[v]; n.typ == 'e' {
 		return child0(n)

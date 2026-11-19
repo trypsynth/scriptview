@@ -3,7 +3,7 @@ package scpt
 import "strings"
 
 // topLevelStmts finds top-level statements (not inside handler bodies).
-func (dc *decompState) topLevelStmts(handlerBodyIDs map[int16]bool) []string {
+func (dc *decompState) topLevelStmts(handlerBodyIDs map[nodeID]bool) []string {
 	for _, id := range dc.nodeOrder {
 		n := dc.nodes[id]
 		if n.typ != 'k' || handlerBodyIDs[id] {
@@ -22,7 +22,7 @@ func (dc *decompState) topLevelStmts(handlerBodyIDs map[int16]bool) []string {
 
 // handlerDef emits `on name(params) … end name`. The 'i' node is
 // [signature, body]; the 'I' signature is [name, positional chain, given chain].
-func (dc *decompState) handlerDef(id int16, depth int) []string {
+func (dc *decompState) handlerDef(id nodeID, depth int) []string {
 	indent := strings.Repeat("\t", depth)
 	n := dc.nodes[id]
 	if len(n.children) < 2 {
@@ -59,7 +59,7 @@ func (dc *decompState) handlerDef(id int16, depth int) []string {
 
 // block walks a 'k' node's statement linked list via paramMap.
 // Each paramMap entry is a 2-element cons cell [head-stmt-id, tail-ref].
-func (dc *decompState) block(kID int16, depth int) []string {
+func (dc *decompState) block(kID nodeID, depth int) []string {
 	kNode, ok := dc.nodes[kID]
 	if !ok {
 		return nil
@@ -74,7 +74,7 @@ func (dc *decompState) block(kID int16, depth int) []string {
 
 	var lines []string
 	ref := child(kNode, 0)
-	seen := make(map[int16]bool)
+	seen := make(map[nodeID]bool)
 	for ref > 0 && !seen[ref] {
 		seen[ref] = true
 		entry, ok := dc.paramMap[ref]
@@ -181,12 +181,12 @@ func isStmtNode(typ byte) bool {
 const maxNesting = 300
 
 // stmt emits one or more lines for a statement node.
-func (dc *decompState) stmt(id int16, depth int) []string {
+func (dc *decompState) stmt(id nodeID, depth int) []string {
 	if dc.nesting > maxNesting || dc.activeStmt[id] {
 		return []string{"-- (damaged file: cyclic statement)"}
 	}
 	if dc.activeStmt == nil {
-		dc.activeStmt = map[int16]bool{}
+		dc.activeStmt = map[nodeID]bool{}
 	}
 	dc.activeStmt[id] = true
 	dc.nesting++
@@ -376,7 +376,7 @@ func (dc *decompState) stmt(id int16, depth int) []string {
 
 // stmtBreak reports whether statement wrapper id follows a `¬` break, as in
 // `tell x to ¬` or `if c then ¬`.
-func (dc *decompState) stmtBreak(id int16) bool {
+func (dc *decompState) stmtBreak(id nodeID) bool {
 	n, ok := dc.nodes[id]
 	return ok && n.typ == 'l' && n.flags&flagContinuation != 0
 }
@@ -420,7 +420,7 @@ func (dc *decompState) comment(n nodeRec) string {
 // hdr appends to a compound statement's header line the comment that the
 // compiler attached to the first line of its body: a comment-only line, or
 // one flagged as preceding its statement.
-func (dc *decompState) hdr(header string, bodyID int16) string {
+func (dc *decompState) hdr(header string, bodyID nodeID) string {
 	first := bodyID
 	if n, ok := dc.nodes[bodyID]; ok && n.typ == 'k' {
 		cell, ok := dc.paramMap[child(n, 0)]
@@ -438,14 +438,14 @@ func (dc *decompState) hdr(header string, bodyID int16) string {
 		return header
 	}
 	if dc.hoisted == nil {
-		dc.hoisted = map[int16]bool{}
+		dc.hoisted = map[nodeID]bool{}
 	}
 	dc.hoisted[first] = true
 	return header + " " + c
 }
 
 // body renders a statement or block child at the given depth.
-func (dc *decompState) body(id int16, depth int) []string {
+func (dc *decompState) body(id nodeID, depth int) []string {
 	if id <= 0 {
 		return nil
 	}
@@ -490,7 +490,7 @@ func (dc *decompState) ifStmt(n nodeRec, depth int) []string {
 
 	// Else-if chain.
 	ref := child(n, 2)
-	seen := make(map[int16]bool)
+	seen := make(map[nodeID]bool)
 	for ref > 0 && !seen[ref] {
 		seen[ref] = true
 		condCell, ok := dc.paramMap[ref]
@@ -557,7 +557,7 @@ func (dc *decompState) repeatStmt(n nodeRec, depth int) []string {
 }
 
 // stmtExpr renders an expression that a statement consists of or assigns.
-func (dc *decompState) stmtExpr(id int16) string {
+func (dc *decompState) stmtExpr(id nodeID) string {
 	s := dc.expr(id)
 	n, ok := dc.nodes[id]
 	if !ok || dc.repeatWith == 0 {
@@ -572,7 +572,7 @@ func (dc *decompState) stmtExpr(id int16) string {
 // tellTarget renders a tell block's target. Script Editor parenthesizes a
 // whose filter, a command or an Objective-C style call there:
 // tell (first process whose frontmost is true), tell (make new x).
-func (dc *decompState) tellTarget(id int16) string {
+func (dc *decompState) tellTarget(id nodeID) string {
 	s := dc.expr(id)
 	n, ok := dc.nodes[id]
 	if !ok {
@@ -586,7 +586,7 @@ func (dc *decompState) tellTarget(id int16) string {
 
 // isObjCCall reports whether id is an Objective-C style call, alone or
 // through a possessive: x's foo:y.
-func (dc *decompState) isObjCCall(id int16) bool {
+func (dc *decompState) isObjCCall(id nodeID) bool {
 	n, ok := dc.nodes[id]
 	for steps := 0; ok && n.typ == 'n' && n.flags&flagPossessive != 0 && steps < 64; steps++ {
 		n, ok = dc.nodes[child0(n)]

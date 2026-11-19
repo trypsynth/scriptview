@@ -43,7 +43,7 @@ func (r *reader) readU16BE() (uint16, error) {
 	return binary.BigEndian.Uint16(b), nil
 }
 
-func (r *reader) readI16BE() (int16, error) {
+func (r *reader) readI16BE() (nodeID, error) {
 	v, err := r.readU16BE()
-	return int16(v), err
+	return nodeID(int16(v)), err
 }

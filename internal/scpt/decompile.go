@@ -7,46 +7,51 @@ import (
 	"github.com/trypsynth/scriptview/internal/mactext"
 )
 
+// nodeID identifies a node of the syntax tree, or a reference when it's
+// negative. A file stores IDs in 16 bits, but the trees that the bytecode
+// decompiler builds for large run-only scripts need more.
+type nodeID int32
+
 // decompState holds the full FASD parse tree needed for source reconstruction.
 type decompState struct {
-	nodes     map[int16]nodeRec
-	nodeOrder []int16
-	refName   map[int16]string
-	intByRef  map[int16]int
-	textByID  map[int16]string
-	paramMap  map[int16][]int16
+	nodes     map[nodeID]nodeRec
+	nodeOrder []nodeID
+	refName   map[nodeID]string
+	intByRef  map[nodeID]int
+	textByID  map[nodeID]string
+	paramMap  map[nodeID][]nodeID
 	// wraps holds 0x0e wrapper records (e.g. a literal's text payload).
-	wraps    map[int16][]int16
-	wrapType map[int16]byte
+	wraps    map[nodeID][]nodeID
+	wrapType map[nodeID]byte
 	// objects holds every decoded object by reference (strict parse only).
-	objects map[int16]*object
+	objects map[nodeID]*object
 	// valueCache memoizes decoded object values.
-	valueCache map[int16]fasValue
+	valueCache map[nodeID]fasValue
 	// canonical maps a lowercase identifier to its first spelling; Script
 	// Editor spells interleaved handler name segments that way.
 	canonical map[string]string
-	appByID   map[int16]string
+	appByID   map[nodeID]string
 	// evCode holds the suite+event code of each command ref; refs without a
 	// user-defined name are builtin commands, printed as `cmd arg`.
-	evCode   map[int16]string
-	realByID map[int16]float64
-	descByID map[int16]descRec
-	comments map[int16]string
+	evCode   map[nodeID]string
+	realByID map[nodeID]float64
+	descByID map[nodeID]descRec
+	comments map[nodeID]string
 	// osCode holds the raw four-char code behind each OSType ref, for
 	// context-dependent terminology such as command parameter labels.
-	osCode map[int16]string
+	osCode map[nodeID]string
 	// piped marks identifiers written as |name| in the source.
-	piped map[int16]bool
+	piped map[nodeID]bool
 	// osEnum holds the enumeration type of typed-constant refs.
-	osEnum map[int16]string
+	osEnum map[nodeID]string
 	// scopes is the stack of applications whose terminology is in scope,
 	// innermost last (tell blocks, using terms from).
 	scopes []string
 	// targeted marks user handler calls with an explicit target (my foo:x,
 	// x's foo:y, tell x to foo:y); only those use interleaved syntax; plain
 	// calls keep the foo_bar_(x, y) form. curCall is the call being rendered.
-	targeted map[int16]bool
-	curCall  int16
+	targeted map[nodeID]bool
+	curCall  nodeID
 	// contDepth counts the continuation-marked wrappers being rendered.
 	contDepth int
 	// inMy is set while rendering the operand of `my (…)`, whose
@@ -76,7 +81,7 @@ type decompState struct {
 	noUse bool
 	// propertyRefs marks bytecode property references (MakeObjectAlias), as
 	// against constant references the compiler folded into literals.
-	propertyRefs map[int16]bool
+	propertyRefs map[nodeID]bool
 	// cmdLabels holds the parameter labels of the command whose arguments
 	// are being rendered; variables named like one need pipes.
 	cmdLabels map[string]bool
@@ -88,9 +93,9 @@ type decompState struct {
 	// and activeStmt hold the nodes being rendered, to break cycles.
 	nesting            int
 	helperDepth        int
-	active, activeStmt map[int16]bool
+	active, activeStmt map[nodeID]bool
 	// hoisted marks 'l' nodes whose comment was moved to a header line.
-	hoisted map[int16]bool
+	hoisted map[nodeID]bool
 }
 
 // Decompile reconstructs AppleScript source from the FASD parse tree.
@@ -165,7 +170,7 @@ const (
 )
 
 // firstPositive returns the first positive child of n, or 0.
-func firstPositive(n nodeRec) int16 {
+func firstPositive(n nodeRec) nodeID {
 	for _, ch := range n.children {
 		if ch > 0 {
 			return ch
@@ -175,7 +180,7 @@ func firstPositive(n nodeRec) int16 {
 }
 
 // child0 returns the first child ref (possibly negative), or 0.
-func child0(n nodeRec) int16 {
+func child0(n nodeRec) nodeID {
 	if len(n.children) == 0 {
 		return 0
 	}
@@ -183,7 +188,7 @@ func child0(n nodeRec) int16 {
 }
 
 // child returns n.children[i] if present and positive, else 0.
-func child(n nodeRec, i int) int16 {
+func child(n nodeRec, i int) nodeID {
 	if i < len(n.children) && n.children[i] > 0 {
 		return n.children[i]
 	}

@@ -28,7 +28,7 @@ type nodeRec struct {
 	flags uint16
 	// start and end are the node's source text range (character offsets).
 	start, end uint16
-	children   []int16
+	children   []nodeID
 }
 
 // Parse reads a compiled script: a .scpt file, the data or resource fork
@@ -153,23 +153,23 @@ func newBuilder() *builder {
 	return &builder{
 		f: &File{},
 		dc: &decompState{
-			nodes:     make(map[int16]nodeRec),
-			refName:   make(map[int16]string),
-			intByRef:  make(map[int16]int),
-			textByID:  make(map[int16]string),
-			paramMap:  make(map[int16][]int16),
-			wraps:     make(map[int16][]int16),
-			appByID:   make(map[int16]string),
-			evCode:    make(map[int16]string),
-			realByID:  make(map[int16]float64),
-			descByID:  make(map[int16]descRec),
-			comments:  make(map[int16]string),
-			osCode:    make(map[int16]string),
-			osEnum:    make(map[int16]string),
-			piped:     make(map[int16]bool),
-			wrapType:  make(map[int16]byte),
+			nodes:     make(map[nodeID]nodeRec),
+			refName:   make(map[nodeID]string),
+			intByRef:  make(map[nodeID]int),
+			textByID:  make(map[nodeID]string),
+			paramMap:  make(map[nodeID][]nodeID),
+			wraps:     make(map[nodeID][]nodeID),
+			appByID:   make(map[nodeID]string),
+			evCode:    make(map[nodeID]string),
+			realByID:  make(map[nodeID]float64),
+			descByID:  make(map[nodeID]descRec),
+			comments:  make(map[nodeID]string),
+			osCode:    make(map[nodeID]string),
+			osEnum:    make(map[nodeID]string),
+			piped:     make(map[nodeID]bool),
+			wrapType:  make(map[nodeID]byte),
 			canonical: make(map[string]string),
-			objects:   make(map[int16]*object),
+			objects:   make(map[nodeID]*object),
 		},
 	}
 }
@@ -180,18 +180,18 @@ func (b *builder) finish() *File {
 	return b.f
 }
 
-func (b *builder) node(id int16, rec nodeRec) {
+func (b *builder) node(id nodeID, rec nodeRec) {
 	if _, exists := b.dc.nodes[id]; !exists {
 		b.dc.nodeOrder = append(b.dc.nodeOrder, id)
 	}
 	b.dc.nodes[id] = rec
 }
 
-func (b *builder) text(id int16, s string) {
+func (b *builder) text(id nodeID, s string) {
 	b.dc.textByID[id] = s
 }
 
-func (b *builder) ident(ref int16, names []string) {
+func (b *builder) ident(ref nodeID, names []string) {
 	// Script Editor shows every occurrence of an identifier in the spelling
 	// of its first appearance; remember that spelling per lowercase name.
 	if best := bestName(names); best != "" {
@@ -214,13 +214,13 @@ func (b *builder) ident(ref int16, names []string) {
 	}
 }
 
-func (b *builder) integer(ref int16, v int) {
+func (b *builder) integer(ref nodeID, v int) {
 	b.dc.intByRef[ref] = v
 }
 
 // osType records a 0x0a term reference: kind byte plus payload.
-func (b *builder) osType(ref int16, kind byte, data []byte) {
-	var m map[int16]string
+func (b *builder) osType(ref nodeID, kind byte, data []byte) {
+	var m map[nodeID]string
 	var code string
 	switch {
 	case (kind == osKindCode || kind == osKindCode2) && len(data) == 4:
@@ -242,7 +242,7 @@ func (b *builder) osType(ref int16, kind byte, data []byte) {
 
 // blob records a 0x0f/0x12 data blob: an alias (application specifier) or an
 // AEDesc literal.
-func (b *builder) blob(id int16, kind byte, data []byte) {
+func (b *builder) blob(id nodeID, kind byte, data []byte) {
 	// A plain descriptor (kind 0x0d): an alias literal, a date, «data …».
 	if kind == 0x0d && len(data) >= 4 {
 		b.dc.descByID[id] = descRec{typ: string(data[:4]), data: data[4:]}
@@ -408,7 +408,7 @@ func scanRecords(body []byte, b *builder) {
 
 // collectParamRecord reads a 0x02 parameter-list record (opcode already consumed).
 // Format: ref(2BE) + count(2BE) + count×2 child refs.
-func collectParamRecord(r *reader) (int16, []int16) {
+func collectParamRecord(r *reader) (nodeID, []nodeID) {
 	if r.remaining() < 4 {
 		return 0, nil
 	}
@@ -426,7 +426,7 @@ func collectParamRecord(r *reader) (int16, []int16) {
 	if r.remaining() < int(count)*2 {
 		return ref, nil
 	}
-	children := make([]int16, count)
+	children := make([]nodeID, count)
 	for i := range children {
 		v, err := r.readI16BE()
 		if err != nil {
@@ -439,7 +439,7 @@ func collectParamRecord(r *reader) (int16, []int16) {
 
 // collectNodeRecord reads a 0x0d node record body (opcode already consumed),
 // returning its ID and structure. Returns nil rec for spurious 0x0d bytes.
-func collectNodeRecord(r *reader) (int16, *nodeRec) {
+func collectNodeRecord(r *reader) (nodeID, *nodeRec) {
 	const maxNodeSkip = 300
 
 	if r.remaining() < 5 {
@@ -447,7 +447,7 @@ func collectNodeRecord(r *reader) (int16, *nodeRec) {
 	}
 
 	peek := r.data[r.pos : r.pos+5]
-	id := int16(uint16(peek[0])<<8 | uint16(peek[1]))
+	id := nodeID(int16(uint16(peek[0])<<8 | uint16(peek[1])))
 	count := int(uint16(peek[2])<<8 | uint16(peek[3]))
 	typ := peek[4]
 
@@ -468,9 +468,9 @@ func collectNodeRecord(r *reader) (int16, *nodeRec) {
 	}
 
 	// Child refs start at byte 11 (after id:2, count:2, type:1, fixed:6).
-	children := make([]int16, count)
+	children := make([]nodeID, count)
 	for i := range children {
-		children[i] = int16(uint16(raw[11+i*2])<<8 | uint16(raw[12+i*2]))
+		children[i] = nodeID(int16(uint16(raw[11+i*2])<<8 | uint16(raw[12+i*2])))
 	}
 	flags := uint16(raw[5])<<8 | uint16(raw[6])
 	return id, &nodeRec{typ: typ, flags: flags, children: children}
@@ -478,7 +478,7 @@ func collectNodeRecord(r *reader) (int16, *nodeRec) {
 
 // readTextLiteral reads the body of a 0x11 text-literal record.
 // Format: node_id(2BE signed) + byte_len(2BE) + UTF-16BE string
-func readTextLiteral(r *reader) (nodeID int16, s string, ok bool, err error) {
+func readTextLiteral(r *reader) (nodeID nodeID, s string, ok bool, err error) {
 	nodeID, err = r.readI16BE()
 	if err != nil {
 		return 0, "", false, err
@@ -505,7 +505,7 @@ func readTextLiteral(r *reader) (nodeID int16, s string, ok bool, err error) {
 // Returns the raw ref (for handler detection), both name variants, and ok.
 //
 // Format: ref(2BE signed) + data_len(2BE) + identifier-data
-func readIdentRecord(r *reader) (ref int16, names []string, ok bool, err error) {
+func readIdentRecord(r *reader) (ref nodeID, names []string, ok bool, err error) {
 	ref, err = r.readI16BE()
 	if err != nil {
 		return 0, nil, false, err
@@ -554,7 +554,7 @@ func parseIdentData(data []byte) []string {
 
 // readIntLiteral reads the body of a 0x03 integer-literal record.
 // Format: ref(2BE signed) + value(2BE signed)
-func readIntLiteral(r *reader) (ref int16, v int, ok bool, err error) {
+func readIntLiteral(r *reader) (ref nodeID, v int, ok bool, err error) {
 	ref, err = r.readI16BE()
 	if err != nil {
 		return 0, 0, false, err
@@ -660,12 +660,12 @@ func aliasAt(blob []byte, i int) (string, bool) {
 // peekAppBlob inspects a 0x0f blob record (opcode already consumed) without
 // advancing the reader. If the blob embeds an alias record ("alis"), it returns
 // the application name taken from the alias's filename field, minus ".app".
-func peekAppBlob(r *reader) (int16, string, bool) {
+func peekAppBlob(r *reader) (nodeID, string, bool) {
 	if r.remaining() < 4 {
 		return 0, "", false
 	}
 	hdr := r.data[r.pos : r.pos+4]
-	id := int16(uint16(hdr[0])<<8 | uint16(hdr[1]))
+	id := nodeID(int16(uint16(hdr[0])<<8 | uint16(hdr[1])))
 	n := int(uint16(hdr[2])<<8 | uint16(hdr[3]))
 	if id <= 0 || n < 64 || r.remaining() < 4+n {
 		return 0, "", false
@@ -692,7 +692,7 @@ func peekAppBlob(r *reader) (int16, string, bool) {
 
 // readSizedRecord reads ref(2) + len(2) + data when len equals want; otherwise
 // it consumes nothing so the scanner can resync byte-wise.
-func readSizedRecord(r *reader, want int) (int16, []byte, bool) {
+func readSizedRecord(r *reader, want int) (nodeID, []byte, bool) {
 	if r.remaining() < 4+want {
 		return 0, nil, false
 	}
@@ -700,7 +700,7 @@ func readSizedRecord(r *reader, want int) (int16, []byte, bool) {
 	if int(uint16(hdr[2])<<8|uint16(hdr[3])) != want {
 		return 0, nil, false
 	}
-	ref := int16(uint16(hdr[0])<<8 | uint16(hdr[1]))
+	ref := nodeID(int16(uint16(hdr[0])<<8 | uint16(hdr[1])))
 	r.pos += 4
 	data, _ := r.readBytes(want)
 	return ref, data, true
@@ -714,12 +714,12 @@ type descRec struct {
 
 // readDescBlob reads a 0x0f blob holding an AEDesc:
 // id(2) len(2) kind(1)=0x0d type(4) data(len-4).
-func readDescBlob(r *reader) (int16, descRec, bool) {
+func readDescBlob(r *reader) (nodeID, descRec, bool) {
 	if r.remaining() < 9 {
 		return 0, descRec{}, false
 	}
 	b := r.data[r.pos:]
-	id := int16(uint16(b[0])<<8 | uint16(b[1]))
+	id := nodeID(int16(uint16(b[0])<<8 | uint16(b[1])))
 	n := int(uint16(b[2])<<8 | uint16(b[3]))
 	if id <= 0 || n < 4 || b[4] != 0x0d || r.remaining() < 5+n || !isFourCC(b[5:9]) {
 		return 0, descRec{}, false
@@ -732,12 +732,12 @@ func readDescBlob(r *reader) (int16, descRec, bool) {
 // readComment reads a 0x0c source-comment record:
 // id(2) len(2) textLen(2) text(textLen, Mac Roman/ASCII) trailer(4).
 // It consumes nothing unless the lengths are self-consistent.
-func readComment(r *reader) (int16, string, bool) {
+func readComment(r *reader) (nodeID, string, bool) {
 	if r.remaining() < 6 {
 		return 0, "", false
 	}
 	b := r.data[r.pos:]
-	id := int16(uint16(b[0])<<8 | uint16(b[1]))
+	id := nodeID(int16(uint16(b[0])<<8 | uint16(b[1])))
 	n := int(uint16(b[2])<<8 | uint16(b[3]))
 	tl := int(uint16(b[4])<<8 | uint16(b[5]))
 	if id <= 0 || n != 2+tl+4 || r.remaining() < 4+n {

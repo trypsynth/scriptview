@@ -282,22 +282,22 @@ const (
 // It returns the raw four-char code behind each term ref and the 8-char
 // suite+event code behind each command ref. Names are resolved at render
 // time, when the enclosing tell target (and so the dictionary) is known.
-func scanOSTypeNames(body []byte) (osCode map[int16]string, evCode map[int16]string) {
-	osCode = make(map[int16]string)
-	evCode = make(map[int16]string)
+func scanOSTypeNames(body []byte) (osCode map[nodeID]string, evCode map[nodeID]string) {
+	osCode = make(map[nodeID]string)
+	evCode = make(map[nodeID]string)
 
 	for i := 0; i+6 <= len(body); i++ {
 		if body[i] != objCodeID {
 			continue
 		}
-		ref := int16(uint16(body[i+1])<<8 | uint16(body[i+2]))
+		ref := nodeID(int16(uint16(body[i+1])<<8 | uint16(body[i+2])))
 		n := int(uint16(body[i+3])<<8 | uint16(body[i+4]))
 		kind := body[i+5]
 		if ref >= 0 || i+6+n > len(body) {
 			continue
 		}
 		data := body[i+6 : i+6+n]
-		var m map[int16]string
+		var m map[nodeID]string
 		var code string
 		switch {
 		case kind == osKindCode && n == 4 && isFourCC(data):

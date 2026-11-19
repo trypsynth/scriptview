@@ -42,13 +42,13 @@ const (
 // object is one decoded record.
 type object struct {
 	typ  byte
-	ref  int16
+	ref  nodeID
 	size uint16 // raw size field (the value itself for fixnums and booleans)
 	kind byte   // kind byte, for types that have one
 	// For cmdBlock: flags, code start and code end.
 	flags, start, end uint16
-	refs              []int16 // child references
-	data              []byte  // payload bytes
+	refs              []nodeID // child references
+	data              []byte   // payload bytes
 }
 
 // readObjects decodes the body as a sequence of objects, returning them in
@@ -72,7 +72,7 @@ func readObjects(body []byte) ([]*object, error) {
 			if r.remaining() < 2*count {
 				return io.ErrUnexpectedEOF
 			}
-			o.refs = make([]int16, count)
+			o.refs = make([]nodeID, count)
 			for i := range o.refs {
 				o.refs[i], _ = r.readI16BE()
 			}

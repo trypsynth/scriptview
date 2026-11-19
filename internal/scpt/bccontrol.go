@@ -1,7 +1,7 @@
 package scpt
 
 // body decompiles [lo, hi) into a 'k' block node.
-func (bh *bcHandler) body(lo, hi int) (int16, error) {
+func (bh *bcHandler) body(lo, hi int) (nodeID, error) {
 	stmts, err := bh.stmts(lo, hi)
 	if err != nil {
 		return 0, err
@@ -10,7 +10,7 @@ func (bh *bcHandler) body(lo, hi int) (int16, error) {
 }
 
 // ifStmt decompiles `cond TestIf else … [Jump end] …`.
-func (bh *bcHandler) ifStmt(pc int, stack *[]stackVal) (int16, int, error) {
+func (bh *bcHandler) ifStmt(pc int, stack *[]stackVal) (nodeID, int, error) {
 	b := bh.b
 	in := bh.prog[pc]
 	s := *stack
@@ -32,7 +32,7 @@ func (bh *bcHandler) ifStmt(pc int, stack *[]stackVal) (int16, int, error) {
 	if err != nil {
 		return 0, 0, err
 	}
-	children := []int16{cond.id, then, b.ref(), b.ref()}
+	children := []nodeID{cond.id, then, b.ref(), b.ref()}
 	if end > elseAt {
 		// An if statement as the whole else branch prints as `else if`.
 		els, err := bh.stmts(elseAt, end)
@@ -54,14 +54,14 @@ func (bh *bcHandler) ifStmt(pc int, stack *[]stackVal) (int16, int, error) {
 
 // elseIfChain folds a lone nested if statement into else-if form: it
 // returns the chain ([cond, [then, next]] cells) and the final else.
-func (bh *bcHandler) elseIfChain(els []int16) ([2]int16, bool) {
+func (bh *bcHandler) elseIfChain(els []nodeID) ([2]nodeID, bool) {
 	b := bh.b
 	if len(els) != 1 {
-		return [2]int16{}, false
+		return [2]nodeID{}, false
 	}
 	inner := b.out.nodes[child0(b.out.nodes[els[0]])]
 	if inner.typ != 'Z' || len(inner.children) != 4 {
-		return [2]int16{}, false
+		return [2]nodeID{}, false
 	}
 	// Chain cells: [cond, cell[then, rest]].
 	rest := inner.children[2]
@@ -70,16 +70,16 @@ func (bh *bcHandler) elseIfChain(els []int16) ([2]int16, bool) {
 	}
 	thenCell := b.nextID
 	b.nextID++
-	b.out.paramMap[thenCell] = []int16{inner.children[1], rest}
+	b.out.paramMap[thenCell] = []nodeID{inner.children[1], rest}
 	condCell := b.nextID
 	b.nextID++
-	b.out.paramMap[condCell] = []int16{inner.children[0], thenCell}
-	return [2]int16{condCell, inner.children[3]}, true
+	b.out.paramMap[condCell] = []nodeID{inner.children[0], thenCell}
+	return [2]nodeID{condCell, inner.children[3]}, true
 }
 
 // tellStmt decompiles `target Tell n … EndTell`. When the body leaves a
 // value on the stack, the tell is an expression.
-func (bh *bcHandler) tellStmt(pc int, stack *[]stackVal) (int16, int, bool, error) {
+func (bh *bcHandler) tellStmt(pc int, stack *[]stackVal) (nodeID, int, bool, error) {
 	b := bh.b
 	in := bh.prog[pc]
 	s := *stack
@@ -98,7 +98,7 @@ func (bh *bcHandler) tellStmt(pc int, stack *[]stackVal) (int16, int, bool, erro
 	if err != nil {
 		return 0, 0, false, err
 	}
-	var value int16
+	var value nodeID
 	for _, v := range rest {
 		if !v.undefined && !v.assigned && !v.it {
 			value = v.id
@@ -115,7 +115,7 @@ func (bh *bcHandler) tellStmt(pc int, stack *[]stackVal) (int16, int, bool, erro
 			return value, j + 1, true, nil
 		}
 		id := b.node('O', value, target.id)
-		b.out.nodes[id] = nodeRec{typ: 'O', flags: flagAltSyntax, children: []int16{value, target.id}}
+		b.out.nodes[id] = nodeRec{typ: 'O', flags: flagAltSyntax, children: []nodeID{value, target.id}}
 		return id, j + 1, true, nil
 	}
 	if value != 0 {
@@ -129,7 +129,7 @@ func (bh *bcHandler) tellStmt(pc int, stack *[]stackVal) (int16, int, bool, erro
 }
 
 // repeatStmt decompiles `LinkRepeat end, setup, Repeat…, body, Dup StoreResult Jump back`.
-func (bh *bcHandler) repeatStmt(pc int) (int16, int, error) {
+func (bh *bcHandler) repeatStmt(pc int) (nodeID, int, error) {
 	b := bh.b
 	in := bh.prog[pc]
 	end := in.jumpTarget(in.args[0])
@@ -154,7 +154,7 @@ func (bh *bcHandler) repeatStmt(pc int) (int16, int, error) {
 		bodyEnd = bh.prog[back-2].off
 	}
 	top := bh.prog[loopTop]
-	var stmt int16
+	var stmt nodeID
 	switch top.name {
 	case "Pop": // plain repeat: LinkRepeat PushUndefined [Pop …]
 		body, err := bh.body(bh.prog[loopTop+1].off, bodyEnd)
@@ -183,7 +183,7 @@ func (bh *bcHandler) repeatStmt(pc int) (int16, int, error) {
 				return 0, 0, errUnsupported{top, "missing range"}
 			}
 			v := bh.varRef(top.args[0])
-			children := []int16{body, v, setup[0].id, setup[1].id}
+			children := []nodeID{body, v, setup[0].id, setup[1].id}
 			if setup[2].count != 1 {
 				children = append(children, setup[2].id)
 			}
@@ -248,7 +248,7 @@ func (bh *bcHandler) stackAt(lo, hi int) ([]stackVal, error) {
 
 // tryStmt decompiles `ErrorHandler handler, body, EndErrorHandler end,
 // handler: HandleError msg num, …`.
-func (bh *bcHandler) tryStmt(pc int) (int16, int, error) {
+func (bh *bcHandler) tryStmt(pc int) (nodeID, int, error) {
 	b := bh.b
 	in := bh.prog[pc]
 	handlerAt := in.jumpTarget(in.args[0])
@@ -269,7 +269,7 @@ func (bh *bcHandler) tryStmt(pc int) (int16, int, error) {
 		handlerStart = he.off + he.size
 		// Operands are literal indices: the variable receiving the message,
 		// and a binding of labels (number, from, …) to variables.
-		var keys, values []int16
+		var keys, values []nodeID
 		msg := b.ref()
 		if len(he.args) >= 1 {
 			switch v := bh.lit(he.args[0]).(type) {
@@ -316,7 +316,7 @@ func (bh *bcHandler) tryStmt(pc int) (int16, int, error) {
 }
 
 // considerStmt decompiles `considering … Consider n … EndConsider`.
-func (bh *bcHandler) considerStmt(pc int, considering, ignoring stackVal) (int16, int, error) {
+func (bh *bcHandler) considerStmt(pc int, considering, ignoring stackVal) (nodeID, int, error) {
 	b := bh.b
 	in := bh.prog[pc]
 	depth := 0
@@ -340,13 +340,13 @@ func (bh *bcHandler) considerStmt(pc int, considering, ignoring stackVal) (int16
 }
 
 // attrChain turns a list literal node of attributes into a name cons chain.
-func (bh *bcHandler) attrChain(listID int16) int16 {
+func (bh *bcHandler) attrChain(listID nodeID) nodeID {
 	b := bh.b
 	n := b.out.nodes[listID]
 	if n.typ != 'J' {
 		return b.ref()
 	}
-	var names []int16
+	var names []nodeID
 	for ref := child0(n); ref > 0; {
 		cell, ok := b.out.paramMap[ref]
 		if !ok || len(cell) != 2 {
@@ -381,7 +381,7 @@ func (bh *bcHandler) matching(pc int, open, close string) (int, error) {
 // foldDestructuring rewrites the compiler's expansion of
 // `set {a, b} to x` — `set a to item 1 of x`, `set b to item 2 of x`, …,
 // then x as a discarded expression — back into one statement.
-func (bh *bcHandler) foldDestructuring(stmts []int16) []int16 {
+func (bh *bcHandler) foldDestructuring(stmts []nodeID) []nodeID {
 	// A nested pattern, set {{a, b}, {c, d}} to x, folds from the inside
 	// out: each pass turns the inner sets into one item of the outer.
 	for n := len(stmts) + 1; len(stmts) < n; {
@@ -391,10 +391,10 @@ func (bh *bcHandler) foldDestructuring(stmts []int16) []int16 {
 	return stmts
 }
 
-func (bh *bcHandler) foldDestructuringOnce(stmts []int16) []int16 {
+func (bh *bcHandler) foldDestructuringOnce(stmts []nodeID) []nodeID {
 	b := bh.b
 	// itemOf returns (k, x) when stmt is `set target to item k of x`.
-	itemOf := func(stmt int16) (int, int16, int16, bool) {
+	itemOf := func(stmt nodeID) (int, nodeID, nodeID, bool) {
 		set := b.out.nodes[child0(b.out.nodes[stmt])]
 		if (set.typ != 'r' && set.typ != 's') || len(set.children) != 2 {
 			return 0, 0, 0, false
@@ -411,7 +411,7 @@ func (bh *bcHandler) foldDestructuringOnce(stmts []int16) []int16 {
 		return k, ref.children[1], set.children[1], ok
 	}
 	// propOf returns (property ref, x, target) for `set target to prop of x`.
-	propOf := func(stmt int16) (int16, int16, int16, bool) {
+	propOf := func(stmt nodeID) (nodeID, nodeID, nodeID, bool) {
 		set := b.out.nodes[child0(b.out.nodes[stmt])]
 		if set.typ != 'r' || len(set.children) != 2 {
 			return 0, 0, 0, false
@@ -426,10 +426,10 @@ func (bh *bcHandler) foldDestructuringOnce(stmts []int16) []int16 {
 		}
 		return child0(prop), ref.children[1], set.children[1], true
 	}
-	var out []int16
+	var out []nodeID
 	for i := 0; i < len(stmts); i++ {
 		if _, x, _, ok := propOf(stmts[i]); ok {
-			var keys, targets []int16
+			var keys, targets []nodeID
 			j := i
 			for ; j < len(stmts); j++ {
 				key, xj, t, ok := propOf(stmts[j])
@@ -451,7 +451,7 @@ func (bh *bcHandler) foldDestructuringOnce(stmts []int16) []int16 {
 			out = append(out, stmts[i])
 			continue
 		}
-		var targets []int16
+		var targets []nodeID
 		j := i
 		for ; j < len(stmts); j++ {
 			kj, xj, t, ok := itemOf(stmts[j])

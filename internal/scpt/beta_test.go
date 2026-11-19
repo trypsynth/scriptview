@@ -12,7 +12,7 @@ type bnode struct {
 	flags     uint16
 	data      []byte
 	kids      []*bnode
-	ref       int16
+	ref       nodeID
 }
 
 func bNode(kind byte, flags uint16, kids ...*bnode) *bnode {
@@ -25,7 +25,7 @@ func bSym(index uint32) *bnode {
 	return &bnode{typ: objSymbol, data: binary.BigEndian.AppendUint32(nil, index*8+1)}
 }
 
-func bFix(v int16) *bnode { return &bnode{typ: objFixnum, data: []byte{byte(v >> 8), byte(v)}} }
+func bFix(v nodeID) *bnode { return &bnode{typ: objFixnum, data: []byte{byte(v >> 8), byte(v)}} }
 
 func bStr(s string) *bnode {
 	d := binary.BigEndian.AppendUint16(nil, uint16(len(s)))
@@ -60,7 +60,7 @@ func bList(items ...*bnode) *bnode {
 // holds body.
 func encodeBeta(kind byte, body *bnode) []byte {
 	out := []byte("FasdUAS 0.95")
-	next := int16(-1)
+	next := nodeID(-1)
 	var emit func(n *bnode)
 	emit = func(n *bnode) {
 		for _, k := range n.kids {

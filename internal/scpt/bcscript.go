@@ -32,14 +32,14 @@ func DecompileBytecode(f *File) (string, error) {
 		return "", err
 	}
 	out := b.out
-	out.wraps[0] = []int16{-1, b.node('k', b.cons(items))}
+	out.wraps[0] = []nodeID{-1, b.node('k', b.cons(items))}
 	return decompileWith(out), nil
 }
 
 // scriptItems decompiles a script object's table
 // [_, [names…], entries…] into top-level items.
 // parent is the object's parent, which an explicit property parent names.
-func (b *bcBuilder) scriptItems(v fasValue, top bool, parent fasValue) ([]int16, error) {
+func (b *bcBuilder) scriptItems(v fasValue, top bool, parent fasValue) ([]nodeID, error) {
 	saved := b.prior
 	b.prior = map[string]bool{}
 	for n := range saved {
@@ -60,8 +60,8 @@ func (b *bcBuilder) scriptItems(v fasValue, top bool, parent fasValue) ([]int16,
 	}
 	b.scopes = append(b.scopes, scopeNames)
 	defer func() { b.scopes = b.scopes[:len(b.scopes)-1] }()
-	var items, uses []int16
-	var runBody []int16
+	var items, uses []nodeID
+	var runBody []nodeID
 	// The compiler puts the implicit run handler after every other handler,
 	// so a run handler anywhere else was written out: on run.
 	lastHandler := -1
@@ -162,7 +162,7 @@ func (b *bcBuilder) scriptItems(v fasValue, top bool, parent fasValue) ([]int16,
 		}
 		if c, ok := name.(fasCode); ok && c.code == "pare" && entry == nil {
 			// property parent : …, whose value is the object's parent.
-			var value int16
+			var value nodeID
 			switch p := parent.(type) {
 			case fasApp:
 				value = b.literal(p)
@@ -204,7 +204,7 @@ func (b *bcBuilder) scriptItems(v fasValue, top bool, parent fasValue) ([]int16,
 	}
 	if top {
 		if globals := b.globals(table[2:]); len(globals) > 0 {
-			items = append([]int16{b.node('l', b.node('p', b.cons(globals)))}, items...)
+			items = append([]nodeID{b.node('l', b.node('p', b.cons(globals)))}, items...)
 		}
 	}
 	if len(runBody) > 0 {
@@ -226,7 +226,7 @@ func (b *bcBuilder) scriptItems(v fasValue, top bool, parent fasValue) ([]int16,
 }
 
 // usesAdditions reports whether use statements include `use scripting additions`.
-func (b *bcBuilder) usesAdditions(uses []int16) bool {
+func (b *bcBuilder) usesAdditions(uses []nodeID) bool {
 	for _, u := range uses {
 		x := b.out.nodes[child0(b.out.nodes[u])]
 		if t, ok := b.out.nodes[child(x, 1)]; ok && t.typ == '2' && b.out.osCode[child0(t)] == "osax" {
@@ -274,9 +274,9 @@ func (b *bcBuilder) globalAccesses(entries []fasValue) map[string]bool {
 // globals returns the variables that handlers reach as globals, which the
 // source must have declared (`global x`): top-level code sees its variables
 // as globals without one, but a handler only with a declaration.
-func (b *bcBuilder) globals(entries []fasValue) []int16 {
+func (b *bcBuilder) globals(entries []fasValue) []nodeID {
 	seen := map[string]bool{"result": true, "applescript": true}
-	var out []int16
+	var out []nodeID
 	for _, entry := range entries {
 		h, ok := b.src.handlerFrom(entry)
 		if !ok {
@@ -313,7 +313,7 @@ const (
 	bodyRun // the implicit run handler: its undeclared variables are global
 )
 
-func (b *bcBuilder) handlerBody(h handlerCode, kind int) ([]int16, error) {
+func (b *bcBuilder) handlerBody(h handlerCode, kind int) ([]nodeID, error) {
 	prog, err := disassemble(h.code)
 	if err != nil {
 		return nil, err
@@ -331,7 +331,7 @@ func (b *bcBuilder) handlerBody(h handlerCode, kind int) ([]int16, error) {
 	}
 	if err == nil && kind != bodyInit {
 		if decl := bh.localDecl(kind == bodyRun); decl != 0 {
-			stmts = append([]int16{decl}, stmts...)
+			stmts = append([]nodeID{decl}, stmts...)
 		}
 	}
 	return stmts, err
@@ -342,7 +342,7 @@ func (b *bcBuilder) handlerBody(h handlerCode, kind int) ([]int16, error) {
 // first uses them, so a variable numbered out of that order, or never used,
 // was declared: local a, b. In the implicit run handler, a variable is local
 // only when declared, or as a loop or error variable.
-func (bh *bcHandler) localDecl(run bool) int16 {
+func (bh *bcHandler) localDecl(run bool) nodeID {
 	vars := bh.h.vars
 	np := paramVarCount(bh.h.params) + len(bh.h.pattern) + bh.h.labeled // on open {a, b}: the pattern's names
 	if len(vars) <= np {
@@ -442,7 +442,7 @@ func (bh *bcHandler) localDecl(run bool) int16 {
 	if k < np {
 		return 0
 	}
-	var names []int16
+	var names []nodeID
 	for i := np; i <= k; i++ {
 		names = append(names, bh.varRef(i))
 	}
@@ -450,13 +450,13 @@ func (bh *bcHandler) localDecl(run bool) int16 {
 }
 
 // handlerDef builds an 'i' handler definition node.
-func (b *bcBuilder) handlerDef(h handlerCode, blk *fasBlock) (int16, error) {
+func (b *bcBuilder) handlerDef(h handlerCode, blk *fasBlock) (nodeID, error) {
 	stmts, err := b.handlerBody(h, bodyHandler)
 	if err != nil {
 		return 0, err
 	}
 	body := b.node('k', b.cons(stmts))
-	var params []int16
+	var params []nodeID
 	for _, p := range h.params {
 		if name, ok := p.(string); ok {
 			params = append(params, b.node('o', b.nameRef(name)))
@@ -465,7 +465,7 @@ func (b *bcBuilder) handlerDef(h handlerCode, blk *fasBlock) (int16, error) {
 		}
 	}
 	nameRef := b.keyRef(h.name)
-	var sig int16
+	var sig nodeID
 	if _, event := h.name.(fasCode); event {
 		// Event handler: `on open theFiles` — the direct parameter first.
 		direct := b.ref()
@@ -473,7 +473,7 @@ func (b *bcBuilder) handlerDef(h handlerCode, blk *fasBlock) (int16, error) {
 			direct = params[0]
 		}
 		if h.hasPattern {
-			var names []int16
+			var names []nodeID
 			for _, p := range h.pattern {
 				names = append(names, b.node('o', b.nameRef(p)))
 			}
@@ -494,12 +494,12 @@ func (b *bcBuilder) handlerDef(h handlerCode, blk *fasBlock) (int16, error) {
 
 // labeledParams builds the given/preposition cells from a handler block's
 // labeled-parameter binding (label → variable name).
-func (b *bcBuilder) labeledParams(blk *fasBlock) int16 {
+func (b *bcBuilder) labeledParams(blk *fasBlock) nodeID {
 	bind, ok := blk.items[3].(fasBinding)
 	if !ok || len(bind.keys) == 0 {
 		return b.ref()
 	}
-	var keys, values []int16
+	var keys, values []nodeID
 	for i := range bind.keys {
 		keys = append(keys, b.keyRef(bind.keys[i]))
 		if name, ok := bind.values[i].(string); ok {
@@ -527,9 +527,9 @@ func (bh *bcHandler) parentName(level, index int) string {
 // MakeObjectAlias forms offset by 21: 20 a reference to, 21 property,
 // 22 every, 23 some, 24 index, 25 key, 27 range, 30 beginning, 31 end,
 // 32 middle. Items start with the container (nil for none).
-func (b *bcBuilder) specBlock(x *fasBlock) (int16, bool) {
+func (b *bcBuilder) specBlock(x *fasBlock) (nodeID, bool) {
 	it := x.items
-	withContainer := func(part int16) int16 {
+	withContainer := func(part nodeID) nodeID {
 		if len(it) == 0 || it[0] == nil {
 			return part
 		}
@@ -542,7 +542,7 @@ func (b *bcBuilder) specBlock(x *fasBlock) (int16, bool) {
 		}
 		return b.node('n', part, b.literal(container))
 	}
-	key := func(v fasValue) int16 { return b.keyRef(v) }
+	key := func(v fasValue) nodeID { return b.keyRef(v) }
 	switch {
 	case x.kind == 20 && len(it) == 1:
 		return b.node('N', b.literal(it[0])), true
@@ -604,7 +604,7 @@ func (b *bcBuilder) useKey(v fasValue) string {
 
 // useStatements builds `use …` statements from the required-imports
 // property: block4{count, block0{records…}}.
-func (b *bcBuilder) useStatements(v fasValue) []int16 {
+func (b *bcBuilder) useStatements(v fasValue) []nodeID {
 	outer, ok := v.(*fasBlock)
 	if !ok || len(outer.items) < 2 {
 		return nil
@@ -613,15 +613,15 @@ func (b *bcBuilder) useStatements(v fasValue) []int16 {
 	if !ok {
 		return nil
 	}
-	var out []int16
+	var out []nodeID
 	for _, rec := range inner.items {
 		bind, ok := rec.(fasBinding)
 		if !ok {
 			continue
 		}
-		var target int16
+		var target nodeID
 		var targetValue fasValue
-		var keys, values []int16
+		var keys, values []nodeID
 		for i, k := range bind.keys {
 			kc, _ := k.(fasCode)
 			switch {
@@ -649,7 +649,7 @@ func (b *bcBuilder) useStatements(v fasValue) []int16 {
 		}
 		use := b.node('x', b.ref(), target, labels)
 		if b.useTargets == nil {
-			b.useTargets = map[string]int16{}
+			b.useTargets = map[string]nodeID{}
 		}
 		b.useTargets[b.useKey(targetValue)] = use
 		out = append(out, b.node('l', use))
@@ -659,7 +659,7 @@ func (b *bcBuilder) useStatements(v fasValue) []int16 {
 
 // scriptInit decompiles a script object's init handler into its body:
 // assignments to the object's own variables become properties.
-func (b *bcBuilder) scriptInit(blk *fasBlock) ([]int16, error) {
+func (b *bcBuilder) scriptInit(blk *fasBlock) ([]nodeID, error) {
 	h, ok := b.src.handlerFrom(blk)
 	if !ok {
 		return nil, fmt.Errorf("malformed script init")
@@ -672,7 +672,7 @@ func (b *bcBuilder) scriptInit(blk *fasBlock) ([]int16, error) {
 	if err != nil {
 		return nil, err
 	}
-	var props, rest []int16
+	var props, rest []nodeID
 	for _, st := range stmts {
 		n := b.out.nodes[child0(b.out.nodes[st])]
 		if n.typ == 'r' && len(n.children) == 2 {
@@ -698,7 +698,7 @@ func (b *bcBuilder) scriptInit(blk *fasBlock) ([]int16, error) {
 }
 
 // isBlankLine reports whether stmt is an empty line node.
-func (b *bcBuilder) isBlankLine(stmt int16) bool {
+func (b *bcBuilder) isBlankLine(stmt nodeID) bool {
 	n, ok := b.out.nodes[stmt]
 	return ok && n.typ == 'l' && len(n.children) == 0
 }
@@ -724,7 +724,7 @@ func paramVarCount(params []fasValue) int {
 // usesFromNode turns the value a script object's init handler gives its
 // required import items, {{item:a reference to framework "X"}, …}, into use
 // statements.
-func (b *bcBuilder) usesFromNode(list int16) []int16 {
+func (b *bcBuilder) usesFromNode(list nodeID) []nodeID {
 	l := b.out.nodes[list]
 	if l.typ == 'b' && len(l.children) == 2 && b.out.osCode[child0(b.out.nodes[l.children[0]])] == "pimr" {
 		// A later use: required import items & {{item:…}}.
@@ -733,7 +733,7 @@ func (b *bcBuilder) usesFromNode(list int16) []int16 {
 	if l.typ != 'J' {
 		return nil
 	}
-	var out []int16
+	var out []nodeID
 	for ref, steps := child0(l), 0; ref > 0 && steps < 1000; steps++ {
 		cell, ok := b.out.paramMap[ref]
 		if !ok || len(cell) != 2 {
@@ -743,8 +743,8 @@ func (b *bcBuilder) usesFromNode(list int16) []int16 {
 		if rec.typ != 'K' {
 			return nil
 		}
-		var target int16
-		var keys, values []int16
+		var target nodeID
+		var keys, values []nodeID
 		for _, c := range b.out.cells(child0(rec)) {
 			switch code := b.out.osCode[c[0]]; {
 			case code == "cobj" || b.out.refName[c[0]] == "item":

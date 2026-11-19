@@ -3,7 +3,7 @@ package scpt
 import "fmt"
 
 // objectAlias builds a reference from MakeObjectAlias's operands.
-func (bh *bcHandler) objectAlias(in instr, stack *[]stackVal) (int16, error) {
+func (bh *bcHandler) objectAlias(in instr, stack *[]stackVal) (nodeID, error) {
 	b := bh.b
 	pop := func() (stackVal, error) {
 		s := *stack
@@ -31,7 +31,7 @@ func (bh *bcHandler) objectAlias(in instr, stack *[]stackVal) (int16, error) {
 		}
 		id := b.node('6', container.id, test.id)
 		if t := b.out.nodes[test.id]; len(t.children) > 0 && b.out.nodes[t.children[0]].typ == 'g' {
-			b.out.nodes[id] = nodeRec{typ: '6', flags: flagAltSyntax, children: []int16{container.id, test.id}} // where it > 1
+			b.out.nodes[id] = nodeRec{typ: '6', flags: flagAltSyntax, children: []nodeID{container.id, test.id}} // where it > 1
 		}
 		return id, nil
 	}
@@ -70,7 +70,7 @@ func (bh *bcHandler) objectAlias(in instr, stack *[]stackVal) (int16, error) {
 			container.id = b.node('e', container.id) // item 1 of (get selection), (get x whose …)
 		}
 	}
-	var part int16
+	var part nodeID
 	switch kind {
 	case 0: // property
 		part = cls.id
@@ -79,7 +79,7 @@ func (bh *bcHandler) objectAlias(in instr, stack *[]stackVal) (int16, error) {
 		if b.out.osCode[bh.keyOf(cls.id)] == "prop" {
 			// properties of x is every «class prop» of x; "every property"
 			// doesn't parse.
-			b.out.nodes[part] = nodeRec{typ: '2', flags: flagAltSyntax, children: []int16{bh.keyOf(cls.id)}}
+			b.out.nodes[part] = nodeRec{typ: '2', flags: flagAltSyntax, children: []nodeID{bh.keyOf(cls.id)}}
 		}
 	case 2: // some class
 		part = b.node('3', bh.keyOf(cls.id))
@@ -106,7 +106,7 @@ func (bh *bcHandler) objectAlias(in instr, stack *[]stackVal) (int16, error) {
 			}
 		}
 		n := b.node('7', bh.keyOf(cls.id), idx.id, idx2.id)
-		b.out.nodes[n] = nodeRec{typ: '7', flags: flagThe, children: []int16{bh.keyOf(cls.id), idx.id, idx2.id}}
+		b.out.nodes[n] = nodeRec{typ: '7', flags: flagThe, children: []nodeID{bh.keyOf(cls.id), idx.id, idx2.id}}
 		part = n
 	case 7, 8: // [class] before/after container
 		part = b.node(map[int]byte{7: '8', 8: '9'}[kind], bh.keyOf(cls.id))
@@ -126,7 +126,7 @@ func (bh *bcHandler) objectAlias(in instr, stack *[]stackVal) (int16, error) {
 				flags |= flagImplicitIts
 			}
 			id := b.node('n', part, b.node('g'))
-			b.out.nodes[id] = nodeRec{typ: 'n', flags: flags, children: []int16{part, b.out.nodes[id].children[1]}}
+			b.out.nodes[id] = nodeRec{typ: 'n', flags: flags, children: []nodeID{part, b.out.nodes[id].children[1]}}
 			return id, nil
 		}
 		return part, nil // implicit container: the tell target or whose's it
@@ -139,7 +139,7 @@ func (bh *bcHandler) objectAlias(in instr, stack *[]stackVal) (int16, error) {
 	}
 	if cn := b.out.nodes[container.id]; kind == 3 && cn.typ == 'f' && b.out.osCode[bh.keyOf(cls.id)] == "psxf" {
 		id := b.node('n', part, container.id)
-		b.out.nodes[id] = nodeRec{typ: 'n', flags: flagAltSyntax, children: []int16{part, container.id}} // my POSIX file x
+		b.out.nodes[id] = nodeRec{typ: 'n', flags: flagAltSyntax, children: []nodeID{part, container.id}} // my POSIX file x
 		return id, nil
 	}
 	id := b.node('n', part, container.id)
@@ -147,13 +147,13 @@ func (bh *bcHandler) objectAlias(in instr, stack *[]stackVal) (int16, error) {
 		b.out.propertyRefs[id] = true
 	}
 	if cn := b.out.nodes[container.id]; kind == 0 && cn.typ == 'f' && b.out.nodes[part].typ == 'o' {
-		b.out.nodes[id] = nodeRec{typ: 'n', flags: flagAltSyntax, children: []int16{part, container.id}} // my counter
+		b.out.nodes[id] = nodeRec{typ: 'n', flags: flagAltSyntax, children: []nodeID{part, container.id}} // my counter
 		return id, nil
 	}
 	if (kind == 0 || kind == 3) && bh.isObjCTarget(container.id) {
 		// current application's NSString, x's |length|, current
 		// application's class "NSEvent": the ASObjC idiom.
-		b.out.nodes[id] = nodeRec{typ: 'n', flags: flagPossessive, children: []int16{part, container.id}}
+		b.out.nodes[id] = nodeRec{typ: 'n', flags: flagPossessive, children: []nodeID{part, container.id}}
 	}
 	return id, nil
 }
@@ -174,7 +174,7 @@ func popArgs(in instr, stack *[]stackVal) ([]stackVal, error) {
 }
 
 // positionalCall builds handler(args…) from PositionalMessageSend.
-func (bh *bcHandler) positionalCall(in instr, stack *[]stackVal) (int16, error) {
+func (bh *bcHandler) positionalCall(in instr, stack *[]stackVal) (nodeID, error) {
 	b := bh.b
 	args, err := popArgs(in, stack)
 	if err != nil {
@@ -186,7 +186,7 @@ func (bh *bcHandler) positionalCall(in instr, stack *[]stackVal) (int16, error) 
 	}
 	target := s[len(s)-1]
 	*stack = s[:len(s)-1]
-	ids := make([]int16, len(args))
+	ids := make([]nodeID, len(args))
 	for i, a := range args {
 		ids[i] = b.stmtValue(a) // an evaluated reference is an explicit get: f(get x of y)
 	}
@@ -194,7 +194,7 @@ func (bh *bcHandler) positionalCall(in instr, stack *[]stackVal) (int16, error) 
 	if target.it {
 		return call, nil
 	}
-	n := nodeRec{typ: 'n', children: []int16{call, target.id}, flags: flagPossessive}
+	n := nodeRec{typ: 'n', children: []nodeID{call, target.id}, flags: flagPossessive}
 	if b.out.nodes[target.id].typ == 'f' {
 		n.flags = flagAltSyntax // my call()
 	}
@@ -205,7 +205,7 @@ func (bh *bcHandler) positionalCall(in instr, stack *[]stackVal) (int16, error) 
 
 // messageSend builds a command or labeled handler call from MessageSend:
 // [target/direct, key, value, …, count].
-func (bh *bcHandler) messageSend(in instr, stack *[]stackVal) (int16, error) {
+func (bh *bcHandler) messageSend(in instr, stack *[]stackVal) (nodeID, error) {
 	b := bh.b
 	args, err := popArgs(in, stack)
 	if err != nil {
@@ -220,7 +220,7 @@ func (bh *bcHandler) messageSend(in instr, stack *[]stackVal) (int16, error) {
 	}
 	direct := s[len(s)-1]
 	*stack = s[:len(s)-1]
-	var keys, values []int16
+	var keys, values []nodeID
 	for i := 0; i < len(args); i += 2 {
 		key := bh.keyOf(args[i].id)
 		if b.out.osCode[key] == "Krtn" {
@@ -245,7 +245,7 @@ func (bh *bcHandler) messageSend(in instr, stack *[]stackVal) (int16, error) {
 
 // errorCommand builds `error msg number n …` from Error:
 // [me, key, value, …, count, message].
-func (bh *bcHandler) errorCommand(in instr, stack *[]stackVal) (int16, error) {
+func (bh *bcHandler) errorCommand(in instr, stack *[]stackVal) (nodeID, error) {
 	b := bh.b
 	s := *stack
 	if len(s) == 0 {
@@ -261,7 +261,7 @@ func (bh *bcHandler) errorCommand(in instr, stack *[]stackVal) (int16, error) {
 	if len(s) > 0 {
 		*stack = s[:len(s)-1] // the PushMe target
 	}
-	var keys, values []int16
+	var keys, values []nodeID
 	for i := 0; i+1 < len(args); i += 2 {
 		keys = append(keys, bh.keyOf(args[i].id))
 		values = append(values, args[i+1].id)
@@ -278,14 +278,14 @@ func (bh *bcHandler) errorCommand(in instr, stack *[]stackVal) (int16, error) {
 }
 
 // isCurrentApp reports whether id is the constant current application.
-func (bh *bcHandler) isCurrentApp(id int16) bool {
+func (bh *bcHandler) isCurrentApp(id nodeID) bool {
 	n := bh.b.out.nodes[id]
 	return n.typ == 'm' && bh.b.out.osCode[child0(n)] == "cura"
 }
 
 // isObjCTarget reports whether id is `current application` or a reference
 // through it, where Script Editor output uses possessive ('s) syntax.
-func (bh *bcHandler) isObjCTarget(id int16) bool {
+func (bh *bcHandler) isObjCTarget(id nodeID) bool {
 	b := bh.b
 	for range 16 {
 		n, ok := b.out.nodes[id]
