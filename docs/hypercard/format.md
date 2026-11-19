@@ -5,11 +5,7 @@ This page describes a HyperCard stack file as scriptview reads it. Apple never p
 - Rebecca Bettencourt's format notes (`HC_FILE_FORMAT_2010.TXT`, kreativekorp.com), based on Tyler Vano's work.
 - Uli Kusterer's [stackimport](https://github.com/uliwitness/stackimport), which reads the same format, including the pictures that scriptview skips. It handles only HyperCard 2.x.
 
-scriptview was tested on these stacks:
-
-- 29 stacks from Apple's 1993 and 1994 discs, among them HyperCard's own Home stack and Apple's AppleScript developer tools.
-- 4,651 stacks from software CDs, through discmaster.textfiles.com and the HyperCard Online collection on archive.org: 3,227 from HyperCard 2.x, 1,381 from HyperCard 1.x, 38 from HyperCard IIGS, and 5 from Plus.
-- 12 stacks that came with text listings of their scripts, which show how HyperCard indents. See [Scripts and indentation](#scripts-and-indentation).
+The rules started from 29 stacks on Apple's 1993 and 1994 discs, among them HyperCard's own Home stack and Apple's AppleScript developer tools. scriptview is now tested on 38,879 stacks from software CDs and archives. See [Testing the classic formats](../classic-testing.md). 12 stacks that came with text listings of their scripts show how HyperCard indents: see [Scripts and indentation](#scripts-and-indentation).
 
 All numbers are big-endian, except in HyperCard IIGS stacks. Text is Mac Roman, with a carriage return at the end of each line.
 

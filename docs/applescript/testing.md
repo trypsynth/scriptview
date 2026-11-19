@@ -92,6 +92,8 @@ The other 10 beta scripts belong to SimpleDialog, a sample app, and have no text
 
 Apple owns these scripts, so they aren't in the repository. The tests use synthetic files instead.
 
+A much larger set, 51,161 classic scripts from software CDs, tests that every script reads. See [Testing the classic formats](../classic-testing.md).
+
 ## Fuzzing
 
 `go test -fuzz FuzzDecompile ./scpt` feeds scriptview damaged files. Fuzzing found these bugs:

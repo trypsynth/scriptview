@@ -36,3 +36,4 @@ About these notes:
 
 - [Text encodings](text-encodings.md): the encodings of classic Mac OS, and how scriptview tells which one a file uses.
 - [Disk images](disk-images.md): the HFS and HFS+ volumes of classic Mac disks, and the files that wrap them.
+- [Testing the classic formats](classic-testing.md): the sets of stacks, projects, and classic scripts that scriptview is tested on, what's checked, and what's still wrong.
