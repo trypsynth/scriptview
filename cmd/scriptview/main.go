@@ -173,7 +173,18 @@ func run(opts options, paths []string) int {
 			closer.Close()
 			continue
 		}
-		out, ext, err := runFile(opts, path, true)
+		file, err := classic.ReadFile(scriptPath(path))
+		if err == nil {
+			if vols := memImage(file); vols != nil {
+				several = true
+				status = max(status, walkImage(opts, path, filepath.Base(path), vols, 0))
+				continue
+			}
+		}
+		out, ext := "", ""
+		if err == nil {
+			out, ext, err = runClassic(opts, file, path, true)
+		}
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "scriptview: %v\n", err)
 			if errors.As(err, new(usageError)) {
@@ -228,21 +239,13 @@ func walk(opts options, root string) int {
 		if fi, err := d.Info(); err != nil || fi.Size() > maxSize {
 			return nil
 		}
-		out, ext, err := runFile(opts, path, false)
-		if errors.Is(err, errSkip) {
-			return nil
-		}
+		file, err := classic.ReadFile(path)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "scriptview: %s: %v\n", path, err)
 			status = 1
-			if out == "" {
-				return nil
-			}
+			return nil
 		}
-		if err := emit(opts, path, rel, out, ext, true); err != nil {
-			fmt.Fprintf(os.Stderr, "scriptview: %v\n", err)
-			status = 1
-		}
+		status = max(status, runInImage(opts, file, path, rel, 0))
 		return nil
 	})
 	if err != nil {
@@ -261,7 +264,7 @@ const maxSize = 64 << 20
 func openImage(path string) ([]*hfs.Volume, io.Closer, error) {
 	f, err := os.Open(path)
 	if err != nil {
-		return nil, nil, nil // runFile reports it
+		return nil, nil, nil // reading it reports the error
 	}
 	fi, err := f.Stat()
 	if err != nil || !fi.Mode().IsRegular() {
@@ -335,11 +338,26 @@ func fileName(n string) string {
 	return n
 }
 
-// runInImage runs the command on a file from a disk image, opening it in
-// turn if it's an image itself.
+// memImage opens a file that's in memory as a disk image, or returns nil
+// if it isn't one. A Disk Copy 6 image needs its resource fork, which a
+// MacBinary file can hold.
+func memImage(f classic.File) []*hfs.Volume {
+	if vols, err := hfs.OpenWithResources(bytes.NewReader(f.Data), int64(len(f.Data)), f.Rsrc); err == nil {
+		return vols
+	}
+	if inner, ok := classic.Unwrap(f.Data); ok && len(inner.Rsrc) > 0 {
+		if vols, err := hfs.OpenWithResources(bytes.NewReader(inner.Data), int64(len(inner.Data)), inner.Rsrc); err == nil {
+			return vols
+		}
+	}
+	return nil
+}
+
+// runInImage runs the command on a file that a walk found, in a folder or
+// on a disk image, opening it in turn if it's an image itself.
 func runInImage(opts options, f classic.File, path, rel string, depth int) int {
 	if depth < maxDepth {
-		if vols, err := hfs.Open(bytes.NewReader(f.Data), int64(len(f.Data))); err == nil {
+		if vols := memImage(f); vols != nil {
 			return walkImage(opts, path, rel, vols, depth+1)
 		}
 	}
@@ -387,19 +405,10 @@ func emit(opts options, path, rel, out, ext string, header bool) error {
 	return nil
 }
 
-// runFile runs the command on one file, and returns its output and the
-// file extension for it. With explicit set, the user named the file, so a
-// plain-text file named .scpt decompiles to itself, and a file the command
-// doesn't apply to is a usage error, not errSkip.
-func runFile(opts options, path string, explicit bool) (out, ext string, err error) {
-	file, err := classic.ReadFile(scriptPath(path))
-	if err != nil {
-		return "", "", err
-	}
-	return runClassic(opts, file, path, explicit)
-}
-
-// runClassic runs the command on a file's forks, like runFile.
+// runClassic runs the command on a file's forks, and returns its output and
+// the file extension for it. With explicit set, the user named the file, so
+// a plain-text file named .scpt decompiles to itself, and a file the
+// command doesn't apply to is a usage error, not errSkip.
 func runClassic(opts options, file classic.File, path string, explicit bool) (out, ext string, err error) {
 	if stack, ok := stackFile(file); ok {
 		return runStack(opts, stack, explicit)
